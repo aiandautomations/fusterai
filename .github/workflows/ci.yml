@@ -23,6 +23,7 @@ jobs:
           POSTGRES_DB: fusterai_test
           POSTGRES_USER: fusterai
           POSTGRES_PASSWORD: secret
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-
@@ -77,10 +78,12 @@ jobs:
       - name: Copy .env
         run: cp .env.example .env
 
+      - name: Grant CREATEDB to test user
+        run: psql -h 127.0.0.1 -U fusterai -d fusterai_test -c "ALTER USER fusterai CREATEDB;"
+
       - name: Configure test environment
         run: |
           php artisan key:generate
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=fusterai_test/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=fusterai/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=secret/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
