@@ -84,6 +84,7 @@ jobs:
       - name: Configure test environment
         run: |
           php artisan key:generate
+          php artisan passport:keys --force
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=fusterai/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=secret/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
