@@ -25,10 +25,7 @@ class GetCustomerHistory extends Tool
     public function handle(Request $request): Response
     {
         $email    = $request->string('email');
-        $customer = Customer::withCount([
-                'conversations',
-                'conversations as open_tickets_count' => fn ($q) => $q->where('status', 'open'),
-            ])
+        $customer = Customer::withCount('conversations')
             ->with(['conversations' => fn ($q) => $q->latest()->limit(10)])
             ->where('email', $email)
             ->first();
@@ -37,13 +34,15 @@ class GetCustomerHistory extends Tool
             return Response::error("No customer found with email: {$email}");
         }
 
+        $openCount = $customer->conversations()->where('status', 'open')->count();
+
         return Response::json([
             'id'            => $customer->id,
             'name'          => $customer->name,
             'email'         => $customer->email,
             'created'       => $customer->created_at->toDateTimeString(),
             'total_tickets' => $customer->conversations_count,
-            'open_tickets'  => $customer->open_tickets_count,
+            'open_tickets'  => $openCount,
             'conversations' => $customer->conversations->map(function ($c) {
                 /** @var \App\Domains\Conversation\Models\Conversation $c */
                 return [

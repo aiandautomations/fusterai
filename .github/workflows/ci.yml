@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ["8.2", "8.3"]
+        php: ["8.4", "8.5"]
 
     services:
       postgres:
@@ -102,10 +102,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.3
+      - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: pdo, pdo_pgsql, pgsql, redis, pcntl, zip
           coverage: none
 
@@ -113,8 +113,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-8.3-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-8.3-
+          key: composer-8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-8.4-
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader

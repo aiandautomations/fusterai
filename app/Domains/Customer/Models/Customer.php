@@ -59,10 +59,13 @@ class Customer extends Model
      */
     public static function resolveOrCreate(int $workspaceId, string $email, string $name = ''): static
     {
-        return static::firstOrCreate(
+        /** @var static $instance */
+        $instance = static::firstOrCreate(
             ['workspace_id' => $workspaceId, 'email' => strtolower($email)],
             ['name' => $name ?: explode('@', $email)[0]],
         );
+
+        return $instance;
     }
 
     /**
@@ -70,10 +73,13 @@ class Customer extends Model
      */
     public static function resolveOrCreateByPhone(int $workspaceId, string $phone, string $name = ''): static
     {
-        return static::firstOrCreate(
+        /** @var static $instance */
+        $instance = static::firstOrCreate(
             ['workspace_id' => $workspaceId, 'phone' => $phone],
             ['name' => $name ?: $phone],
         );
+
+        return $instance;
     }
 
     // ── Helpers ──────────────────────────────────────────────────
