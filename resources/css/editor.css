@@ -1,0 +1,48 @@
+/* Tiptap editor content styles */
+.ProseMirror {
+    outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #9ca3af;
+    pointer-events: none;
+    height: 0;
+}
+
+.ProseMirror > * + * {
+    margin-top: 0.5em;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+    padding: 0 1rem;
+    list-style: revert;
+}
+
+.ProseMirror blockquote {
+    padding-left: 1rem;
+    border-left: 3px solid #e5e7eb;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.ProseMirror a {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ProseMirror code {
+    background-color: #f1f5f9;
+    padding: 0.1em 0.3em;
+    border-radius: 0.25em;
+    font-family: monospace;
+    font-size: 0.875em;
+}
+
+/* Thread body prose styles */
+.prose-invert a {
+    color: rgba(255, 255, 255, 0.85);
+}

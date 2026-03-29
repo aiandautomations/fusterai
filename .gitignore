@@ -1,0 +1,89 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+/vendor/
+/node_modules/
+/.npm-cache/
+/.npm/
+
+# ── Build Artifacts ───────────────────────────────────────────────────────────
+/public/build/
+/public/hot
+/public/storage
+/bootstrap/cache/*.php
+/bootstrap/ssr/
+
+# ── Environment Files ─────────────────────────────────────────────────────────
+.env
+.env.backup
+.env.production
+.env.staging
+# Safe to commit — contain no secrets
+!.env.example
+!.env.docker
+
+# ── Storage (generated at runtime) ───────────────────────────────────────────
+/storage/*.key
+/storage/pail/
+/storage/app/public/
+/storage/app/attachments/
+/storage/app/media/
+/storage/logs/*.log
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/framework/testing/
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.phpunit.result.cache
+/.phpunit.cache/
+/tests/coverage/
+
+# ── PHP Tools ────────────────────────────────────────────────────────────────
+.phpactor.json
+.php-cs-fixer.cache
+.pint.cache
+/auth.json
+/composer.phar
+
+# ── Docker (local overrides only — docker-compose.yml IS committed) ───────────
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ── Database ─────────────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+/database/*.sqlite
+
+# ── Certificates / Secrets ───────────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ── Editor & IDE ─────────────────────────────────────────────────────────────
+/.vscode/
+/.idea/
+/.fleet/
+/.nova/
+/.zed/
+*.swp
+*.swo
+*~
+
+# ── OS Files ─────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+Homestead.json
+Homestead.yaml
+npm-debug.log*
+*.log
+
+.claude/
+CLAUDE.md

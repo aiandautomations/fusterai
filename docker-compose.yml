@@ -1,0 +1,213 @@
+services:
+
+    # ── Application ───────────────────────────────────────────────────────────────
+    laravel.test:
+        build:
+            context: .
+            dockerfile: docker/Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP:-1000}'
+        image: fusterai/app
+        container_name: fusterai_app
+        restart: unless-stopped
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            SUPERVISOR_PHP_COMMAND: 'php artisan serve --host=0.0.0.0 --port=8000'
+            SUPERVISOR_PHP_USER: 'sail'
+            APP_ENV: '${APP_ENV:-local}'
+            APP_KEY: '${APP_KEY}'
+            APP_URL: '${APP_URL:-http://localhost}'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: 5432
+            DB_DATABASE: '${DB_DATABASE:-fusterai}'
+            DB_USERNAME: '${DB_USERNAME:-fusterai}'
+            DB_PASSWORD: '${DB_PASSWORD:-secret}'
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            QUEUE_CONNECTION: redis
+            CACHE_STORE: redis
+            BROADCAST_CONNECTION: reverb
+            SESSION_DRIVER: redis
+            REVERB_APP_ID: '${REVERB_APP_ID:-fusterai}'
+            REVERB_APP_KEY: '${REVERB_APP_KEY:-fusterai-key}'
+            REVERB_APP_SECRET: '${REVERB_APP_SECRET:-fusterai-secret}'
+            REVERB_HOST: 'localhost'
+            REVERB_PORT: 8080
+            REVERB_SCHEME: http
+            VITE_REVERB_APP_KEY: '${REVERB_APP_KEY:-fusterai-key}'
+            VITE_REVERB_HOST: '${APP_HOST:-localhost}'
+            VITE_REVERB_PORT: 8080
+            VITE_REVERB_SCHEME: http
+            SCOUT_DRIVER: '${SCOUT_DRIVER:-meilisearch}'
+            MEILISEARCH_HOST: 'http://meilisearch:7700'
+            MEILISEARCH_KEY: '${MEILISEARCH_KEY:-}'
+            ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+            MAIL_MAILER: '${MAIL_MAILER:-log}'
+            MAIL_HOST: mailpit
+            MAIL_PORT: 1025
+            FILESYSTEM_DISK: '${FILESYSTEM_DISK:-local}'
+            AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID:-}'
+            AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY:-}'
+            AWS_DEFAULT_REGION: '${AWS_DEFAULT_REGION:-us-east-1}'
+            AWS_BUCKET: '${AWS_BUCKET:-}'
+        volumes:
+            - '.:/var/www/html'
+            - 'sail-node-modules:/var/www/html/node_modules'
+        ports:
+            - '${APP_PORT:-8000}:8000'
+            - '${REVERB_PORT:-8080}:8080'
+        networks:
+            - sail
+
+    # ── Horizon (queue worker) ────────────────────────────────────────────────────
+    horizon:
+        image: fusterai/app
+        container_name: fusterai_horizon
+        restart: unless-stopped
+        command: ['php', 'artisan', 'horizon']
+        depends_on:
+            - laravel.test
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            APP_KEY: '${APP_KEY}'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: 5432
+            DB_DATABASE: '${DB_DATABASE:-fusterai}'
+            DB_USERNAME: '${DB_USERNAME:-fusterai}'
+            DB_PASSWORD: '${DB_PASSWORD:-secret}'
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            QUEUE_CONNECTION: redis
+            REVERB_HOST: 'laravel.test'
+            REVERB_PORT: 8080
+            REVERB_APP_ID: '${REVERB_APP_ID:-fusterai}'
+            REVERB_APP_KEY: '${REVERB_APP_KEY:-fusterai-key}'
+            REVERB_APP_SECRET: '${REVERB_APP_SECRET:-fusterai-secret}'
+            ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+
+    # ── Scheduler ─────────────────────────────────────────────────────────────────
+    scheduler:
+        image: fusterai/app
+        container_name: fusterai_scheduler
+        restart: unless-stopped
+        command: ['php', 'artisan', 'schedule:work']
+        depends_on:
+            - laravel.test
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            APP_KEY: '${APP_KEY}'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: 5432
+            DB_DATABASE: '${DB_DATABASE:-fusterai}'
+            DB_USERNAME: '${DB_USERNAME:-fusterai}'
+            DB_PASSWORD: '${DB_PASSWORD:-secret}'
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            QUEUE_CONNECTION: redis
+            REVERB_HOST: 'laravel.test'
+            REVERB_PORT: 8080
+            REVERB_APP_ID: '${REVERB_APP_ID:-fusterai}'
+            REVERB_APP_KEY: '${REVERB_APP_KEY:-fusterai-key}'
+            REVERB_APP_SECRET: '${REVERB_APP_SECRET:-fusterai-secret}'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+
+    # ── PostgreSQL (with pgvector) ────────────────────────────────────────────────
+    pgsql:
+        image: 'pgvector/pgvector:pg17'
+        container_name: fusterai_postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: '${DB_DATABASE:-fusterai}'
+            POSTGRES_USER: '${DB_USERNAME:-fusterai}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'sail-pgsql:/var/lib/postgresql/data'
+            - './docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql'
+        ports:
+            - '${DB_PORT:-5432}:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-fusterai} -d ${DB_DATABASE:-fusterai}']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        networks:
+            - sail
+
+    # ── Redis ─────────────────────────────────────────────────────────────────────
+    redis:
+        image: 'redis:7-alpine'
+        container_name: fusterai_redis
+        restart: unless-stopped
+        command: 'redis-server --save 60 1 --loglevel warning'
+        volumes:
+            - 'sail-redis:/data'
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        networks:
+            - sail
+
+    # ── MeiliSearch ───────────────────────────────────────────────────────────────
+    meilisearch:
+        image: 'getmeili/meilisearch:v1.10'
+        container_name: fusterai_meilisearch
+        restart: unless-stopped
+        environment:
+            MEILI_MASTER_KEY: '${MEILISEARCH_KEY:-}'
+            MEILI_NO_ANALYTICS: 'true'
+        volumes:
+            - 'sail-meilisearch:/meili_data'
+        ports:
+            - '${MEILISEARCH_PORT:-7700}:7700'
+        networks:
+            - sail
+
+    # ── Mailpit (local email testing) ─────────────────────────────────────────────
+    mailpit:
+        image: 'axllent/mailpit:latest'
+        container_name: fusterai_mailpit
+        restart: unless-stopped
+        ports:
+            - '${MAILPIT_SMTP_PORT:-1025}:1025'
+            - '${MAILPIT_HTTP_PORT:-8025}:8025'
+        networks:
+            - sail
+
+volumes:
+    sail-pgsql:
+        driver: local
+    sail-redis:
+        driver: local
+    sail-meilisearch:
+        driver: local
+    sail-node-modules:
+        driver: local
+
+networks:
+    sail:
+        driver: bridge

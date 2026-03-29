@@ -1,0 +1,11 @@
+{
+    "alias": "SatisfactionSurvey",
+    "name": "Satisfaction Survey",
+    "description": "Emails a 👍 / 👎 CSAT survey to the customer when a conversation is closed. Shows the rating in the conversation sidebar.",
+    "version": "1.0.0",
+    "author": "FusterAI",
+    "hooks": {
+        "actions": ["conversation.closed"],
+        "filters": ["conversation.show.extra", "ai.system_prompt"]
+    }
+}
