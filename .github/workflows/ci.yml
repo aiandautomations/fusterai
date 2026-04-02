@@ -91,6 +91,7 @@ jobs:
           sed -i 's/REDIS_HOST=.*/REDIS_HOST=127.0.0.1/' .env
           sed -i 's/SCOUT_DRIVER=.*/SCOUT_DRIVER=database/' .env
           sed -i 's/QUEUE_CONNECTION=.*/QUEUE_CONNECTION=sync/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=fusterai_test/' .env
 
       - name: Run database migrations
         run: php artisan migrate --force
