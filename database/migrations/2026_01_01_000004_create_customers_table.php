@@ -19,7 +19,7 @@ return new class extends Migration
             $table->jsonb('meta')->nullable();
             $table->timestamps();
 
-            $table->index(['workspace_id', 'email']);
+            $table->unique(['workspace_id', 'email']);
         });
     }
 

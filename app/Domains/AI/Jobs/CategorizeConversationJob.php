@@ -71,6 +71,7 @@ class CategorizeConversationJob implements ShouldQueue
                 'conversation_id' => $conversation->id,
                 'error'           => $e->getMessage(),
             ]);
+            $this->fail($e);
         }
     }
 

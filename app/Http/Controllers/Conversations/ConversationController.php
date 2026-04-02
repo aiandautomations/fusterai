@@ -296,7 +296,8 @@ class ConversationController extends Controller
     public function merge(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['into_id' => ['required', 'exists:conversations,id']]);
+        $workspaceId = $request->user()->workspace_id;
+        $request->validate(['into_id' => ['required', Rule::exists('conversations', 'id')->where('workspace_id', $workspaceId)]]);
 
         if ((int) $request->into_id === $conversation->id) {
             return back()->with('error', 'A conversation cannot be merged into itself.');
