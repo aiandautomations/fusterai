@@ -14,46 +14,60 @@ class SlaManagerServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Routes are loaded centrally by ModuleServiceProvider so they are always
-        // available without a server restart. Migrations are also registered there
-        // but we keep this call for self-documentation / standalone module use.
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
-        // Create SLA status record when a conversation is created
+        // ── Attach SLA when conversation is created ───────────────────────────
         Hooks::addAction('conversation.created', function (Conversation $conversation) {
             $this->attachSla($conversation);
         });
 
-        // Re-attach SLA if priority changes
+        // ── Re-attach SLA if priority changes ────────────────────────────────
         Hooks::addAction('conversation.updated', function (Conversation $conversation) {
             if ($conversation->wasChanged('priority')) {
                 $this->attachSla($conversation, reattach: true);
             }
         });
 
-        // Mark first response achieved when agent replies
+        // ── Pause SLA when conversation is set to pending ─────────────────────
+        // (waiting for customer response — clock should not tick)
+        Hooks::addAction('conversation.updated', function (Conversation $conversation) {
+            if (! $conversation->wasChanged('status')) {
+                return;
+            }
+
+            $status = SlaStatus::where('conversation_id', $conversation->id)->first();
+            if (! $status) {
+                return;
+            }
+
+            if ($conversation->status === 'pending') {
+                $status->pause();
+            } elseif (in_array($conversation->status, ['open']) && $status->isPaused()) {
+                $status->resume();
+            }
+        });
+
+        // ── Mark first response achieved when agent sends a reply ─────────────
         Hooks::addAction('thread.created', function ($thread) {
             if (! $thread->user_id || $thread->type !== 'message') {
                 return;
             }
 
-            $status = SlaStatus::where('conversation_id', $thread->conversation_id)
+            SlaStatus::where('conversation_id', $thread->conversation_id)
                 ->whereNull('first_response_achieved_at')
-                ->first();
-
-            $status?->update(['first_response_achieved_at' => now()]);
+                ->update(['first_response_achieved_at' => now()]);
         });
 
-        // Mark resolved when conversation is closed
+        // ── Mark resolved when conversation is closed ─────────────────────────
         Hooks::addAction('conversation.updated', function (Conversation $conversation) {
             if ($conversation->wasChanged('status') && $conversation->status === 'closed') {
                 SlaStatus::where('conversation_id', $conversation->id)
                     ->whereNull('resolved_at')
-                    ->update(['resolved_at' => now()]);
+                    ->update(['resolved_at' => now(), 'paused_at' => null]);
             }
         });
 
-        // Inject SLA data into conversation API responses
+        // ── Inject SLA data into conversation page props ──────────────────────
         Hooks::addFilter('conversation.show.extra', function (array $data, Conversation $conversation) {
             $status = SlaStatus::with('policy')
                 ->where('conversation_id', $conversation->id)
@@ -61,24 +75,25 @@ class SlaManagerServiceProvider extends ServiceProvider
 
             if ($status) {
                 $data['sla'] = [
-                    'policy'                          => $status->policy ? [
-                        'name'                    => $status->policy->name,
-                        'first_response_label'    => $status->policy->first_response_label,
-                        'resolution_label'        => $status->policy->resolution_label,
+                    'policy'                           => $status->policy ? [
+                        'name'                   => $status->policy->name,
+                        'first_response_label'   => $status->policy->first_response_label,
+                        'resolution_label'       => $status->policy->resolution_label,
                     ] : null,
-                    'first_response_status'           => $status->first_response_status,
-                    'resolution_status'               => $status->resolution_status,
-                    'first_response_due_at'           => $status->first_response_due_at,
-                    'resolution_due_at'               => $status->resolution_due_at,
+                    'first_response_status'            => $status->first_response_status,
+                    'resolution_status'                => $status->resolution_status,
+                    'first_response_due_at'            => $status->first_response_due_at,
+                    'resolution_due_at'                => $status->resolution_due_at,
                     'first_response_remaining_minutes' => $status->first_response_remaining_minutes,
-                    'resolution_remaining_minutes'    => $status->resolution_remaining_minutes,
+                    'resolution_remaining_minutes'     => $status->resolution_remaining_minutes,
+                    'is_paused'                        => $status->isPaused(),
                 ];
             }
 
             return $data;
         });
 
-        // Add SLA context to AI system prompt
+        // ── Add SLA breach context to AI system prompt ────────────────────────
         Hooks::addFilter('ai.system_prompt', function (string $prompt, Conversation $conversation) {
             $status = SlaStatus::where('conversation_id', $conversation->id)->first();
 
@@ -89,11 +104,13 @@ class SlaManagerServiceProvider extends ServiceProvider
             return $prompt;
         });
 
-        // Schedule breach detection every 5 minutes
+        // ── Schedule breach detection every 5 minutes ────────────────────────
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->job(CheckSlaBreachJob::class, 'default')->everyFiveMinutes();
         });
     }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     private function attachSla(Conversation $conversation, bool $reattach = false): void
     {
@@ -108,19 +125,36 @@ class SlaManagerServiceProvider extends ServiceProvider
 
         $createdAt = $conversation->created_at ?? now();
 
-        $attributes = [
-            'sla_policy_id'          => $policy->id,
-            'first_response_due_at'  => $createdAt->copy()->addMinutes($policy->first_response_minutes),
-            'resolution_due_at'      => $createdAt->copy()->addMinutes($policy->resolution_minutes),
-        ];
-
         if ($reattach) {
-            SlaStatus::where('conversation_id', $conversation->id)
-                ->update($attributes);
+            $existing = SlaStatus::where('conversation_id', $conversation->id)->first();
+
+            if (! $existing) {
+                return;
+            }
+
+            $updates = [
+                'sla_policy_id'   => $policy->id,
+                'resolution_due_at' => $createdAt->copy()->addMinutes($policy->resolution_minutes + $existing->pause_offset_minutes),
+            ];
+
+            // Only re-calculate first_response_due_at if not yet achieved
+            if (! $existing->first_response_achieved_at) {
+                $updates['first_response_due_at'] = $createdAt->copy()->addMinutes($policy->first_response_minutes + $existing->pause_offset_minutes);
+                // Reset breach flag only if not yet achieved (new policy, new chance)
+                $updates['first_response_breached'] = false;
+            }
+
+            $updates['resolution_breached'] = false;
+
+            $existing->update($updates);
         } else {
             SlaStatus::firstOrCreate(
                 ['conversation_id' => $conversation->id],
-                $attributes
+                [
+                    'sla_policy_id'         => $policy->id,
+                    'first_response_due_at' => $createdAt->copy()->addMinutes($policy->first_response_minutes),
+                    'resolution_due_at'     => $createdAt->copy()->addMinutes($policy->resolution_minutes),
+                ]
             );
         }
     }

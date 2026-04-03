@@ -578,10 +578,22 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                                                 <PuzzleIcon className="h-4 w-4" /><span>Modules</span>
                                             </Link>
                                         </DropdownMenuItem>
-                                        {(usePage<PageProps>().props as any).activeModules?.includes('SlaManager') && (
+                                        {(usePage<PageProps>().props as any).activeModules?.includes('SlaManager') && (<>
                                             <DropdownMenuItem asChild>
-                                                <Link href="/settings/sla" className={cn('w-full', path.startsWith('/settings/sla') && 'text-primary')}>
+                                                <Link href="/settings/sla" className={cn('w-full', path === '/settings/sla' && 'text-primary')}>
                                                     <ClockIcon className="h-4 w-4" /><span>SLA Policies</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/settings/sla/report" className={cn('w-full', path.startsWith('/settings/sla/report') && 'text-primary')}>
+                                                    <BarChartIcon className="h-4 w-4" /><span>SLA Report</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </>)}
+                                        {(usePage<PageProps>().props as any).activeModules?.includes('ConversationRouting') && (
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/settings/routing" className={cn('w-full', path.startsWith('/settings/routing') && 'text-primary')}>
+                                                    <ClockIcon className="h-4 w-4" /><span>Routing</span>
                                                 </Link>
                                             </DropdownMenuItem>
                                         )}
