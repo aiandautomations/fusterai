@@ -65,8 +65,8 @@ class FetchEmails extends Command
                 ProcessInboundEmailJob::dispatch($mailbox->id, [
                     'message_id'  => $message->getMessageId()->first() ?? '',
                     'subject'     => (string) $message->getSubject()->first(),
-                    'from_email'  => $message->getFrom()->first()?->mail ?? '',
-                    'from_name'   => $message->getFrom()->first()?->personal ?? '',
+                    'from_email'  => $message->getFrom()->first()->mail ?? '',
+                    'from_name'   => $message->getFrom()->first()->personal ?? '',
                     'body_html'   => $message->hasHTMLBody() ? $message->getHTMLBody() : '',
                     'body_text'   => $message->hasTextBody() ? $message->getTextBody() : '',
                     'in_reply_to' => $message->getInReplyTo()->first() ?? '',
