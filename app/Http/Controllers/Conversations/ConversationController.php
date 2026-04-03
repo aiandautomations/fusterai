@@ -186,6 +186,7 @@ class ConversationController extends Controller
         });
 
         RunAutomationRulesJob::dispatch('conversation.created', $conversation);
+        Hooks::doAction('conversation.created', $conversation);
 
         return redirect()->route('conversations.show', $conversation);
     }
