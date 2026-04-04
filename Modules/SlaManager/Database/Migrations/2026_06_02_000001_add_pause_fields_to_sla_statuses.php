@@ -9,10 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sla_statuses', function (Blueprint $table) {
-            // Tracks when the SLA clock was paused (e.g. conversation set to pending).
-            $table->timestamp('paused_at')->nullable()->after('resolution_breached');
-            // Accumulated pause time in minutes from previous pause/resume cycles.
-            $table->unsignedInteger('pause_offset_minutes')->default(0)->after('paused_at');
+            if (!Schema::hasColumn('sla_statuses', 'paused_at')) {
+                $table->timestamp('paused_at')->nullable()->after('resolution_breached');
+            }
+            if (!Schema::hasColumn('sla_statuses', 'pause_offset_minutes')) {
+                $table->unsignedInteger('pause_offset_minutes')->default(0)->after('paused_at');
+            }
         });
     }
 

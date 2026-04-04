@@ -55,10 +55,12 @@ interface CannedResponse {
 
 // ── Mention suggestion builder ───────────────────────────────────────────────
 
-function buildMentionSuggestion(agents: Agent[]) {
+function buildMentionSuggestion(agents: Agent[], enabledRef: React.MutableRefObject<boolean>) {
     return {
-        items: ({ query }: { query: string }) =>
-            agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8),
+        items: ({ query }: { query: string }) => {
+            if (!enabledRef.current) return [];
+            return agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8);
+        },
 
         render: () => {
             let popup: HTMLDivElement | null = null;
@@ -474,23 +476,27 @@ export default function RichTextEditor({
     agents = [],
     enableMentions = false,
 }: Props) {
-    const extensions = [
+    // Use a ref so the suggestion `items` fn always reads the latest value
+    // without needing to recreate the editor (useEditor only runs once).
+    const enableMentionsRef = useRef(enableMentions);
+    enableMentionsRef.current = enableMentions;
+
+    // Build extensions once — Mention is always included when agents are provided.
+    const extensions = useRef([
         StarterKit,
         Underline,
         Link.configure({ openOnClick: false }),
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Placeholder.configure({ placeholder }),
-        ...(enableMentions
+        ...(agents.length > 0
             ? [
                   Mention.configure({
-                      HTMLAttributes: {
-                          class: 'mention',
-                      },
-                      suggestion: buildMentionSuggestion(agents),
+                      HTMLAttributes: { class: 'mention' },
+                      suggestion: buildMentionSuggestion(agents, enableMentionsRef),
                   }),
               ]
             : []),
-    ];
+    ]).current;
 
     const editor = useEditor({
         extensions,
