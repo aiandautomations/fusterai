@@ -49,11 +49,12 @@ class ConversationController extends Controller
             $query->where('mailbox_id', $mailboxId);
         }
 
-        match ($request->get('assigned')) {
-            'me'   => $query->where('assigned_user_id', $user->id),
-            'none' => $query->whereNull('assigned_user_id'),
-            default => null,
-        };
+        $assigned = $request->get('assigned');
+        if ($assigned === 'me') {
+            $query->where('assigned_user_id', $user->id);
+        } elseif ($assigned === 'none') {
+            $query->whereNull('assigned_user_id');
+        }
 
         if ($tagId = $request->get('tag')) {
             $query->whereHas('tags', fn($q) => $q->where('tags.id', $tagId));
@@ -200,7 +201,7 @@ class ConversationController extends Controller
         $newStatus = $request->status;
         $conversation->update(['status' => $newStatus]);
 
-        $labels = ['open' => 'Open', 'pending' => 'Pending', 'closed' => 'Closed', 'spam' => 'Spam'];
+        $labels = Conversation::STATUS_LABELS;
         $actor  = $request->user()->name;
         $conversation->threads()->create([
             'user_id' => $request->user()->id,

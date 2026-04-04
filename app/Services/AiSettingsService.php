@@ -67,6 +67,19 @@ class AiSettingsService
     }
 
     /**
+     * Check whether a workspace-level AI feature flag is enabled.
+     * Falls back to config default so behaviour is consistent across all
+     * inbound channels (email, webhook, WhatsApp, live chat).
+     */
+    public function isFeatureEnabled(int $workspaceId, string $feature): bool
+    {
+        $workspace = Workspace::find($workspaceId);
+        $wsFeatures = $workspace?->settings['ai_features'] ?? [];
+
+        return (bool) ($wsFeatures[$feature] ?? config("ai.features.{$feature}", true));
+    }
+
+    /**
      * Return sanitised AI config for the frontend.
      * The API key is never exposed — only whether one has been saved.
      */

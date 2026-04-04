@@ -9,6 +9,7 @@ use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\ConversationUpdated;
 use App\Events\NewThreadReceived;
+use App\Services\AiSettingsService;
 use App\Support\Hooks;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -45,11 +46,8 @@ class ProcessWebhookMessageJob implements ShouldQueue
         $subject   = $payload['subject']    ?? $payload['title'] ?? '(No Subject)';
         $body      = $payload['body']       ?? $payload['message'] ?? $payload['content'] ?? '';
 
-        // Find or create customer by email
-        $customer = Customer::firstOrCreate(
-            ['workspace_id' => $mailbox->workspace_id, 'email' => strtolower($fromEmail)],
-            ['name' => $fromName ?: explode('@', $fromEmail)[0]],
-        );
+        // Find or create customer by email — consistent with email and API channels
+        $customer = Customer::resolveOrCreate($mailbox->workspace_id, $fromEmail, $fromName);
 
         // Create new conversation
         $conversation = Conversation::create([
@@ -84,11 +82,13 @@ class ProcessWebhookMessageJob implements ShouldQueue
         broadcast(new NewThreadReceived($thread));
         broadcast(new ConversationUpdated($conversation->fresh()));
 
-        // Dispatch AI jobs
-        if (config('ai.features.reply_suggestions', true)) {
+        // Dispatch AI jobs — read workspace-level feature flags via AiSettingsService
+        // so behaviour is consistent with email and other inbound channels.
+        $ai = app(AiSettingsService::class);
+        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'reply_suggestions')) {
             GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
         }
-        if (config('ai.features.auto_categorization', true)) {
+        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'auto_categorization')) {
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         }
     }

@@ -6,6 +6,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
 use App\Models\CannedResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CannedResponseController extends Controller
@@ -35,7 +36,7 @@ class CannedResponseController extends Controller
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:100'],
             'content'    => ['required', 'string'],
-            'mailbox_id' => ['nullable', 'integer', 'exists:mailboxes,id'],
+            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 
         CannedResponse::create([
@@ -53,7 +54,7 @@ class CannedResponseController extends Controller
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:100'],
             'content'    => ['required', 'string'],
-            'mailbox_id' => ['nullable', 'integer', 'exists:mailboxes,id'],
+            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 
         $cannedResponse->update($validated);

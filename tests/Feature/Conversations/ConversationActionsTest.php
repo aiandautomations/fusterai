@@ -92,3 +92,43 @@ test('merge into_id must exist', function () {
         ->post("/conversations/{$this->conv->id}/merge", ['into_id' => 999999])
         ->assertSessionHasErrors('into_id');
 });
+
+test('bulk action cannot close conversations from another workspace', function () {
+    $other     = \App\Models\Workspace::factory()->create();
+    $otherConv = Conversation::factory()->create([
+        'workspace_id' => $other->id,
+        'mailbox_id'   => \App\Domains\Mailbox\Models\Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'status'       => 'open',
+    ]);
+
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'    => [$otherConv->id],
+            'action' => 'close',
+        ])
+        ->assertOk();
+
+    // Conversation from another workspace must remain untouched
+    expect($otherConv->fresh()->status)->toBe('open');
+});
+
+test('bulk action only affects conversations within the same workspace', function () {
+    $other     = \App\Models\Workspace::factory()->create();
+    $otherConv = Conversation::factory()->create([
+        'workspace_id' => $other->id,
+        'mailbox_id'   => \App\Domains\Mailbox\Models\Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'status'       => 'open',
+    ]);
+
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'    => [$this->conv->id, $otherConv->id],
+            'action' => 'close',
+        ])
+        ->assertOk();
+
+    expect($this->conv->fresh()->status)->toBe('closed');
+    expect($otherConv->fresh()->status)->toBe('open');
+});

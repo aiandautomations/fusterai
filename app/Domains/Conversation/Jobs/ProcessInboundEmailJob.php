@@ -10,7 +10,7 @@ use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\ConversationUpdated;
 use App\Events\NewThreadReceived;
-use App\Models\Workspace;
+use App\Services\AiSettingsService;
 use App\Support\Hooks;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -98,19 +98,16 @@ class ProcessInboundEmailJob implements ShouldQueue
         }
         Hooks::doAction('thread.created', $thread);
 
-        // Broadcast real-time update
-        broadcast(new NewThreadReceived($thread));
+        // Broadcast real-time update — load relations the frontend expects
+        broadcast(new NewThreadReceived($thread->load(['user', 'customer', 'attachments'])));
         broadcast(new ConversationUpdated($conversation));
 
-        // Trigger AI jobs — read feature flags from workspace settings (admin-configurable)
-        $wsFeatures = Workspace::find($mailbox->workspace_id)?->settings['ai_features'] ?? [];
-        $replySuggestionsEnabled   = $wsFeatures['reply_suggestions']   ?? config('ai.features.reply_suggestions', true);
-        $autoCategorizationEnabled = $wsFeatures['auto_categorization'] ?? config('ai.features.auto_categorization', true);
-
-        if ($replySuggestionsEnabled) {
+        // Trigger AI jobs — read workspace-level feature flags via AiSettingsService
+        $ai = app(AiSettingsService::class);
+        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'reply_suggestions')) {
             GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
         }
-        if ($autoCategorizationEnabled && $conversation->wasRecentlyCreated) {
+        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'auto_categorization') && $conversation->wasRecentlyCreated) {
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         }
 
@@ -127,24 +124,30 @@ class ProcessInboundEmailJob implements ShouldQueue
             $ref = $data['in_reply_to'] ?: $data['references'];
             // Extract conversation ID from our message-id format: <conversation-123@fusterai>
             if (preg_match('/conversation-(\d+)@fusterai/', $ref, $m)) {
-                $existing = Conversation::find((int) $m[1]);
-                if ($existing && $existing->mailbox_id === $mailbox->id) {
+                $existing = Conversation::where('mailbox_id', $mailbox->id)
+                    ->find((int) $m[1]);
+                if ($existing) {
                     return $existing;
                 }
             }
         }
 
-        // New conversation
-        return Conversation::create([
-            'workspace_id' => $mailbox->workspace_id,
-            'mailbox_id'   => $mailbox->id,
-            'customer_id'  => $customer->id,
-            'subject'      => $data['subject'] ?: '(No Subject)',
-            'status'       => 'open',
-            'channel_type' => 'email',
-            'channel_id'   => $data['message_id'],
-            'last_reply_at' => now(),
-        ]);
+        // firstOrCreate on channel_id prevents duplicate conversations when the
+        // same email is processed more than once (e.g. duplicate IMAP fetch).
+        return Conversation::firstOrCreate(
+            [
+                'mailbox_id' => $mailbox->id,
+                'channel_id' => $data['message_id'],
+            ],
+            [
+                'workspace_id'  => $mailbox->workspace_id,
+                'customer_id'   => $customer->id,
+                'subject'       => $data['subject'] ?: '(No Subject)',
+                'status'        => 'open',
+                'channel_type'  => 'email',
+                'last_reply_at' => now(),
+            ],
+        );
     }
 
     /**

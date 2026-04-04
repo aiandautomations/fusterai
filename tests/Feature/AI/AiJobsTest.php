@@ -75,3 +75,48 @@ test('GenerateReplySuggestionJob creates AiSuggestion record', function () {
         AiSuggestion::where('conversation_id', $this->conversation->id)->exists()
     )->toBeTrue();
 });
+
+test('GenerateReplySuggestionJob marks job as failed when AI throws', function () {
+    ReplySuggestionAgent::fake(function () {
+        throw new \RuntimeException('AI provider unavailable');
+    });
+
+    $job = \Mockery::mock(GenerateReplySuggestionJob::class . '[fail]', [$this->conversation])
+        ->shouldAllowMockingProtectedMethods()
+        ->makePartial();
+
+    $job->shouldReceive('fail')->once()->with(\Mockery::type(\RuntimeException::class));
+
+    $job->handle();
+});
+
+test('AI feature flag disabled for workspace skips reply suggestion job', function () {
+    $this->workspace->update([
+        'settings' => ['ai_features' => ['reply_suggestions' => false, 'auto_categorization' => true]],
+    ]);
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    // Simulate what ProcessInboundEmailJob does
+    $ai = app(\App\Services\AiSettingsService::class);
+    if ($ai->isFeatureEnabled($this->workspace->id, 'reply_suggestions')) {
+        GenerateReplySuggestionJob::dispatch($this->conversation)->onQueue('ai');
+    }
+
+    \Illuminate\Support\Facades\Queue::assertNotPushed(GenerateReplySuggestionJob::class);
+});
+
+test('AI feature flag enabled for workspace dispatches reply suggestion job', function () {
+    $this->workspace->update([
+        'settings' => ['ai_features' => ['reply_suggestions' => true, 'auto_categorization' => true]],
+    ]);
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $ai = app(\App\Services\AiSettingsService::class);
+    if ($ai->isFeatureEnabled($this->workspace->id, 'reply_suggestions')) {
+        GenerateReplySuggestionJob::dispatch($this->conversation)->onQueue('ai');
+    }
+
+    \Illuminate\Support\Facades\Queue::assertPushedOn('ai', GenerateReplySuggestionJob::class);
+});

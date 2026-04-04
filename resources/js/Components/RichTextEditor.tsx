@@ -55,11 +55,11 @@ interface CannedResponse {
 
 // ── Mention suggestion builder ───────────────────────────────────────────────
 
-function buildMentionSuggestion(agents: Agent[], enabledRef: React.MutableRefObject<boolean>) {
+function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.MutableRefObject<boolean>) {
     return {
         items: ({ query }: { query: string }) => {
             if (!enabledRef.current) return [];
-            return agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8);
+            return workspaceAgents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8);
         },
 
         render: () => {
@@ -335,9 +335,9 @@ function CannedResponsePicker({
                                 )}
                             >
                                 <p className="text-sm font-medium leading-tight">{r.name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1"
-                                   dangerouslySetInnerHTML={{ __html: r.content.replace(/<[^>]+>/g, ' ').trim() }}
-                                />
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                    {r.content.replace(/<[^>]+>/g, ' ').trim()}
+                                </p>
                             </button>
                         ))}
                     </div>

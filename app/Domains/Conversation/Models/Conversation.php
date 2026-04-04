@@ -23,6 +23,14 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Conversation extends Model
 {
+    /** Human-readable labels for each status value. Used in activity log messages. */
+    public const STATUS_LABELS = [
+        'open'    => 'Open',
+        'pending' => 'Pending',
+        'closed'  => 'Closed',
+        'spam'    => 'Spam',
+    ];
+
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
     use Searchable;

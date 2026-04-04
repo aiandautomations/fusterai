@@ -15,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ProcessWhatsAppWebhookJob implements ShouldQueue
@@ -40,6 +41,9 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             $message = $value['messages'][0] ?? null;
 
             if (!$message) {
+                Log::info('ProcessWhatsAppWebhookJob: no message in payload, skipping.', [
+                    'mailbox_id' => $this->mailbox->id,
+                ]);
                 return;
             }
 
@@ -101,7 +105,11 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         } catch (\Throwable $e) {
-            report($e);
+            Log::error('ProcessWhatsAppWebhookJob failed', [
+                'mailbox_id' => $this->mailbox->id,
+                'error'      => $e->getMessage(),
+            ]);
+            $this->fail($e);
         }
     }
 }
