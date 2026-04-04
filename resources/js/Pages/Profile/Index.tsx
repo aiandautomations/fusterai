@@ -6,7 +6,7 @@ import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar'
 import { getInitials } from '@/lib/utils'
-import { ShieldIcon, UserIcon, CameraIcon, XIcon, UploadIcon } from 'lucide-react'
+import { ShieldIcon, UserIcon, CameraIcon, XIcon, UploadIcon, PenLineIcon } from 'lucide-react'
 
 interface User {
     id: number
@@ -14,6 +14,7 @@ interface User {
     email: string
     avatar?: string
     role: string
+    signature?: string
 }
 
 interface Props { user: User }
@@ -43,7 +44,7 @@ function SectionCard({ title, description, icon: Icon, children }: {
 }
 
 export default function ProfileIndex({ user }: Props) {
-    const profileForm = useForm({ name: user.name, email: user.email })
+    const profileForm = useForm({ name: user.name, email: user.email, signature: user.signature ?? '' })
     const passwordForm = useForm({ current_password: '', password: '', password_confirmation: '' })
     const avatarForm = useForm<{ avatar: File | null }>({ avatar: null })
 
@@ -175,7 +176,7 @@ export default function ProfileIndex({ user }: Props) {
                 {/* Profile info */}
                 <SectionCard
                     title="Profile Information"
-                    description="Update your name and email address."
+                    description="Update your name, email address and personal email signature."
                     icon={UserIcon}
                 >
                     <form onSubmit={submitProfile} className="space-y-4">
@@ -204,6 +205,23 @@ export default function ProfileIndex({ user }: Props) {
                             />
                             {profileForm.errors.email && (
                                 <p className="text-xs text-destructive">{profileForm.errors.email}</p>
+                            )}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="signature">Email signature</Label>
+                            <textarea
+                                id="signature"
+                                rows={4}
+                                className="flex min-h-[96px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                                value={profileForm.data.signature}
+                                onChange={e => profileForm.setData('signature', e.target.value)}
+                                placeholder={'Best regards,\nYour Name\nSupport Team'}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Appended to your outgoing replies. Overrides the mailbox default signature.
+                            </p>
+                            {profileForm.errors.signature && (
+                                <p className="text-xs text-destructive">{profileForm.errors.signature}</p>
                             )}
                         </div>
                         <div className="flex justify-end">

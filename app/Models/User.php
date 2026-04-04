@@ -37,6 +37,7 @@ class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthe
         'password',
         'role',
         'avatar',
+        'signature',
         'preferences',
         'last_active_at',
     ];

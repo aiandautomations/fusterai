@@ -42,6 +42,18 @@
     font-size: 0.875em;
 }
 
+/* @mention chip */
+.mention {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 0.25rem;
+    padding: 0 0.3em;
+    font-weight: 500;
+    cursor: default;
+}
+
 /* Thread body prose styles */
 .prose-invert a {
     color: rgba(255, 255, 255, 0.85);

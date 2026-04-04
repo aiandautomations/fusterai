@@ -7,6 +7,7 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
+use App\Notifications\AgentMentionedNotification;
 use App\Notifications\ConversationFollowerNotification;
 use App\Notifications\NewCustomerReplyNotification;
 use Illuminate\Http\RedirectResponse;
@@ -78,6 +79,29 @@ class ThreadController extends Controller
                 ->each(fn ($follower) => $follower->notify(new ConversationFollowerNotification($conversation, $thread)));
         }
 
+        // Notify @mentioned agents in notes
+        if ($validated['type'] === 'note') {
+            $this->notifyMentions($thread, $conversation, $request->user());
+        }
+
         return back();
+    }
+
+    private function notifyMentions(Thread $thread, Conversation $conversation, \App\Models\User $sender): void
+    {
+        // Parse data-id attributes from <span data-type="mention" data-id="...">
+        preg_match_all('/data-id="(\d+)"/', $thread->body, $matches);
+        $mentionedIds = array_unique(array_map('intval', $matches[1] ?? []));
+
+        if (empty($mentionedIds)) {
+            return;
+        }
+
+        \App\Models\User::where('workspace_id', $conversation->workspace_id)
+            ->whereIn('id', $mentionedIds)
+            ->where('id', '!=', $sender->id)
+            ->each(fn (\App\Models\User $user) =>
+                $user->notify(new AgentMentionedNotification($conversation, $thread, $sender->name))
+            );
     }
 }

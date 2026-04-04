@@ -13,7 +13,7 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         return Inertia::render('Profile/Index', [
-            'user' => $request->user()->only('id', 'name', 'email', 'avatar', 'role'),
+            'user' => $request->user()->only('id', 'name', 'email', 'avatar', 'role', 'signature'),
         ]);
     }
 
@@ -22,8 +22,9 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'name'      => ['required', 'string', 'max:255'],
+            'email'     => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'signature' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $user->update($validated);

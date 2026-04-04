@@ -26,7 +26,7 @@ interface Props {
     mailbox: Mailbox & {
         imap_config?: Record<string, string>;
         smtp_config?: Record<string, string>;
-        auto_reply_config?: { enabled: boolean; subject?: string; body?: string };
+        auto_reply_config?: { enabled: boolean; subject?: string; body?: string; auto_close_pending_days?: number };
     };
 }
 
@@ -150,6 +150,7 @@ export default function MailboxSettings({ mailbox }: Props) {
             enabled: mailbox.auto_reply_config?.enabled ?? false,
             subject: mailbox.auto_reply_config?.subject ?? '',
             body: mailbox.auto_reply_config?.body ?? '',
+            auto_close_pending_days: mailbox.auto_reply_config?.auto_close_pending_days ?? 0,
         },
     });
 
@@ -472,6 +473,44 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     </Field>
                                 </>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Auto-close */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <BotIcon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle>Auto-Close Stale Conversations</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Automatically close pending conversations when customers haven't replied for a set number of days.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            <Field
+                                label="Close pending after (days)"
+                                htmlFor="auto-close-days"
+                                hint="Set to 0 to disable auto-close. Conversations in 'pending' status with no customer reply older than this will be closed daily."
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Input
+                                        id="auto-close-days"
+                                        type="number"
+                                        min={0}
+                                        max={365}
+                                        className="w-32"
+                                        value={data.auto_reply_config.auto_close_pending_days}
+                                        onChange={(e) =>
+                                            setData('auto_reply_config', {
+                                                ...data.auto_reply_config,
+                                                auto_close_pending_days: parseInt(e.target.value, 10) || 0,
+                                            })
+                                        }
+                                    />
+                                    <span className="text-sm text-muted-foreground">days (0 = disabled)</span>
+                                </div>
+                            </Field>
                         </CardContent>
                     </Card>
 

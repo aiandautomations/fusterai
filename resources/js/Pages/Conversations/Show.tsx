@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import RichTextEditor from '@/Components/RichTextEditor';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
 import SlotRenderer from '@/Components/SlotRenderer';
+import { useConversationShortcuts } from '@/hooks/useConversationShortcuts';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
@@ -57,6 +58,7 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         conversation.aiSuggestions?.[0]?.content ?? null,
     );
     const [replyType, setReplyType] = useState<'message' | 'note'>('message');
+    const editorFocusRef = useRef<(() => void) | null>(null);
     const [isRequestingAi, setIsRequestingAi] = useState(false);
     const [viewers, setViewers] = useState<{ id: number; name: string }[]>([]);
     const [threads, setThreads] = useState(conversation.threads ?? []);
@@ -66,6 +68,22 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
     const { data, setData, post, processing, reset } = useForm({
         body: '',
         type: 'message' as 'message' | 'note',
+    });
+
+    useConversationShortcuts({
+        conversationId: conversation.id,
+        status: conversation.status,
+        onFocusReply: () => {
+            setReplyType('message');
+            setData('type', 'message');
+            setTimeout(() => editorFocusRef.current?.(), 50);
+        },
+        onFocusNote: () => {
+            setReplyType('note');
+            setData('type', 'note');
+            setTimeout(() => editorFocusRef.current?.(), 50);
+        },
+        onClose: () => updateStatus('closed'),
     });
 
     // Real-time: listen for new threads + AI suggestions on this conversation
@@ -279,7 +297,8 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                     {/* Reply editor */}
                     <div className="border-t border-border/60 bg-background p-4 shrink-0">
                         <SlotRenderer name="conversation.reply.before" props={{ conversation }} />
-                        <div className="flex items-center gap-1 mb-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1">
                             {(['message', 'note'] as const).map((t) => (
                                 <button
                                     key={t}
@@ -299,6 +318,10 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                     }
                                 </button>
                             ))}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground/50 hidden sm:block">
+                              r reply · n note · c close
+                          </span>
                         </div>
 
                         <form onSubmit={submitReply}>
@@ -306,9 +329,14 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                 <RichTextEditor
                                     value={data.body}
                                     onChange={(html) => setData('body', html)}
-                                    placeholder={replyType === 'message' ? 'Write your reply…' : 'Write an internal note…'}
+                                    placeholder={replyType === 'message' ? 'Write your reply…' : 'Write an internal note… (type @ to mention an agent)'}
                                     minHeight="100px"
                                     mailboxId={conversation.mailbox_id}
+                                    agents={agents}
+                                    enableMentions={replyType === 'note'}
+                                    onEditorReady={(editor) => {
+                                        editorFocusRef.current = () => editor.commands.focus();
+                                    }}
                                 />
                             </div>
 

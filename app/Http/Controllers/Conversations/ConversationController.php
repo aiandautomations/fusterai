@@ -395,4 +395,38 @@ class ConversationController extends Controller
             'snoozed' => (int) ($row->snoozed ?? 0),
         ];
     }
+
+    // ── Bulk actions ──────────────────────────────────────────────────────────
+
+    public function bulk(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $workspaceId = $request->user()->workspace_id;
+
+        $validated = $request->validate([
+            'ids'         => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*'       => ['integer'],
+            'action'      => ['required', 'in:close,reopen,assign,snooze,spam'],
+            'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
+            'snooze_until'=> ['nullable', 'date', 'after:now'],
+        ]);
+
+        // Scope all IDs to the workspace — prevents cross-workspace access
+        $conversations = Conversation::where('workspace_id', $workspaceId)
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        foreach ($conversations as $conversation) {
+            match ($validated['action']) {
+                'close'   => $conversation->update(['status' => 'closed']),
+                'reopen'  => $conversation->update(['status' => 'open', 'snoozed_until' => null]),
+                'spam'    => $conversation->update(['status' => 'spam']),
+                'assign'  => $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]),
+                'snooze'  => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
+            };
+
+            broadcast(new ConversationUpdated($conversation->fresh()));
+        }
+
+        return response()->json(['updated' => $conversations->count()]);
+    }
 }

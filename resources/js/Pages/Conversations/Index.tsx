@@ -7,7 +7,8 @@ import { Button } from '@/Components/ui/button';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
 import { cn, getInitials, sanitizeHtml } from '@/lib/utils';
 import type { Conversation, Mailbox, Tag, Thread, User, Customer, Attachment, Paginated, PageProps, Folder } from '@/types';
-import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon } from 'lucide-react';
+import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon } from 'lucide-react';
+import { Checkbox } from '@/Components/ui/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import RichTextEditor from '@/Components/RichTextEditor';
 import type { Editor } from '@tiptap/react';
+import { useConversationListShortcuts } from '@/hooks/useConversationShortcuts';
 
 // ── Canned response picker (Tiptap-aware) ─────────────────────────────────────
 
@@ -331,6 +333,54 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
     const [showNewConv, setShowNewConv] = useState(false);
     const [mobileShowDetail, setMobileShowDetail] = useState(!!selected);
     const appliedAgentDefaultRef = useRef(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [bulkLoading, setBulkLoading] = useState(false);
+
+    const allIds = conversations.data.map(c => c.id);
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+    const currentSelectedId = selected?.id ?? null;
+
+    useConversationListShortcuts({
+        conversationIds: allIds,
+        currentId: currentSelectedId,
+        onSelect: (id) => {
+            const conv = conversations.data.find(c => c.id === id);
+            if (conv) selectConversation(conv);
+        },
+    });
+
+    function toggleSelect(id: number, e: React.MouseEvent) {
+        e.stopPropagation();
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }
+
+    function toggleSelectAll() {
+        setSelectedIds(allSelected ? new Set() : new Set(allIds));
+    }
+
+    async function bulkAction(action: string, extra: Record<string, unknown> = {}) {
+        if (selectedIds.size === 0) return;
+        setBulkLoading(true);
+        try {
+            await fetch('/conversations/bulk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ ids: [...selectedIds], action, ...extra }),
+            });
+            setSelectedIds(new Set());
+            router.reload({ only: ['conversations', 'counts'] });
+        } finally {
+            setBulkLoading(false);
+        }
+    }
 
     function go(params: Record<string, string | undefined>) {
         router.get('/conversations', { ...filters, ...params }, { preserveScroll: true, replace: true });
@@ -504,6 +554,68 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                         </div>
                     )}
 
+                    {/* Bulk action bar — floats above list when items selected */}
+                    {selectedIds.size > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border-b border-primary/20 shrink-0 flex-wrap">
+                            <span className="text-xs font-medium text-primary">{selectedIds.size} selected</span>
+                            <div className="h-3 w-px bg-border mx-1" />
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('close')}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Close
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('reopen')}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Reopen
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('assign', { assigned_to: auth.user.id })}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Assign to me
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('spam')}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted text-destructive hover:text-destructive transition-colors disabled:opacity-50"
+                            >
+                                Mark spam
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedIds(new Set())}
+                                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                <XIcon className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Select-all header row */}
+                    {conversations.data.length > 0 && (
+                        <div className="flex items-center gap-2.5 px-3.5 py-2 border-b border-border/60 bg-muted/20 shrink-0">
+                            <Checkbox
+                                checked={allSelected}
+                                onCheckedChange={toggleSelectAll}
+                                className="h-3.5 w-3.5"
+                                aria-label="Select all"
+                            />
+                            <span className="text-[11px] text-muted-foreground">
+                                {allSelected ? 'Deselect all' : 'Select all'}
+                            </span>
+                        </div>
+                    )}
+
                     {/* List */}
                     <div className="flex-1 overflow-y-auto divide-y divide-border/60">
                         {conversations.data.length === 0 ? (
@@ -522,6 +634,8 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                     key={conv.id}
                                     conversation={conv}
                                     isSelected={selected?.id === conv.id}
+                                    isChecked={selectedIds.has(conv.id)}
+                                    onCheck={(e) => toggleSelect(conv.id, e)}
                                     onClick={() => selectConversation(conv)}
                                 />
                             ))
@@ -615,18 +729,20 @@ const priorityBar: Record<string, string> = {
 function ConversationRow({
     conversation,
     isSelected,
+    isChecked,
+    onCheck,
     onClick,
 }: {
     conversation: Conversation;
     isSelected: boolean;
+    isChecked: boolean;
+    onCheck: (e: React.MouseEvent) => void;
     onClick: () => void;
 }) {
     const isSnoozed = conversation.snoozed_until && new Date(conversation.snoozed_until) > new Date();
 
     return (
-        <button
-            type="button"
-            onClick={onClick}
+        <div
             className={cn(
                 'group w-full text-left flex items-stretch transition-colors',
                 isSelected ? 'bg-primary/[0.07]' : 'hover:bg-muted/40',
@@ -638,7 +754,27 @@ function ConversationRow({
                 isSelected ? 'bg-primary' : (priorityBar[conversation.priority] ?? 'bg-transparent'),
             )} />
 
-            <div className="flex-1 px-3.5 py-3.5 min-w-0">
+            {/* Checkbox — visible on hover or when checked */}
+            <div
+                className="flex items-center pl-2 pr-0 py-3.5"
+                onClick={onCheck}
+            >
+                <Checkbox
+                    checked={isChecked}
+                    className={cn(
+                        'h-3.5 w-3.5 transition-opacity',
+                        isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                    )}
+                    aria-label="Select conversation"
+                />
+            </div>
+
+            <button
+                type="button"
+                onClick={onClick}
+                className="flex-1 min-w-0 text-left"
+            >
+            <div className="flex-1 px-3 py-3.5 min-w-0">
                 <div className="flex items-start gap-2.5">
                     <Avatar className="size-8 shrink-0 mt-0.5">
                         <AvatarImage src={conversation.customer?.avatar ?? undefined} alt={conversation.customer?.name ?? ''} />
@@ -696,7 +832,8 @@ function ConversationRow({
                     </div>
                 </div>
             </div>
-        </button>
+            </button>
+        </div>
     );
 }
 

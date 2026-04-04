@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     // ── Conversations ─────────────────────────────────────────────────────────
 
     Route::resource('conversations', ConversationController::class)->only(['index', 'show', 'store']);
+    Route::post('/conversations/bulk', [ConversationController::class, 'bulk'])->name('conversations.bulk');
     Route::patch('/conversations/{conversation}/status', [ConversationController::class, 'updateStatus'])->name('conversations.status');
     Route::patch('/conversations/{conversation}/assign', [ConversationController::class, 'assign'])->name('conversations.assign');
     Route::patch('/conversations/{conversation}/snooze', [ConversationController::class, 'snooze'])->name('conversations.snooze');

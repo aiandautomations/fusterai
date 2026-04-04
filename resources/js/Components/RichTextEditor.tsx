@@ -5,6 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import Mention from '@tiptap/extension-mention';
 import { cn } from '@/lib/utils';
 import {
     BoldIcon,
@@ -27,6 +28,11 @@ export interface RichTextEditorHandle {
     clearContent: () => void;
 }
 
+interface Agent {
+    id: number;
+    name: string;
+}
+
 interface Props {
     value: string;
     onChange: (html: string) => void;
@@ -36,6 +42,8 @@ interface Props {
     onEditorReady?: (editor: Editor) => void;
     onKeyDown?: (e: KeyboardEvent) => void;
     mailboxId?: number;
+    agents?: Agent[];
+    enableMentions?: boolean;
 }
 
 interface CannedResponse {
@@ -43,6 +51,113 @@ interface CannedResponse {
     name: string;
     content: string;
     mailbox_id: number | null;
+}
+
+// ── Mention suggestion builder ───────────────────────────────────────────────
+
+function buildMentionSuggestion(agents: Agent[]) {
+    return {
+        items: ({ query }: { query: string }) =>
+            agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())).slice(0, 8),
+
+        render: () => {
+            let popup: HTMLDivElement | null = null;
+            let items: Agent[]              = [];
+            let selectedIndex               = 0;
+            let selectFn: ((item: Agent) => void) | null = null;
+
+            function render() {
+                if (!popup) return;
+                popup.innerHTML = '';
+                items.forEach((item, i) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = `@${item.name}`;
+                    btn.className = [
+                        'w-full text-left px-3 py-2 text-sm transition-colors border-b border-border/40 last:border-0',
+                        i === selectedIndex
+                            ? 'bg-accent text-accent-foreground'
+                            : 'hover:bg-muted/60',
+                    ].join(' ');
+                    btn.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        selectFn?.(item);
+                    });
+                    btn.addEventListener('mouseenter', () => {
+                        selectedIndex = i;
+                        render();
+                    });
+                    popup!.appendChild(btn);
+                });
+
+                if (items.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.textContent = 'No agents found';
+                    empty.className = 'px-3 py-2.5 text-xs text-muted-foreground text-center';
+                    popup.appendChild(empty);
+                }
+            }
+
+            return {
+                onStart: (props: { items: Agent[]; command: (item: { id: string; label: string }) => void; clientRect?: (() => DOMRect | null) | null }) => {
+                    items = props.items;
+                    selectedIndex = 0;
+                    selectFn = (item: Agent) => props.command({ id: String(item.id), label: item.name });
+
+                    popup = document.createElement('div');
+                    popup.className = [
+                        'absolute z-50 w-52 rounded-lg border border-border bg-popover shadow-lg overflow-hidden',
+                    ].join(' ');
+                    popup.style.position = 'fixed';
+
+                    document.body.appendChild(popup);
+                    render();
+
+                    const rect = props.clientRect?.();
+                    if (rect) {
+                        popup.style.top  = `${rect.bottom + 4}px`;
+                        popup.style.left = `${rect.left}px`;
+                    }
+                },
+
+                onUpdate: (props: { items: Agent[]; command: (item: { id: string; label: string }) => void; clientRect?: (() => DOMRect | null) | null }) => {
+                    items = props.items;
+                    selectedIndex = 0;
+                    selectFn = (item: Agent) => props.command({ id: String(item.id), label: item.name });
+                    render();
+
+                    const rect = props.clientRect?.();
+                    if (rect && popup) {
+                        popup.style.top  = `${rect.bottom + 4}px`;
+                        popup.style.left = `${rect.left}px`;
+                    }
+                },
+
+                onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+                    if (event.key === 'ArrowDown') {
+                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                        render();
+                        return true;
+                    }
+                    if (event.key === 'ArrowUp') {
+                        selectedIndex = Math.max(selectedIndex - 1, 0);
+                        render();
+                        return true;
+                    }
+                    if (event.key === 'Enter') {
+                        if (items[selectedIndex]) selectFn?.(items[selectedIndex]);
+                        return true;
+                    }
+                    return false;
+                },
+
+                onExit: () => {
+                    popup?.remove();
+                    popup = null;
+                },
+            };
+        },
+    };
 }
 
 // ── Toolbar button ────────────────────────────────────────────────────────────
@@ -356,15 +471,29 @@ export default function RichTextEditor({
     onEditorReady,
     onKeyDown,
     mailboxId,
+    agents = [],
+    enableMentions = false,
 }: Props) {
+    const extensions = [
+        StarterKit,
+        Underline,
+        Link.configure({ openOnClick: false }),
+        TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        Placeholder.configure({ placeholder }),
+        ...(enableMentions
+            ? [
+                  Mention.configure({
+                      HTMLAttributes: {
+                          class: 'mention',
+                      },
+                      suggestion: buildMentionSuggestion(agents),
+                  }),
+              ]
+            : []),
+    ];
+
     const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Underline,
-            Link.configure({ openOnClick: false }),
-            TextAlign.configure({ types: ['heading', 'paragraph'] }),
-            Placeholder.configure({ placeholder }),
-        ],
+        extensions,
         content: value,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());

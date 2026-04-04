@@ -30,6 +30,7 @@ class SendReplyJob implements ShouldQueue
     public function handle(): void
     {
         $conversation = $this->conversation->load(['mailbox', 'customer', 'threads']);
+        $this->thread->loadMissing('user');
         $mailbox      = $conversation->mailbox;
         $customer     = $conversation->customer;
 
@@ -57,11 +58,13 @@ class SendReplyJob implements ShouldQueue
 
         $thread = $this->thread;
 
-        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread) {
+        $agentSignature = $this->thread->user?->signature;
+
+        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature) {
             $msg->to($customer->email, $customer->name)
                 ->from($mailbox->email, $mailbox->name)
                 ->subject($this->buildSubject($conversation))
-                ->html($this->buildHtmlBody($thread, $mailbox))
+                ->html($this->buildHtmlBody($thread, $mailbox, $agentSignature))
                 ->text(strip_tags($thread->body));
 
             // Set In-Reply-To header to thread the email
@@ -97,11 +100,14 @@ class SendReplyJob implements ShouldQueue
             : 'Re: ' . $conversation->subject;
     }
 
-    private function buildHtmlBody(Thread $thread, $mailbox): string
+    private function buildHtmlBody(Thread $thread, $mailbox, ?string $agentSignature = null): string
     {
-        $body      = $thread->body;
-        $signature = $mailbox->signature
-            ? '<br><br>--<br>' . nl2br(e($mailbox->signature))
+        $body = $thread->body;
+
+        // Agent signature takes priority; fall back to mailbox signature
+        $rawSignature = $agentSignature ?? $mailbox->signature ?? null;
+        $signature    = $rawSignature
+            ? '<br><br>--<br>' . nl2br(e($rawSignature))
             : '';
 
         return $body . $signature;

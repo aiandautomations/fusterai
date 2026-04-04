@@ -71,6 +71,11 @@ class MailboxController extends Controller
             'active'      => ['sometimes', 'boolean'],
             'imap_config' => ['nullable', 'array'],
             'smtp_config' => ['nullable', 'array'],
+            'auto_reply_config'                            => ['nullable', 'array'],
+            'auto_reply_config.enabled'                    => ['boolean'],
+            'auto_reply_config.subject'                    => ['nullable', 'string', 'max:255'],
+            'auto_reply_config.body'                       => ['nullable', 'string'],
+            'auto_reply_config.auto_close_pending_days'    => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
 
         $mailbox->update($validated);

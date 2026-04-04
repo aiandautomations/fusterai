@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import {
     DropdownMenu,
@@ -8,7 +8,8 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { cn, getInitials } from '@/lib/utils';
 import type { Conversation, Folder, Mailbox, Tag, User } from '@/types';
-import { EyeIcon, EyeOffIcon, XIcon, ChevronDownIcon, ArrowUpRightIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, XIcon, ChevronDownIcon, ArrowUpRightIcon, UserCheckIcon } from 'lucide-react';
+import type { PageProps } from '@/types';
 
 interface SurveyData {
     rating: 'good' | 'bad';
@@ -77,6 +78,8 @@ export default function ConversationInspector({
     const availableFolders = folders.filter((folder) => !selectedFolderIds.includes(folder.id));
     const followers = conversation.followers ?? [];
     const assignedAgent = agents.find((a) => a.id === conversation.assigned_user_id);
+    const currentUser = usePage<PageProps>().props.auth.user;
+    const isAssignedToMe = conversation.assigned_user_id === currentUser.id;
 
     return (
         <div className={cn('flex flex-col overflow-y-auto bg-background', className)}>
@@ -192,7 +195,20 @@ export default function ConversationInspector({
 
                 {/* Assigned to — avatar + name button */}
                 <div className="space-y-1.5">
-                    <p className="text-[11px] text-muted-foreground/70 font-medium">Assigned to</p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-muted-foreground/70 font-medium">Assigned to</p>
+                        {!isAssignedToMe && (
+                            <button
+                                type="button"
+                                onClick={() => onAssignChange(String(currentUser.id))}
+                                className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors"
+                                title="Assign to me"
+                            >
+                                <UserCheckIcon className="h-3 w-3" />
+                                Assign to me
+                            </button>
+                        )}
+                    </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors group border border-transparent hover:border-border">
                             {assignedAgent ? (
