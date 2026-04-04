@@ -416,12 +416,13 @@ class ConversationController extends Controller
             ->get();
 
         foreach ($conversations as $conversation) {
-            match ($validated['action']) {
+            match ((string) $validated['action']) {
                 'close'   => $conversation->update(['status' => 'closed']),
                 'reopen'  => $conversation->update(['status' => 'open', 'snoozed_until' => null]),
                 'spam'    => $conversation->update(['status' => 'spam']),
                 'assign'  => $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]),
                 'snooze'  => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
+                default   => null,
             };
 
             broadcast(new ConversationUpdated($conversation->fresh()));

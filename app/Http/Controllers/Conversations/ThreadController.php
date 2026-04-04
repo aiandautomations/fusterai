@@ -91,7 +91,7 @@ class ThreadController extends Controller
     {
         // Parse data-id attributes from <span data-type="mention" data-id="...">
         preg_match_all('/data-id="(\d+)"/', $thread->body, $matches);
-        $mentionedIds = array_unique(array_map('intval', $matches[1] ?? []));
+        $mentionedIds = array_unique(array_map('intval', $matches[1]));
 
         if (empty($mentionedIds)) {
             return;

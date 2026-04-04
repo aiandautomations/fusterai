@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
 
         // ── Users ────────────────────────────────────────────────────────────────
 
-        $admin = User::firstOrCreate(['email' => 'admin@example.com'], [
+        $admin = User::firstOrCreate(['email' => 'admin@fusterai.com'], [
             'name'         => 'Admin User',
             'password'     => Hash::make('password'),
             'workspace_id' => $workspace->id,

@@ -26,6 +26,9 @@ done
 echo "Running migrations..."
 gosu $WWWUSER php artisan migrate --force
 
+echo "Generating Passport OAuth keys (if missing)..."
+gosu $WWWUSER php artisan passport:keys --force 2>/dev/null || true
+
 echo "Installing frontend dependencies..."
 npm install
 

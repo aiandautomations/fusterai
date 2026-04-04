@@ -1,0 +1,32 @@
+{
+  "name": "FusterAI",
+
+  // Reuse the same docker-compose stack used for local development.
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "laravel.test",
+  "workspaceFolder": "/var/www/html",
+
+  // Run as the sail user (uid 1337 in the image, mapped to WWWUSER at runtime).
+  "remoteUser": "sail",
+
+  // Ports forwarded to the Codespaces browser/tunnel.
+  "forwardPorts": [8000, 8025, 7700],
+  "portsAttributes": {
+    "8000": {
+      "label": "FusterAI App",
+      "onAutoForward": "openBrowserOnce"
+    },
+    "8025": {
+      "label": "Mailpit (email)",
+      "onAutoForward": "silent"
+    },
+    "7700": {
+      "label": "MeiliSearch",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // After the container stack is up, seed demo data so the app is immediately usable.
+  // The entrypoint already runs migrations, npm install, and npm build before supervisord starts.
+  "postCreateCommand": "until php artisan db:show > /dev/null 2>&1; do sleep 2; done && php artisan fusterai:install --demo --force"
+}
