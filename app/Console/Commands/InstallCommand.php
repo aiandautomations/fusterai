@@ -109,7 +109,7 @@ class InstallCommand extends Command
         $this->line("  <fg=white>Password:</> <fg=cyan>{$password}</>");
         $this->newLine();
 
-        if (! env('ANTHROPIC_API_KEY')) {
+        if (! config('ai.providers.anthropic.key')) {
             $this->line('  <fg=gray>Tip: Add ANTHROPIC_API_KEY to .env to enable AI reply suggestions.</>');
             $this->newLine();
         }
