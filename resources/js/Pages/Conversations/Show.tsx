@@ -308,6 +308,7 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                     onChange={(html) => setData('body', html)}
                                     placeholder={replyType === 'message' ? 'Write your reply…' : 'Write an internal note…'}
                                     minHeight="100px"
+                                    mailboxId={conversation.mailbox_id}
                                 />
                             </div>
 
