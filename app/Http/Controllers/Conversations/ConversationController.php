@@ -9,6 +9,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\ConversationUpdated;
 use App\Http\Controllers\Controller;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
+use App\Models\ConversationRead;
 use App\Notifications\ConversationAssignedNotification;
 use App\Support\Hooks;
 use Illuminate\Http\RedirectResponse;
@@ -25,12 +26,14 @@ class ConversationController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'status'   => 'nullable|in:open,pending,closed,spam,snoozed',
-            'priority' => 'nullable|in:low,normal,high,urgent',
-            'mailbox'  => 'nullable|integer',
-            'assigned' => 'nullable|in:me,none,all',
-            'tag'      => 'nullable|integer',
-            'folder'   => 'nullable|integer',
+            'status'    => 'nullable|in:open,pending,closed,spam,snoozed',
+            'priority'  => 'nullable|in:low,normal,high,urgent',
+            'mailbox'   => 'nullable|integer',
+            'assigned'  => 'nullable|in:me,none,all',
+            'tag'       => 'nullable|integer',
+            'folder'    => 'nullable|integer',
+            'date_from' => 'nullable|date',
+            'date_to'   => 'nullable|date|after_or_equal:date_from',
         ]);
 
         $query = Conversation::query()
@@ -68,7 +71,31 @@ class ConversationController extends Controller
             $query->whereHas('folders', fn($q) => $q->where('folders.id', $folderId));
         }
 
+        if ($dateFrom = $request->get('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo = $request->get('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
         $conversations = $query->paginate(30)->withQueryString();
+
+        // Attach is_unread flag — a conversation is unread if the user has never
+        // opened it, or if last_reply_at is newer than their last read timestamp.
+        $convIds = $conversations->pluck('id')->all();
+        $readMap = ConversationRead::where('user_id', $user->id)
+            ->whereIn('conversation_id', $convIds)
+            ->pluck('last_read_at', 'conversation_id');
+
+        $conversations->getCollection()->transform(function (Conversation $conv) use ($readMap) {
+            $lastRead = $readMap->get($conv->id);
+            $conv->is_unread = $lastRead === null
+                ? $conv->last_reply_at !== null
+                : ($conv->last_reply_at !== null && $conv->last_reply_at->gt($lastRead));
+            return $conv;
+        });
+
         $mailboxes     = Mailbox::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'email']);
         $tags          = Tag::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'color']);
         $folders       = Folder::where('workspace_id', $user->workspace_id)->orderBy('order')->get(['id', 'name', 'color', 'icon']);
@@ -107,7 +134,7 @@ class ConversationController extends Controller
             'agents'        => $agents,
             'selected'      => $selected,
             'isFollowing'   => $isFollowing,
-            'filters'       => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation']),
+            'filters'       => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to']),
             ...$extra,
         ]);
     }
@@ -115,6 +142,9 @@ class ConversationController extends Controller
     public function show(Request $request, Conversation $conversation): Response
     {
         $this->authorize('view', $conversation);
+
+        // Auto-mark as read when the conversation is opened
+        ConversationRead::markRead($request->user()->id, $conversation->id);
 
         $conversation->load([
             'customer',
@@ -200,6 +230,17 @@ class ConversationController extends Controller
         $oldStatus = $conversation->status;
         $newStatus = $request->status;
         $conversation->update(['status' => $newStatus]);
+
+        // Block the customer when marked spam so future emails skip auto-reply and
+        // are auto-marked spam. Unblock if the conversation is reopened/closed.
+        $customer = $conversation->customer;
+        if ($customer) {
+            if ($newStatus === 'spam') {
+                $customer->update(['is_blocked' => true]);
+            } elseif ($oldStatus === 'spam') {
+                $customer->update(['is_blocked' => false]);
+            }
+        }
 
         $labels = Conversation::STATUS_LABELS;
         $actor  = $request->user()->name;
@@ -397,6 +438,28 @@ class ConversationController extends Controller
         ];
     }
 
+    // ── Read / Unread ─────────────────────────────────────────────────────────
+
+    public function markRead(Request $request, Conversation $conversation): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $conversation);
+
+        ConversationRead::markRead($request->user()->id, $conversation->id);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function markUnread(Request $request, Conversation $conversation): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $conversation);
+
+        ConversationRead::where('user_id', $request->user()->id)
+            ->where('conversation_id', $conversation->id)
+            ->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     // ── Bulk actions ──────────────────────────────────────────────────────────
 
     public function bulk(Request $request): \Illuminate\Http\JsonResponse
@@ -406,9 +469,10 @@ class ConversationController extends Controller
         $validated = $request->validate([
             'ids'         => ['required', 'array', 'min:1', 'max:100'],
             'ids.*'       => ['integer'],
-            'action'      => ['required', 'in:close,reopen,assign,snooze,spam'],
+            'action'      => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
             'snooze_until'=> ['nullable', 'date', 'after:now'],
+            'priority'    => ['nullable', 'in:low,normal,high,urgent'],
         ]);
 
         // Scope all IDs to the workspace — prevents cross-workspace access
@@ -416,17 +480,26 @@ class ConversationController extends Controller
             ->whereIn('id', $validated['ids'])
             ->get();
 
+        $userId = $request->user()->id;
+
         foreach ($conversations as $conversation) {
             match ((string) $validated['action']) {
-                'close'   => $conversation->update(['status' => 'closed']),
-                'reopen'  => $conversation->update(['status' => 'open', 'snoozed_until' => null]),
-                'spam'    => $conversation->update(['status' => 'spam']),
-                'assign'  => $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]),
-                'snooze'  => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
-                default   => null,
+                'close'        => $conversation->update(['status' => 'closed']),
+                'reopen'       => $conversation->update(['status' => 'open', 'snoozed_until' => null]),
+                'spam'         => $conversation->update(['status' => 'spam']),
+                'assign'       => $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]),
+                'snooze'       => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
+                'priority'     => $conversation->update(['priority' => $validated['priority']]),
+                'mark_read'    => ConversationRead::markRead($userId, $conversation->id),
+                'mark_unread'  => ConversationRead::where('user_id', $userId)
+                    ->where('conversation_id', $conversation->id)
+                    ->delete(),
+                default        => null,
             };
 
-            broadcast(new ConversationUpdated($conversation->fresh()));
+            if (!in_array($validated['action'], ['mark_read', 'mark_unread'])) {
+                broadcast(new ConversationUpdated($conversation->fresh()));
+            }
         }
 
         return response()->json(['updated' => $conversations->count()]);

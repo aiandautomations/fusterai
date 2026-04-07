@@ -58,6 +58,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/conversations/{conversation}/priority', [ConversationController::class, 'updatePriority'])->name('conversations.priority');
     Route::post('/conversations/{conversation}/merge', [ConversationController::class, 'merge'])->name('conversations.merge');
     Route::post('/conversations/{conversation}/tags', [ConversationController::class, 'syncTags'])->name('conversations.tags');
+    Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
+    Route::post('/conversations/{conversation}/unread', [ConversationController::class, 'markUnread'])->name('conversations.unread');
 
     // Threads
     Route::post('/conversations/{conversation}/threads', [ThreadController::class, 'store'])->name('threads.store');
@@ -78,7 +80,7 @@ Route::middleware('auth')->group(function () {
     // ── Customers ─────────────────────────────────────────────────────────────
 
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
-    Route::resource('customers', CustomerController::class)->only(['index', 'show']);
+    Route::resource('customers', CustomerController::class)->only(['index', 'show', 'update']);
 
     // ── Tags ──────────────────────────────────────────────────────────────────
 

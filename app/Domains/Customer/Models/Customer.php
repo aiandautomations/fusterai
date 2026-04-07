@@ -26,10 +26,13 @@ class Customer extends Model
         'avatar',
         'company',
         'meta',
+        'notes',
+        'is_blocked',
     ];
 
     protected $casts = [
-        'meta' => 'array',
+        'meta'       => 'array',
+        'is_blocked' => 'boolean',
     ];
 
     // ── Relations ────────────────────────────────────────────────

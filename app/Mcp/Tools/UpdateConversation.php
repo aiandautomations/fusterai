@@ -52,7 +52,7 @@ class UpdateConversation extends Tool
 
         if ($email = $request->string('assign_to_email')) {
             $agent = User::where('email', $email)->where('workspace_id', $this->workspaceId)->first();
-            if ($agent) $updates['user_id'] = $agent->id;
+            if ($agent) $updates['assigned_user_id'] = $agent->id;
         }
 
         if (!empty($updates)) {

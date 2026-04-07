@@ -36,6 +36,7 @@ class WhatsAppMailboxController extends Controller
         $validated = $request->validate([
             'phone_number_id' => ['required', 'string'],
             'access_token'    => ['required', 'string'],
+            'app_secret'      => ['required', 'string'],
         ]);
 
         $mailbox->channels()->updateOrCreate(

@@ -7,6 +7,7 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
+use App\Models\ConversationRead;
 use App\Notifications\AgentMentionedNotification;
 use App\Notifications\ConversationFollowerNotification;
 use App\Notifications\NewCustomerReplyNotification;
@@ -53,6 +54,9 @@ class ThreadController extends Controller
 
         if ($validated['type'] === 'message') {
             $conversation->update(['last_reply_at' => now()]);
+
+            // Mark conversation as read for the agent who just replied
+            ConversationRead::markRead($request->user()->id, $conversation->id);
 
             if ($isChat) {
                 // Live chat: broadcast directly to the widget — no email needed.

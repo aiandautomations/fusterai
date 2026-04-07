@@ -7,7 +7,7 @@ import { Button } from '@/Components/ui/button';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
 import { cn, getInitials, sanitizeHtml } from '@/lib/utils';
 import type { Conversation, Mailbox, Tag, Thread, User, Customer, Attachment, Paginated, PageProps, Folder } from '@/types';
-import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon } from 'lucide-react';
+import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon, KeyboardIcon } from 'lucide-react';
 import { Checkbox } from '@/Components/ui/checkbox';
 import {
     DropdownMenu,
@@ -46,10 +46,15 @@ function useCannedResponsePicker(mailboxId?: number) {
             setActiveIndex(0);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(async () => {
-                const mbParam = mailboxId ? `&mailbox_id=${mailboxId}` : '';
-                const res = await fetch(`/canned-responses/search?q=${encodeURIComponent(query)}${mbParam}`);
-                const data: CannedResponse[] = await res.json();
-                setResults(data);
+                try {
+                    const mbParam = mailboxId ? `&mailbox_id=${mailboxId}` : '';
+                    const res = await fetch(`/canned-responses/search?q=${encodeURIComponent(query)}${mbParam}`);
+                    if (!res.ok) { setResults([]); return; }
+                    const data: CannedResponse[] = await res.json();
+                    setResults(data);
+                } catch {
+                    setResults([]);
+                }
             }, 150);
         } else {
             setResults([]);
@@ -140,6 +145,8 @@ interface Props {
         tag?: string;
         priority?: string;
         conversation?: string;
+        date_from?: string;
+        date_to?: string;
     };
     selected?: FullConversation | null;
     agents: { id: number; name: string }[];
@@ -324,6 +331,85 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
     );
 }
 
+// ── Keyboard shortcuts modal ──────────────────────────────────────────────────
+
+function ShortcutsModal({ onClose }: { onClose: () => void }) {
+    useEffect(() => {
+        function handler(e: KeyboardEvent) {
+            if (e.key === 'Escape') onClose();
+        }
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [onClose]);
+
+    const sections = [
+        {
+            title: 'Conversation List',
+            shortcuts: [
+                { key: 'j', desc: 'Next conversation' },
+                { key: 'k', desc: 'Previous conversation' },
+                { key: 'Enter / o', desc: 'Open selected conversation' },
+            ],
+        },
+        {
+            title: 'Conversation View',
+            shortcuts: [
+                { key: 'r', desc: 'Focus reply editor' },
+                { key: 'n', desc: 'Focus note editor' },
+                { key: 'c', desc: 'Close conversation' },
+                { key: 'Esc', desc: 'Blur focused element' },
+            ],
+        },
+        {
+            title: 'Reply Editor',
+            shortcuts: [
+                { key: '/', desc: 'Trigger canned response picker' },
+                { key: '↑ / ↓', desc: 'Navigate canned responses' },
+                { key: 'Tab / Enter', desc: 'Insert canned response' },
+            ],
+        },
+        {
+            title: 'Global',
+            shortcuts: [
+                { key: '?', desc: 'Toggle this shortcuts panel' },
+            ],
+        },
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="bg-card rounded-xl shadow-2xl border border-border w-full max-w-md mx-4 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                    <div className="flex items-center gap-2">
+                        <KeyboardIcon className="h-4 w-4 text-muted-foreground" />
+                        <h2 className="font-semibold text-sm">Keyboard Shortcuts</h2>
+                    </div>
+                    <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+                        <XIcon className="h-4 w-4" />
+                    </button>
+                </div>
+                <div className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
+                    {sections.map((section) => (
+                        <div key={section.title}>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">{section.title}</p>
+                            <div className="space-y-1.5">
+                                {section.shortcuts.map(({ key, desc }) => (
+                                    <div key={key} className="flex items-center justify-between gap-4">
+                                        <span className="text-sm text-muted-foreground">{desc}</span>
+                                        <kbd className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] font-mono font-medium text-foreground/80 shrink-0">
+                                            {key}
+                                        </kbd>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ConversationsIndex({ conversations, mailboxes, tags, folders, counts, filters, selected, agents, isFollowing, survey }: Props) {
@@ -331,6 +417,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
     const isAgent = auth.user?.role === 'agent';
     const activeStatus = filters.status ?? 'open';
     const [showNewConv, setShowNewConv] = useState(false);
+    const [showShortcuts, setShowShortcuts] = useState(false);
     const [mobileShowDetail, setMobileShowDetail] = useState(!!selected);
     const appliedAgentDefaultRef = useRef(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -348,6 +435,17 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
             if (conv) selectConversation(conv);
         },
     });
+
+    // Global shortcut: ? opens shortcuts modal
+    useEffect(() => {
+        function handler(e: KeyboardEvent) {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+            if (e.key === '?') { e.preventDefault(); setShowShortcuts(v => !v); }
+        }
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, []);
 
     function toggleSelect(id: number, e: React.MouseEvent) {
         e.stopPropagation();
@@ -439,14 +537,24 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
                         <h1 className="font-semibold text-lg tracking-tight">Inbox</h1>
-                        <Button
-                            size="sm"
-                            className="h-8 gap-1.5 text-xs rounded-lg px-2.5"
-                            onClick={() => setShowNewConv(true)}
-                        >
-                            <PlusIcon className="h-3.5 w-3.5" />
-                            New
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setShowShortcuts(true)}
+                                title="Keyboard shortcuts (?)"
+                                className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                            >
+                                <KeyboardIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <Button
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs rounded-lg px-2.5"
+                                onClick={() => setShowNewConv(true)}
+                            >
+                                <PlusIcon className="h-3.5 w-3.5" />
+                                New
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Status tabs — pill style */}
@@ -534,6 +642,34 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                         })()}
                     </div>
 
+                    {/* Date range filter */}
+                    <div className="px-3 py-2 border-b border-border shrink-0 flex items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground shrink-0">From</span>
+                        <input
+                            type="date"
+                            value={filters.date_from ?? ''}
+                            onChange={e => go({ date_from: e.target.value || undefined, page: undefined })}
+                            className="flex-1 min-w-0 text-[11px] border border-input rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        <span className="text-[11px] text-muted-foreground shrink-0">To</span>
+                        <input
+                            type="date"
+                            value={filters.date_to ?? ''}
+                            min={filters.date_from}
+                            onChange={e => go({ date_to: e.target.value || undefined, page: undefined })}
+                            className="flex-1 min-w-0 text-[11px] border border-input rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        {(filters.date_from || filters.date_to) && (
+                            <button
+                                type="button"
+                                onClick={() => go({ date_from: undefined, date_to: undefined, page: undefined })}
+                                className="text-muted-foreground hover:text-foreground shrink-0"
+                            >
+                                <XIcon className="h-3 w-3" />
+                            </button>
+                        )}
+                    </div>
+
                     {/* Active tag indicator (compact) */}
                     {activeTag && (
                         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
@@ -575,14 +711,48 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                             >
                                 Reopen
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => bulkAction('assign', { assigned_to: auth.user.id })}
-                                disabled={bulkLoading}
-                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
-                            >
-                                Assign to me
-                            </button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        disabled={bulkLoading}
+                                        className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                        Assign <ChevronDownIcon className="h-3 w-3 opacity-60" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-44">
+                                    <DropdownMenuItem onClick={() => bulkAction('assign', { assigned_to: auth.user.id })}>
+                                        Assign to me
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => bulkAction('assign', { assigned_to: null })}>
+                                        Unassign
+                                    </DropdownMenuItem>
+                                    {agents.filter(a => a.id !== auth.user.id).map(agent => (
+                                        <DropdownMenuItem key={agent.id} onClick={() => bulkAction('assign', { assigned_to: agent.id })}>
+                                            {agent.name}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        disabled={bulkLoading}
+                                        className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                        Priority <ChevronDownIcon className="h-3 w-3 opacity-60" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    {(['urgent', 'high', 'normal', 'low'] as const).map(p => (
+                                        <DropdownMenuItem key={p} onClick={() => bulkAction('priority', { priority: p })}>
+                                            <span className="capitalize">{p}</span>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <button
                                 type="button"
                                 onClick={() => bulkAction('spam')}
@@ -590,6 +760,22 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                 className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted text-destructive hover:text-destructive transition-colors disabled:opacity-50"
                             >
                                 Mark spam
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('mark_read')}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Mark read
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => bulkAction('mark_unread')}
+                                disabled={bulkLoading}
+                                className="text-xs px-2.5 py-1 rounded-md bg-background border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Mark unread
                             </button>
                             <button
                                 type="button"
@@ -713,6 +899,9 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
             {showNewConv && (
                 <NewConversationModal mailboxes={mailboxes} onClose={() => setShowNewConv(false)} />
             )}
+            {showShortcuts && (
+                <ShortcutsModal onClose={() => setShowShortcuts(false)} />
+            )}
         </AppLayout>
     );
 }
@@ -785,17 +974,28 @@ function ConversationRow({
 
                     <div className="flex-1 min-w-0">
                         {/* Name + time */}
-                        <div className="flex items-baseline justify-between gap-1 mb-0.5">
-                            <span className="text-[13px] font-semibold truncate text-foreground/90 leading-tight">
-                                {conversation.customer?.name ?? 'Unknown'}
-                            </span>
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                {conversation.is_unread && !isSelected && (
+                                    <span className="h-2 w-2 rounded-full bg-primary shrink-0" aria-label="Unread" />
+                                )}
+                                <span className={cn(
+                                    'text-[13px] truncate leading-tight',
+                                    conversation.is_unread && !isSelected ? 'font-bold text-foreground' : 'font-semibold text-foreground/90',
+                                )}>
+                                    {conversation.customer?.name ?? 'Unknown'}
+                                </span>
+                            </div>
                             <span className="text-[11px] text-muted-foreground/60 shrink-0 tabular-nums">
                                 {relativeTime(conversation.last_reply_at ?? conversation.created_at)}
                             </span>
                         </div>
 
                         {/* Subject */}
-                        <p className="text-[12.5px] text-muted-foreground truncate mb-2 leading-snug">
+                        <p className={cn(
+                            'text-[12.5px] truncate mb-2 leading-snug',
+                            conversation.is_unread && !isSelected ? 'text-foreground/80 font-medium' : 'text-muted-foreground',
+                        )}>
                             {conversation.subject}
                         </p>
 

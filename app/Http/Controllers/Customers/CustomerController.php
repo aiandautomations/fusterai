@@ -45,10 +45,23 @@ class CustomerController extends Controller
     {
         abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
 
-        $customer->load(['conversations' => fn($q) => $q->latest()->limit(10)]);
+        $customer->load(['conversations' => fn($q) => $q->with('mailbox')->latest()->limit(10)]);
 
         return Inertia::render('Customers/Show', [
             'customer' => $customer,
         ]);
+    }
+
+    public function update(Request $request, Customer $customer): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
+
+        $data = $request->validate([
+            'notes' => 'nullable|string|max:10000',
+        ]);
+
+        $customer->update($data);
+
+        return response()->json(['ok' => true]);
     }
 }

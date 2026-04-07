@@ -111,9 +111,14 @@ class ProcessInboundEmailJob implements ShouldQueue
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         }
 
-        // Send auto-reply for new conversations
+        // Auto-mark spam and skip auto-reply for blocked customers (repeat spammers)
         if ($conversation->wasRecentlyCreated) {
-            SendAutoReplyJob::dispatch($conversation)->onQueue('email-outbound');
+            $customer = Customer::find($conversation->customer_id);
+            if ($customer?->is_blocked) {
+                $conversation->update(['status' => 'spam']);
+            } else {
+                SendAutoReplyJob::dispatch($conversation)->onQueue('email-outbound');
+            }
         }
     }
 

@@ -10,7 +10,7 @@
   "remoteUser": "sail",
 
   // Ports forwarded to the Codespaces browser/tunnel.
-  "forwardPorts": [8000, 8025, 7700],
+  "forwardPorts": [8000, 8025, 7700, 8080],
   "portsAttributes": {
     "8000": {
       "label": "FusterAI App",
@@ -22,6 +22,10 @@
     },
     "7700": {
       "label": "MeiliSearch",
+      "onAutoForward": "silent"
+    },
+    "8080": {
+      "label": "Reverb WebSockets",
       "onAutoForward": "silent"
     }
   },

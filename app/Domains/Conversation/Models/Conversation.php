@@ -144,6 +144,11 @@ class Conversation extends Model
         return $this->hasMany(AiSuggestion::class);
     }
 
+    public function reads(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ConversationRead::class);
+    }
+
     // ── Scopes ───────────────────────────────────────────────────
 
     public function scopeOpen(Builder $query): Builder

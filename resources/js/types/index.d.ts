@@ -79,6 +79,8 @@ export interface Customer {
     avatar?: string;
     company?: string;
     meta?: Record<string, unknown>;
+    notes?: string;
+    is_blocked?: boolean;
     created_at: string;
 }
 
@@ -96,6 +98,7 @@ export interface Conversation {
     ai_tags?: string[];
     last_reply_at?: string;
     snoozed_until?: string;
+    is_unread?: boolean;
     created_at: string;
 
     // Relations

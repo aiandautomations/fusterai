@@ -104,22 +104,28 @@ Customer emails, support threads, attachments, AI-generated summaries, knowledge
 ### Communication Channels
 - **Email** — IMAP fetch + per-mailbox SMTP send with signatures and auto-reply
 - **Live chat** — embeddable JavaScript widget + real-time agent console
+- **WhatsApp** — WhatsApp Business Cloud API (inbound webhook + outbound send)
 - **REST API** — full CRUD + reply endpoints with Bearer token auth
-- **Inbound webhooks** — process messages from any platform
+- **Inbound webhooks** — process messages from any platform (Twilio, Stripe, custom systems)
 
 ### Automation & Productivity
 - **Automation rules** — trigger → condition → action workflows (e.g. auto-assign urgent tickets)
-- **SLA management** — SLA policies, breach notifications, pause/resume tracking
+- **Conversation routing** — round-robin and least-loaded auto-assignment per mailbox (module)
+- **SLA management** — SLA policies, breach notifications, pause/resume tracking (module)
+- **CSAT surveys** — customer satisfaction surveys sent on conversation close (module)
 - **In-app notifications** — assignments, replies, @mentions
 - **Email digests** — daily summary emails for agents
 - **Reports** — conversation trends, agent performance, resolution time, channel breakdowns
 - **Full-text search** — MeiliSearch-powered global search across all conversations
+- **Date range filtering** — filter conversations by creation date range
+- **Spam blocking** — mark customers as blocked; repeat senders auto-marked spam with no auto-reply
+- **Bulk actions** — close, reopen, assign to any agent, set priority, snooze, mark spam
 
 ### Developer Experience
 - **Module system** — hook/filter/slot architecture for custom extensions without forking core
 - **Auto-generated API docs** — Scramble OpenAPI docs at `/docs/api`
-- **64+ tests** — Pest 4 test suite with feature and unit coverage
-- **GitHub Actions CI/CD** — automated tests on PHP 8.2 and 8.3
+- **150+ tests** — Pest 4 test suite with feature and unit coverage
+- **GitHub Actions CI/CD** — automated tests on PHP 8.4 and 8.5
 - **Horizon dashboard** — queue monitoring at `/horizon`
 - **Activity logs** — full audit trail via Spatie Activity Log
 - **PHPStan level 5** — static analysis on CI
@@ -178,7 +184,7 @@ Codespaces builds the full stack (PHP 8.4, PostgreSQL, Redis, MeiliSearch) and r
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-org/fusterai.git
+git clone https://github.com/aiandautomations/fusterai.git
 cd fusterai
 
 # 2. Install PHP dependencies (throwaway container — no local PHP needed)
@@ -206,7 +212,7 @@ Sail starts PostgreSQL 17 (with pgvector), Redis, MeiliSearch, and Mailpit, then
 # Interactive — creates your workspace and admin account
 ./vendor/bin/sail artisan fusterai:install
 
-# Or load demo data instead (4 agents, 16 customers, 35 conversations)
+# Or load demo data instead (4 agents, 16 customers, 33 conversations)
 ./vendor/bin/sail artisan fusterai:install --demo
 ```
 
@@ -241,11 +247,11 @@ sail build --no-cache && sail up -d   # Rebuild after Dockerfile changes
 
 ### Option C — Manual Installation
 
-**Prerequisites:** PHP 8.4+ (`pdo_pgsql`, `redis`, `pcntl`, `bcmath`, `gd`, `xml`, `sockets`), PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector), Redis 7+, Node.js 20+, Composer 2.x.
+**Prerequisites:** PHP 8.4+ with extensions: `pdo_pgsql`, `redis`, `pcntl`, `bcmath`, `gd`, `xml`, `sockets`, **`imap`** (required for email fetching), `zip`, `curl`. PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector), Redis 7+, Node.js 20+, Composer 2.x.
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/your-org/fusterai.git
+git clone https://github.com/aiandautomations/fusterai.git
 cd fusterai
 composer install && npm install
 
@@ -264,16 +270,19 @@ php artisan fusterai:install
 npm run build
 ```
 
+> `fusterai:install` handles migrations, OAuth key generation, storage symlink, and creates your admin account. After it completes, you must set up at least one mailbox (Settings → Mailboxes) before the app is usable.
+
 **Start development services:**
 
 ```bash
-# All-in-one (uses Horizon, Reverb, Vite, and Pail concurrently)
+# All-in-one (uses Horizon, Reverb, Scheduler, Vite, and Pail concurrently)
 composer run dev
 
 # Or separate terminals
 php artisan serve           # → http://localhost:8000
 php artisan horizon         # Queue workers
 php artisan reverb:start    # WebSockets → ws://localhost:8080
+php artisan schedule:work   # Scheduler (email fetch, snooze wake-up, digests)
 npm run dev                 # Vite HMR
 ```
 
@@ -415,9 +424,8 @@ FusterAI exposes a [Model Context Protocol](https://modelcontextprotocol.io) ser
 | `get_conversation(id)` | Full conversation with all threads |
 | `search_conversations(query)` | Semantic search across tickets |
 | `get_customer_history(email)` | All past tickets for a customer |
-| `search_knowledge_base(query)` | RAG search across knowledge bases |
 | `create_note(conv_id, text)` | Add an internal note |
-| `assign_conversation(id, user)` | Assign to an agent |
+| `update_conversation(id, ...)` | Update status, priority, assignee, or tags |
 
 **Connect from Claude Desktop, Cursor, or any MCP client:**
 
@@ -439,7 +447,7 @@ FusterAI exposes a [Model Context Protocol](https://modelcontextprotocol.io) ser
 ### Email
 
 - Per-mailbox IMAP configuration (encrypted at rest with AES-256)
-- Scheduled fetch every minute via `php artisan fetch:emails`
+- Scheduled fetch every minute via `php artisan emails:fetch` (or `schedule:work` runs it automatically)
 - Thread matching via `In-Reply-To` email headers (no duplicate conversations)
 - Per-mailbox dynamic SMTP transport with signatures
 - Auto-reply on new conversations
@@ -450,13 +458,27 @@ Embed on any website with two lines of HTML:
 
 ```html
 <script>
-  window.FusterAIConfig = {
-    workspaceId: 'your-workspace-id',
-    serverUrl: 'https://your-fusterai.com'
+  window.FusterAIChat = {
+    workspaceId: 1,
+    wsKey:       'your-reverb-app-key',
+    wsHost:      'your-fusterai.com',
+    wsPort:      8080,
+    apiBase:     'https://your-fusterai.com'
   };
 </script>
 <script src="https://your-fusterai.com/livechat/widget.js" async></script>
 ```
+
+### WhatsApp
+
+Connect a WhatsApp Business account via the Meta Cloud API:
+
+1. Create a Meta Business App and enable WhatsApp
+2. In FusterAI, create a mailbox with channel type **WhatsApp**
+3. Save your `Phone Number ID`, `Access Token`, and `App Secret` in the mailbox settings
+4. Register the webhook URL shown in settings with Meta (verify token = mailbox webhook token)
+
+Inbound messages are matched to existing open conversations or create a new one. Outbound replies route through `WhatsAppDriver` → Meta Graph API v17.0.
 
 ### REST API
 
@@ -472,7 +494,7 @@ curl -X POST http://localhost:8000/api/conversations \
 
 ### Inbound Webhooks
 
-Accept messages from any platform (Twilio, Stripe, custom systems) via `POST /api/webhooks/inbound` with a workspace webhook token.
+Accept messages from any platform (Twilio, Stripe, custom systems) via `POST /api/webhooks/inbound/{token}` where `{token}` is the mailbox webhook token shown in settings.
 
 ---
 
@@ -491,12 +513,12 @@ Modules/MyModule/
 
 ```php
 // React to events
-Hook::listen('conversation.created', function (Conversation $conv) {
+Hooks::addAction('conversation.created', function (Conversation $conv) {
     // send Slack notification, call external API, etc.
 });
 
 // Modify AI system prompt per-conversation
-Hook::filter('ai.system_prompt', function (string $prompt, Conversation $conv) {
+Hooks::addFilter('ai.system_prompt', function (string $prompt, Conversation $conv) {
     return $prompt . "\n\nAlways respond in the customer's language.";
 });
 ```
@@ -508,10 +530,10 @@ Hook::filter('ai.system_prompt', function (string $prompt, Conversation $conv) {
 <SlotRenderer name="conversation.sidebar.bottom" props={{ conversation }} />
 ```
 
-**Included example modules:**
-- `SatisfactionSurvey` — CSAT survey on conversation close
-- `SlaManager` — SLA policies, breach alerts, pause/resume tracking
-- `ConversationRouting` — round-robin and least-loaded auto-assignment
+**Included modules:**
+- `SatisfactionSurvey` — CSAT survey email sent on conversation close; tracks good/bad ratings
+- `SlaManager` — SLA policies per priority, breach notifications, pause/resume on pending
+- `ConversationRouting` — per-mailbox round-robin and least-loaded auto-assignment rules
 
 ---
 
@@ -524,16 +546,15 @@ Auto-generated OpenAPI docs at **`/docs/api`**.
 **Key endpoints:**
 
 ```
-GET    /api/conversations              List conversations (paginated, filterable)
-POST   /api/conversations              Create conversation
-GET    /api/conversations/{id}         Get conversation with threads
-PATCH  /api/conversations/{id}         Update status / priority / assignment
-POST   /api/conversations/{id}/reply   Send a reply
+GET    /api/conversations                    List conversations (paginated, filterable)
+POST   /api/conversations                    Create conversation
+GET    /api/conversations/{id}               Get conversation with threads
+PATCH  /api/conversations/{id}               Update status / priority / assignment
+POST   /api/conversations/{id}/reply         Send a reply
 
-GET    /api/customers                  List customers
-GET    /api/customers/{id}             Customer with conversation history
-
-POST   /api/webhooks/inbound           Process inbound webhook message
+POST   /api/webhooks/inbound/{token}         Process inbound webhook message
+POST   /api/webhooks/whatsapp/{token}        Receive WhatsApp message
+POST   /api/webhooks/bounce/{token}          Handle email bounce notification
 ```
 
 ---
@@ -570,7 +591,7 @@ php artisan queue:flush             # Clear failed jobs
 ### Email Fetching
 
 ```bash
-php artisan fetch:emails            # Manual fetch from all mailboxes
+php artisan emails:fetch            # Manual fetch from all mailboxes
 php artisan schedule:work           # Run scheduler (fetches every minute)
 ```
 
@@ -647,6 +668,41 @@ Detailed guides in the [`docs/`](docs/) folder:
 
 ---
 
+## Troubleshooting
+
+### Emails not arriving or sending
+- **Horizon must be running.** Without it, all background jobs (email fetch, send, AI) are silently queued but never processed.
+- Run `php artisan horizon` (manual) or use `composer run dev` (starts it automatically).
+- Check failed jobs: `php artisan queue:failed`
+
+### Real-time features not working (collision detection, live chat, AI suggestions)
+- Reverb (WebSocket server) must be running: `php artisan reverb:start`
+- `REVERB_APP_KEY` and `REVERB_APP_SECRET` in `.env` must match what the frontend was built with. After changing them, re-run `npm run build`.
+- Verify Reverb is reachable: open browser devtools → Network → WS — you should see a connection to `ws://localhost:8080`.
+
+### Search returns no results
+- If `SCOUT_DRIVER=meilisearch`, MeiliSearch must be running and indexed:
+  ```bash
+  php artisan scout:import "App\Domains\Conversation\Models\Conversation"
+  ```
+- Switch to `SCOUT_DRIVER=database` in `.env` for zero-setup search (slower on large datasets).
+
+### AI features not appearing
+- Add `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) to `.env`.
+- AI features can also be configured via **Settings → AI Config** in the admin panel.
+- Horizon must be running (AI jobs run in the `ai` queue).
+
+### File uploads not working / attachments broken
+- Run `php artisan storage:link` to create the public storage symlink.
+- `fusterai:install` does this automatically; `composer setup` now does too.
+
+### App works but inbox stays empty
+- Set up a mailbox: **Settings → Mailboxes → New Mailbox** with your IMAP credentials.
+- Email fetching runs every minute via the scheduler. Start it with `php artisan schedule:work`.
+- For Docker, the `scheduler` container handles this automatically.
+
+---
+
 ## Contributing
 
 Contributions of all kinds are welcome.
@@ -675,7 +731,6 @@ chore:    maintenance (deps, config, CI)
 
 ### Roadmap
 
-- [ ] WhatsApp Business Cloud API channel
 - [ ] Slack Events API + Bot channel
 - [ ] SMS via Twilio
 - [ ] Multi-language / i18n support

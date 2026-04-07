@@ -7,6 +7,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class RoutingConfig extends Model
 {
@@ -102,11 +103,15 @@ class RoutingConfig extends Model
             return null;
         }
 
-        return $agents->sortBy(function (User $user) {
-            return Conversation::where('workspace_id', $this->workspace_id)
-                ->where('assigned_user_id', $user->id)
-                ->where('status', 'open')
-                ->count();
-        })->first();
+        $agentIds = $agents->pluck('id');
+
+        $openCounts = DB::table('conversations')
+            ->where('workspace_id', $this->workspace_id)
+            ->where('status', 'open')
+            ->whereIn('assigned_user_id', $agentIds)
+            ->groupBy('assigned_user_id')
+            ->pluck(DB::raw('COUNT(*)'), 'assigned_user_id');
+
+        return $agents->sortBy(fn (User $user) => $openCounts->get($user->id, 0))->first();
     }
 }

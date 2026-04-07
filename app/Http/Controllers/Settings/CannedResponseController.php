@@ -90,7 +90,7 @@ class CannedResponseController extends Controller
                 $q->where('name', 'ilike', "%{$query}%")
                   ->orWhere('content', 'ilike', "%{$query}%");
             })
-            ->orderByRaw('mailbox_id IS NULL DESC') // mailbox-specific first
+            ->orderByRaw('mailbox_id IS NULL ASC') // mailbox-specific first
             ->orderBy('name')
             ->limit(8)
             ->get(['id', 'name', 'content', 'mailbox_id']);

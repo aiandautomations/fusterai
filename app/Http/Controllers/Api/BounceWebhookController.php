@@ -7,6 +7,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Receives email bounce notifications from transactional providers.
@@ -36,11 +37,19 @@ class BounceWebhookController extends Controller
 
     private function extractEmail(array $p): string
     {
-        return $p['Recipient']                        // Postmark
+        $email = $p['Recipient']                        // Postmark
             ?? $p['recipient']
-            ?? ($p['event-data']['recipient'] ?? null) // Mailgun
-            ?? ($p['mail']['destination'][0] ?? null)  // SES
-            ?? 'unknown@bounce.local';
+            ?? ($p['event-data']['recipient'] ?? null)  // Mailgun
+            ?? ($p['mail']['destination'][0] ?? null);  // SES
+
+        if ($email === null) {
+            Log::warning('BounceWebhookController: could not extract recipient email from payload', [
+                'payload_keys' => array_keys($p),
+            ]);
+            return 'unknown@bounce.local';
+        }
+
+        return $email;
     }
 
     private function extractBounceType(array $p): string

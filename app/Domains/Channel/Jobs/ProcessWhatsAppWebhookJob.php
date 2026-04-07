@@ -9,6 +9,7 @@ use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\NewThreadReceived;
+use App\Services\AiSettingsService;
 use App\Support\Hooks;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,7 +53,13 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             $body        = $message['text']['body'] ?? ('[' . ($message['type'] ?? 'message') . ']');
             $displayName = $value['contacts'][0]['profile']['name'] ?? $from;
 
-            if (!$from) {
+            if (!$from || !$messageId) {
+                return;
+            }
+
+            // Deduplicate — Meta retries webhooks on failure; skip if already processed
+            if (Thread::whereJsonContains('meta->whatsapp_message_id', $messageId)->exists()) {
+                Log::info('ProcessWhatsAppWebhookJob: duplicate message, skipping.', ['message_id' => $messageId]);
                 return;
             }
 
@@ -101,9 +108,14 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
 
             broadcast(new NewThreadReceived($thread));
 
-            // Trigger AI jobs
-            GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
-            CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
+            // Trigger AI jobs — respect workspace feature flags
+            $ai = app(AiSettingsService::class);
+            if ($ai->isFeatureEnabled($this->mailbox->workspace_id, 'reply_suggestions')) {
+                GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
+            }
+            if ($ai->isFeatureEnabled($this->mailbox->workspace_id, 'auto_categorization') && $conversation->wasRecentlyCreated) {
+                CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
+            }
         } catch (\Throwable $e) {
             Log::error('ProcessWhatsAppWebhookJob failed', [
                 'mailbox_id' => $this->mailbox->id,
