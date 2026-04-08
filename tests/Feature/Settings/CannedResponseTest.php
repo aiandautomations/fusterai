@@ -72,3 +72,48 @@ test('agent cannot delete a canned response from another workspace', function ()
 
     expect(CannedResponse::find($response->id))->not->toBeNull();
 });
+
+// ── index ──────────────────────────────────────────────────────────────────────
+
+test('agent can view the canned responses settings page', function () {
+    $this->actingAs($this->user)
+        ->get('/settings/canned-responses')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('Settings/CannedResponses'));
+});
+
+// ── search ─────────────────────────────────────────────────────────────────────
+
+test('search returns matching canned responses', function () {
+    CannedResponse::create([
+        'workspace_id' => $this->workspace->id,
+        'name'         => 'Shipping delay',
+        'content'      => 'We apologise for the delay.',
+    ]);
+
+    $this->actingAs($this->user)
+        ->getJson('/canned-responses/search?q=shipping')
+        ->assertOk()
+        ->assertJsonCount(1);
+});
+
+test('search returns mailbox-specific and workspace-wide responses', function () {
+    CannedResponse::create(['workspace_id' => $this->workspace->id, 'name' => 'Global reply', 'content' => 'Hi']);
+    CannedResponse::create(['workspace_id' => $this->workspace->id, 'mailbox_id' => $this->mailbox->id, 'name' => 'Mailbox reply', 'content' => 'Hi from mailbox']);
+
+    $response = $this->actingAs($this->user)
+        ->getJson("/canned-responses/search?q=reply&mailbox_id={$this->mailbox->id}")
+        ->assertOk();
+
+    expect(count($response->json()))->toBe(2);
+});
+
+test('search results are scoped to workspace', function () {
+    $other = Workspace::factory()->create();
+    CannedResponse::create(['workspace_id' => $other->id, 'name' => 'Secret', 'content' => 'Top secret reply']);
+
+    $this->actingAs($this->user)
+        ->getJson('/canned-responses/search?q=secret')
+        ->assertOk()
+        ->assertJsonCount(0);
+});
