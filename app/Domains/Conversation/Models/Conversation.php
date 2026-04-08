@@ -4,6 +4,7 @@ namespace App\Domains\Conversation\Models;
 
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
 use Database\Factories\ConversationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,6 +68,8 @@ class Conversation extends Model
     ];
 
     protected $casts = [
+        'status'        => ConversationStatus::class,
+        'priority'      => ConversationPriority::class,
         'ai_tags'       => 'array',
         'last_reply_at' => 'datetime',
         'snoozed_until' => 'datetime',

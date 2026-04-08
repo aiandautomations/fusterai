@@ -44,8 +44,8 @@ test('agent can bulk change priority', function () {
         ->assertOk()
         ->assertJson(['updated' => 2]);
 
-    expect($this->conv1->fresh()->priority)->toBe('urgent');
-    expect($this->conv2->fresh()->priority)->toBe('urgent');
+    expect($this->conv1->fresh()->priority->value)->toBe('urgent');
+    expect($this->conv2->fresh()->priority->value)->toBe('urgent');
 });
 
 test('bulk priority requires a valid priority value', function () {
@@ -76,7 +76,7 @@ test('bulk priority cannot affect conversations from other workspaces', function
         ->assertOk()
         ->assertJson(['updated' => 0]);
 
-    expect($otherConv->fresh()->priority)->toBe('low');
+    expect($otherConv->fresh()->priority->value)->toBe('low');
 });
 
 // ── Bulk assign to any agent ──────────────────────────────────────────────────

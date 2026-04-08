@@ -46,7 +46,7 @@ test('CategorizeConversationJob sets priority and tags using faked agent', funct
 
     (new CategorizeConversationJob($this->conversation))->handle();
 
-    expect($this->conversation->fresh()->priority)->toBe('high');
+    expect($this->conversation->fresh()->priority->value)->toBe('high');
     CategorizationAgent::assertPrompted(fn ($prompt) => true);
 });
 

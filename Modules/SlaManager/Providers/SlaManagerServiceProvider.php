@@ -3,6 +3,8 @@
 namespace Modules\SlaManager\Providers;
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Enums\ConversationStatus;
+use App\Enums\ThreadType;
 use App\Support\Hooks;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
@@ -40,16 +42,16 @@ class SlaManagerServiceProvider extends ServiceProvider
                 return;
             }
 
-            if ($conversation->status === 'pending') {
+            if ($conversation->status === ConversationStatus::Pending) {
                 $status->pause();
-            } elseif (in_array($conversation->status, ['open']) && $status->isPaused()) {
+            } elseif ($conversation->status === ConversationStatus::Open && $status->isPaused()) {
                 $status->resume();
             }
         });
 
         // ── Mark first response achieved when agent sends a reply ─────────────
         Hooks::addAction('thread.created', function ($thread) {
-            if (! $thread->user_id || $thread->type !== 'message') {
+            if (! $thread->user_id || $thread->type !== ThreadType::Message) {
                 return;
             }
 
@@ -60,7 +62,7 @@ class SlaManagerServiceProvider extends ServiceProvider
 
         // ── Mark resolved when conversation is closed ─────────────────────────
         Hooks::addAction('conversation.updated', function (Conversation $conversation) {
-            if ($conversation->wasChanged('status') && $conversation->status === 'closed') {
+            if ($conversation->wasChanged('status') && $conversation->status === ConversationStatus::Closed) {
                 SlaStatus::where('conversation_id', $conversation->id)
                     ->whereNull('resolved_at')
                     ->update(['resolved_at' => now(), 'paused_at' => null]);

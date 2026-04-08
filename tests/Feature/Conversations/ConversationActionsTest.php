@@ -110,7 +110,7 @@ test('bulk action cannot close conversations from another workspace', function (
         ->assertOk();
 
     // Conversation from another workspace must remain untouched
-    expect($otherConv->fresh()->status)->toBe('open');
+    expect($otherConv->fresh()->status->value)->toBe('open');
 });
 
 test('bulk action only affects conversations within the same workspace', function () {
@@ -129,6 +129,6 @@ test('bulk action only affects conversations within the same workspace', functio
         ])
         ->assertOk();
 
-    expect($this->conv->fresh()->status)->toBe('closed');
-    expect($otherConv->fresh()->status)->toBe('open');
+    expect($this->conv->fresh()->status->value)->toBe('closed');
+    expect($otherConv->fresh()->status->value)->toBe('open');
 });

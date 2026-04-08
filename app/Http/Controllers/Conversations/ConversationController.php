@@ -230,16 +230,16 @@ class ConversationController extends Controller
         $request->validate(['status' => ['required', Rule::enum(ConversationStatus::class)]]);
 
         $oldStatus = $conversation->status;
-        $newStatus = $request->status;
+        $newStatus = ConversationStatus::from($request->status);
         $conversation->update(['status' => $newStatus]);
 
         // Block the customer when marked spam so future emails skip auto-reply and
         // are auto-marked spam. Unblock if the conversation is reopened/closed.
         $customer = $conversation->customer;
         if ($customer) {
-            if ($newStatus === 'spam') {
+            if ($newStatus === ConversationStatus::Spam) {
                 $customer->update(['is_blocked' => true]);
-            } elseif ($oldStatus === 'spam') {
+            } elseif ($oldStatus === ConversationStatus::Spam) {
                 $customer->update(['is_blocked' => false]);
             }
         }
@@ -249,13 +249,13 @@ class ConversationController extends Controller
             'user_id' => $request->user()->id,
             'type'    => 'activity',
             'source'  => 'web',
-            'body'    => "{$actor} changed status from <strong>" . Conversation::statusLabel($oldStatus) . "</strong> to <strong>" . Conversation::statusLabel($newStatus) . "</strong>",
+            'body'    => "{$actor} changed status from <strong>{$oldStatus->label()}</strong> to <strong>{$newStatus->label()}</strong>",
         ]);
 
         Hooks::doAction('conversation.updated', $conversation->fresh());
         broadcast(new ConversationUpdated($conversation));
 
-        if ($newStatus === 'closed') {
+        if ($newStatus === ConversationStatus::Closed) {
             Hooks::doAction('conversation.closed', $conversation);
             RunAutomationRulesJob::dispatch('conversation.closed', $conversation);
         }
@@ -321,14 +321,14 @@ class ConversationController extends Controller
         $request->validate(['priority' => ['required', Rule::enum(ConversationPriority::class)]]);
 
         $oldPriority = $conversation->priority;
-        $newPriority = $request->priority;
+        $newPriority = ConversationPriority::from($request->priority);
         $conversation->update(['priority' => $newPriority]);
 
         $conversation->threads()->create([
             'user_id' => $request->user()->id,
             'type'    => 'activity',
             'source'  => 'web',
-            'body'    => "{$request->user()->name} changed priority from <strong>" . ucfirst($oldPriority) . "</strong> to <strong>" . ucfirst($newPriority) . "</strong>",
+            'body'    => "{$request->user()->name} changed priority from <strong>{$oldPriority->label()}</strong> to <strong>{$newPriority->label()}</strong>",
         ]);
 
         Hooks::doAction('conversation.updated', $conversation->fresh());

@@ -123,3 +123,112 @@ test('can update conversation status via API', function () {
         ->assertOk()
         ->assertJsonPath('status', 'closed');
 });
+
+// ── Enum validation boundaries ────────────────────────────────────────────────
+
+test('list rejects invalid status filter', function () {
+    Passport::actingAs($this->user);
+
+    $this->getJson('/api/conversations?status=invalid')
+        ->assertUnprocessable();
+});
+
+test('list rejects invalid priority filter', function () {
+    Passport::actingAs($this->user);
+
+    $this->getJson('/api/conversations?priority=critical')
+        ->assertUnprocessable();
+});
+
+test('create rejects invalid status', function () {
+    Passport::actingAs($this->user);
+
+    $this->postJson('/api/conversations', [
+        'subject'        => 'Test',
+        'customer_email' => 'test@example.com',
+        'body'           => 'Hello',
+        'status'         => 'invalid',
+    ])->assertUnprocessable();
+});
+
+test('create rejects invalid priority', function () {
+    Passport::actingAs($this->user);
+
+    $this->postJson('/api/conversations', [
+        'subject'        => 'Test',
+        'customer_email' => 'test@example.com',
+        'body'           => 'Hello',
+        'priority'       => 'critical',
+    ])->assertUnprocessable();
+});
+
+test('update rejects invalid status', function () {
+    $conversation = Conversation::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'mailbox_id'   => $this->mailbox->id,
+        'status'       => 'open',
+    ]);
+
+    Passport::actingAs($this->user);
+
+    $this->patchJson("/api/conversations/{$conversation->id}", ['status' => 'invalid'])
+        ->assertUnprocessable();
+
+    expect($conversation->fresh()->status->value)->toBe('open');
+});
+
+test('update rejects invalid priority', function () {
+    $conversation = Conversation::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'mailbox_id'   => $this->mailbox->id,
+        'priority'     => 'normal',
+    ]);
+
+    Passport::actingAs($this->user);
+
+    $this->patchJson("/api/conversations/{$conversation->id}", ['priority' => 'critical'])
+        ->assertUnprocessable();
+
+    expect($conversation->fresh()->priority->value)->toBe('normal');
+});
+
+test('can filter api conversations by priority', function () {
+    Conversation::factory()->create(['workspace_id' => $this->workspace->id, 'mailbox_id' => $this->mailbox->id, 'priority' => 'urgent']);
+    Conversation::factory()->create(['workspace_id' => $this->workspace->id, 'mailbox_id' => $this->mailbox->id, 'priority' => 'low']);
+
+    Passport::actingAs($this->user);
+
+    $response = $this->getJson('/api/conversations?priority=urgent')->assertOk();
+    expect($response->json('total'))->toBe(1);
+    expect($response->json('data.0.priority'))->toBe('urgent');
+});
+
+test('create accepts all valid statuses', function () {
+    Passport::actingAs($this->user);
+
+    foreach (['open', 'pending', 'closed', 'spam'] as $status) {
+        $response = $this->postJson('/api/conversations', [
+            'subject'        => "Test {$status}",
+            'customer_email' => "{$status}@example.com",
+            'body'           => 'Hello',
+            'status'         => $status,
+        ])->assertCreated();
+
+        expect($response->json('status'))->toBe($status);
+    }
+});
+
+test('create accepts all valid priorities', function () {
+    Passport::actingAs($this->user);
+
+    foreach (['low', 'normal', 'high', 'urgent'] as $priority) {
+        $response = $this->postJson('/api/conversations', [
+            'subject'        => "Test {$priority}",
+            'customer_email' => "{$priority}@example.com",
+            'body'           => 'Hello',
+            'priority'       => $priority,
+        ])->assertCreated();
+
+        expect($response->json('priority'))->toBe($priority);
+    }
+});

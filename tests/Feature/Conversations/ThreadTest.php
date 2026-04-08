@@ -54,3 +54,56 @@ test('reply body is required', function () {
         ])
         ->assertSessionHasErrors('body');
 });
+
+test('thread type must be message or note', function () {
+    $this->actingAs($this->user)
+        ->post("/conversations/{$this->conversation->id}/threads", [
+            'body' => 'Hello',
+            'type' => 'activity',   // agents cannot post activity threads directly
+        ])
+        ->assertSessionHasErrors('type');
+});
+
+test('thread type rejects arbitrary strings', function () {
+    $this->actingAs($this->user)
+        ->post("/conversations/{$this->conversation->id}/threads", [
+            'body' => 'Hello',
+            'type' => 'ai_suggestion',
+        ])
+        ->assertSessionHasErrors('type');
+});
+
+test('reply creates a thread with correct type', function () {
+    Queue::fake();
+
+    $this->actingAs($this->user)
+        ->post("/conversations/{$this->conversation->id}/threads", [
+            'body' => '<p>Test reply</p>',
+            'type' => 'message',
+        ])
+        ->assertRedirect();
+
+    $thread = \App\Domains\Conversation\Models\Thread::where('conversation_id', $this->conversation->id)
+        ->latest()
+        ->first();
+
+    expect($thread->type->value)->toBe('message');
+    expect($thread->user_id)->toBe($this->user->id);
+});
+
+test('note creates a thread with note type', function () {
+    $this->actingAs($this->user)
+        ->post("/conversations/{$this->conversation->id}/threads", [
+            'body' => '<p>Internal note</p>',
+            'type' => 'note',
+        ])
+        ->assertRedirect();
+
+    $thread = \App\Domains\Conversation\Models\Thread::where('conversation_id', $this->conversation->id)
+        ->where('type', 'note')
+        ->latest()
+        ->first();
+
+    expect($thread)->not->toBeNull();
+    expect($thread->customer_id)->toBeNull();
+});

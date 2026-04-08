@@ -91,7 +91,7 @@ test('RunAutomationRulesJob applies matching actions', function () {
 
     (new RunAutomationRulesJob('conversation.created', $conversation))->handle();
 
-    expect($conversation->fresh()->priority)->toBe('urgent');
+    expect($conversation->fresh()->priority->value)->toBe('urgent');
 });
 
 test('RunAutomationRulesJob skips rules that do not match conditions', function () {
@@ -116,5 +116,5 @@ test('RunAutomationRulesJob skips rules that do not match conditions', function 
 
     (new RunAutomationRulesJob('conversation.created', $conversation))->handle();
 
-    expect($conversation->fresh()->priority)->toBe('normal');
+    expect($conversation->fresh()->priority->value)->toBe('normal');
 });

@@ -3,6 +3,7 @@
 namespace App\Domains\Conversation\Models;
 
 use App\Domains\Customer\Models\Customer;
+use App\Enums\ThreadType;
 use Database\Factories\ThreadFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,6 +43,7 @@ class Thread extends Model
     ];
 
     protected $casts = [
+        'type' => ThreadType::class,
         'meta' => 'array',
     ];
 
@@ -80,12 +82,12 @@ class Thread extends Model
 
     public function isNote(): bool
     {
-        return $this->type === 'note';
+        return $this->type === ThreadType::Note;
     }
 
     public function isMessage(): bool
     {
-        return $this->type === 'message';
+        return $this->type === ThreadType::Message;
     }
 
     public function author(): \App\Models\User|Customer|null
