@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Reports;
 use App\Domains\Conversation\Models\Conversation;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportsController extends Controller
 {
@@ -19,11 +20,21 @@ class ReportsController extends Controller
 
         $base = Conversation::where('workspace_id', $workspaceId);
 
+        $counts = DB::table('conversations')
+            ->where('workspace_id', $workspaceId)
+            ->selectRaw("
+                COUNT(*) as total,
+                COUNT(CASE WHEN status = 'open'    THEN 1 END) as open,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'closed'  THEN 1 END) as closed
+            ")
+            ->first();
+
         $stats = [
-            'total'   => (clone $base)->count(),
-            'open'    => (clone $base)->where('status', 'open')->count(),
-            'pending' => (clone $base)->where('status', 'pending')->count(),
-            'closed'  => (clone $base)->where('status', 'closed')->count(),
+            'total'   => $counts->total,
+            'open'    => $counts->open,
+            'pending' => $counts->pending,
+            'closed'  => $counts->closed,
 
             'trend' => (clone $base)
                 ->where('created_at', '>=', $since)

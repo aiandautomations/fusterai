@@ -57,7 +57,6 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
     const [aiSuggestion, setAiSuggestion] = useState<string | null>(
         conversation.aiSuggestions?.[0]?.content ?? null,
     );
-    const [replyType, setReplyType] = useState<'message' | 'note'>('message');
     const editorFocusRef = useRef<(() => void) | null>(null);
     const [isRequestingAi, setIsRequestingAi] = useState(false);
     const [viewers, setViewers] = useState<{ id: number; name: string }[]>([]);
@@ -74,12 +73,10 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         conversationId: conversation.id,
         status: conversation.status,
         onFocusReply: () => {
-            setReplyType('message');
             setData('type', 'message');
             setTimeout(() => editorFocusRef.current?.(), 50);
         },
         onFocusNote: () => {
-            setReplyType('note');
             setData('type', 'note');
             setTimeout(() => editorFocusRef.current?.(), 50);
         },
@@ -302,10 +299,10 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                             {(['message', 'note'] as const).map((t) => (
                                 <button
                                     key={t}
-                                    onClick={() => { setReplyType(t); setData('type', t); }}
+                                    onClick={() => setData('type', t)}
                                     className={cn(
                                         'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
-                                        replyType === t
+                                        data.type === t
                                             ? t === 'message'
                                                 ? 'bg-primary/10 text-primary'
                                                 : 'bg-warning/10 text-warning'
@@ -325,15 +322,15 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                         </div>
 
                         <form onSubmit={submitReply}>
-                            <div className={cn(replyType === 'note' && '[&_.ProseMirror]:bg-warning/10')}>
+                            <div className={cn(data.type === 'note' && '[&_.ProseMirror]:bg-warning/10')}>
                                 <RichTextEditor
                                     value={data.body}
                                     onChange={(html) => setData('body', html)}
-                                    placeholder={replyType === 'message' ? 'Write your reply…' : 'Write an internal note… (type @ to mention an agent)'}
+                                    placeholder={data.type === 'message' ? 'Write your reply…' : 'Write an internal note… (type @ to mention an agent)'}
                                     minHeight="100px"
                                     mailboxId={conversation.mailbox_id}
                                     agents={agents}
-                                    enableMentions={replyType === 'note'}
+                                    enableMentions={data.type === 'note'}
                                     onEditorReady={(editor) => {
                                         editorFocusRef.current = () => editor.commands.focus();
                                     }}
@@ -354,7 +351,7 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                 </Button>
                                 <Button type="submit" size="sm" className="h-8" disabled={processing}>
                                     <SendIcon className="h-3.5 w-3.5 mr-1.5" />
-                                    {replyType === 'message' ? 'Send Reply' : 'Add Note'}
+                                    {data.type === 'message' ? 'Send Reply' : 'Add Note'}
                                 </Button>
                             </div>
                         </form>

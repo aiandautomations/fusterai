@@ -30,7 +30,7 @@ class SendReplyJob implements ShouldQueue
     public function handle(): void
     {
         $conversation = $this->conversation->load(['mailbox', 'customer', 'threads']);
-        $this->thread->loadMissing('user');
+        $this->thread->loadMissing(['user', 'attachments']);
         $mailbox      = $conversation->mailbox;
         $customer     = $conversation->customer;
 
