@@ -16,6 +16,7 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
+ * @property bool $is_unread
  * @property-read \App\Domains\Mailbox\Models\Mailbox|null $mailbox
  * @property-read \App\Domains\Customer\Models\Customer|null $customer
  * @property-read \App\Models\User|null $assignedUser
