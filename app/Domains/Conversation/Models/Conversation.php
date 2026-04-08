@@ -4,6 +4,7 @@ namespace App\Domains\Conversation\Models;
 
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Enums\ConversationStatus;
 use Database\Factories\ConversationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,13 +25,11 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Conversation extends Model
 {
-    /** Human-readable labels for each status value. Used in activity log messages. */
-    public const STATUS_LABELS = [
-        'open'    => 'Open',
-        'pending' => 'Pending',
-        'closed'  => 'Closed',
-        'spam'    => 'Spam',
-    ];
+    /** Return a human-readable label for a raw status string. */
+    public static function statusLabel(string $status): string
+    {
+        return ConversationStatus::tryFrom($status)?->label() ?? ucfirst($status);
+    }
 
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;

@@ -6,6 +6,8 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
+use App\Enums\ConversationPriority;
+use App\Enums\ConversationStatus;
 use App\Events\ConversationUpdated;
 use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
@@ -40,9 +42,9 @@ class ConversationApiController extends Controller
         $user = $request->user();
 
         $filters = $request->validate([
-            'status'           => 'nullable|in:open,pending,closed,spam',
+            'status'           => ['nullable', Rule::enum(ConversationStatus::class)],
             'mailbox_id'       => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $user->workspace_id)],
-            'priority'         => 'nullable|in:low,normal,high,urgent',
+            'priority'         => ['nullable', Rule::enum(ConversationPriority::class)],
             'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $user->workspace_id)],
             'per_page'         => 'nullable|integer|min:1|max:100',
         ]);
@@ -116,8 +118,8 @@ class ConversationApiController extends Controller
             'customer_name'  => 'nullable|string|max:255',
             'body'           => 'required|string',
             'mailbox_id'     => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $user->workspace_id)],
-            'priority'       => 'nullable|in:low,normal,high,urgent',
-            'status'         => 'nullable|in:open,pending,closed',
+            'priority'       => ['nullable', Rule::enum(ConversationPriority::class)],
+            'status'         => ['nullable', Rule::enum(ConversationStatus::class)],
         ]);
 
         [$conversation, $thread] = DB::transaction(function () use ($user, $validated) {
@@ -175,8 +177,8 @@ class ConversationApiController extends Controller
         }
 
         $validated = $request->validate([
-            'status'           => 'nullable|in:open,pending,closed,spam',
-            'priority'         => 'nullable|in:low,normal,high,urgent',
+            'status'           => ['nullable', Rule::enum(ConversationStatus::class)],
+            'priority'         => ['nullable', Rule::enum(ConversationPriority::class)],
             'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 

@@ -6,6 +6,8 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Folder;
 use App\Domains\Conversation\Models\Tag;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Enums\ConversationPriority;
+use App\Enums\ConversationStatus;
 use App\Events\ConversationUpdated;
 use App\Http\Controllers\Controller;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
@@ -26,8 +28,8 @@ class ConversationController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'status'    => 'nullable|in:open,pending,closed,spam,snoozed',
-            'priority'  => 'nullable|in:low,normal,high,urgent',
+            'status'    => ['nullable', Rule::in([...array_column(ConversationStatus::cases(), 'value'), 'snoozed'])],
+            'priority'  => ['nullable', Rule::enum(ConversationPriority::class)],
             'mailbox'   => 'nullable|integer',
             'assigned'  => 'nullable|in:me,none,all',
             'tag'       => 'nullable|integer',
@@ -225,7 +227,7 @@ class ConversationController extends Controller
     public function updateStatus(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['status' => ['required', 'in:open,pending,closed,spam']]);
+        $request->validate(['status' => ['required', Rule::enum(ConversationStatus::class)]]);
 
         $oldStatus = $conversation->status;
         $newStatus = $request->status;
@@ -242,13 +244,12 @@ class ConversationController extends Controller
             }
         }
 
-        $labels = Conversation::STATUS_LABELS;
         $actor  = $request->user()->name;
         $conversation->threads()->create([
             'user_id' => $request->user()->id,
             'type'    => 'activity',
             'source'  => 'web',
-            'body'    => "{$actor} changed status from <strong>{$labels[$oldStatus]}</strong> to <strong>{$labels[$newStatus]}</strong>",
+            'body'    => "{$actor} changed status from <strong>" . Conversation::statusLabel($oldStatus) . "</strong> to <strong>" . Conversation::statusLabel($newStatus) . "</strong>",
         ]);
 
         Hooks::doAction('conversation.updated', $conversation->fresh());
@@ -317,7 +318,7 @@ class ConversationController extends Controller
     public function updatePriority(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['priority' => ['required', 'in:low,normal,high,urgent']]);
+        $request->validate(['priority' => ['required', Rule::enum(ConversationPriority::class)]]);
 
         $oldPriority = $conversation->priority;
         $newPriority = $request->priority;
@@ -472,7 +473,7 @@ class ConversationController extends Controller
             'action'      => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
             'snooze_until'=> ['nullable', 'date', 'after:now'],
-            'priority'    => ['nullable', 'in:low,normal,high,urgent'],
+            'priority'    => ['nullable', Rule::enum(ConversationPriority::class)],
         ]);
 
         // Scope all IDs to the workspace — prevents cross-workspace access

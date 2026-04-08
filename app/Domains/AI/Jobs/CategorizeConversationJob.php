@@ -5,6 +5,7 @@ namespace App\Domains\AI\Jobs;
 use App\Ai\Agents\CategorizationAgent;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Tag;
+use App\Enums\ConversationPriority;
 use App\Services\AiSettingsService;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 use Illuminate\Bus\Queueable;
@@ -49,7 +50,7 @@ class CategorizeConversationJob implements ShouldQueue
             $data = $response->toArray();
 
             // Update priority
-            if (!empty($data['priority']) && in_array($data['priority'], ['low', 'normal', 'high', 'urgent'])) {
+            if (!empty($data['priority']) && ConversationPriority::tryFrom($data['priority']) !== null) {
                 $conversation->update(['priority' => $data['priority']]);
             }
 

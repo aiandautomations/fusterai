@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Conversations;
 use App\Domains\Conversation\Jobs\SendReplyJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
+use App\Enums\ThreadType;
 use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
 use App\Models\ConversationRead;
@@ -14,6 +15,7 @@ use App\Notifications\NewCustomerReplyNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 
 class ThreadController extends Controller
 {
@@ -23,7 +25,7 @@ class ThreadController extends Controller
 
         $validated = $request->validate([
             'body'            => ['required', 'string', 'max:50000'],
-            'type'            => ['required', 'in:message,note'],
+            'type'            => ['required', Rule::in([ThreadType::Message->value, ThreadType::Note->value])],
             'attachments'     => ['nullable', 'array'],
             'attachments.*'   => ['file', 'max:20480'],
         ]);
