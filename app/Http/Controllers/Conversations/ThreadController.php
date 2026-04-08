@@ -13,6 +13,7 @@ use App\Notifications\ConversationFollowerNotification;
 use App\Notifications\NewCustomerReplyNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class ThreadController extends Controller
 {
@@ -78,9 +79,8 @@ class ThreadController extends Controller
 
             // Notify followers (excluding the sender and the assigned agent, who already got notified)
             $notifiedIds = array_filter([$request->user()->id, $assignedUserId]);
-            $conversation->followers()
-                ->whereNotIn('users.id', $notifiedIds)
-                ->each(fn ($follower) => $follower->notify(new ConversationFollowerNotification($conversation, $thread)));
+            $followers = $conversation->followers()->whereNotIn('users.id', $notifiedIds)->get();
+            Notification::send($followers, new ConversationFollowerNotification($conversation, $thread));
         }
 
         // Notify @mentioned agents in notes
@@ -101,11 +101,10 @@ class ThreadController extends Controller
             return;
         }
 
-        \App\Models\User::where('workspace_id', $conversation->workspace_id)
+        $mentioned = \App\Models\User::where('workspace_id', $conversation->workspace_id)
             ->whereIn('id', $mentionedIds)
             ->where('id', '!=', $sender->id)
-            ->each(fn (\App\Models\User $user) =>
-                $user->notify(new AgentMentionedNotification($conversation, $thread, $sender->name))
-            );
+            ->get();
+        Notification::send($mentioned, new AgentMentionedNotification($conversation, $thread, $sender->name));
     }
 }

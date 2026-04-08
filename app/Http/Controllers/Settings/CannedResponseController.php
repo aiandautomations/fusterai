@@ -49,7 +49,7 @@ class CannedResponseController extends Controller
 
     public function update(Request $request, CannedResponse $cannedResponse)
     {
-        abort_if($cannedResponse->workspace_id !== $request->user()->workspace_id, 403);
+        $this->authorize('update', $cannedResponse);
 
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:100'],
@@ -64,7 +64,7 @@ class CannedResponseController extends Controller
 
     public function destroy(Request $request, CannedResponse $cannedResponse)
     {
-        abort_if($cannedResponse->workspace_id !== $request->user()->workspace_id, 403);
+        $this->authorize('delete', $cannedResponse);
         $cannedResponse->delete();
 
         return back()->with('success', 'Canned response deleted.');

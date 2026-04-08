@@ -78,12 +78,13 @@ export default function NotificationBell() {
 
     // Real-time: listen for new notifications via Reverb
     useEffect(() => {
-        const ch = window.Echo?.private(`App.Models.User.${auth.user?.id}`);
+        const channelName = `App.Models.User.${auth.user?.id}`;
+        const ch = window.Echo?.private(channelName);
         ch?.notification((notification: AppNotification) => {
             setUnreadCount((c) => c + 1);
             setNotifications((prev) => [notification, ...prev]);
         });
-        return () => ch?.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated');
+        return () => window.Echo?.leave(channelName);
     }, [auth.user?.id]);
 
     // Close on outside click

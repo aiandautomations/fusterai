@@ -8,8 +8,10 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Folder;
 use App\Domains\Conversation\Models\Tag;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Models\CannedResponse;
 use App\Models\User;
 use App\Policies\AutomationRulePolicy;
+use App\Policies\CannedResponsePolicy;
 use App\Policies\ConversationPolicy;
 use App\Policies\FolderPolicy;
 use App\Policies\KnowledgeBasePolicy;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AutomationRule::class, AutomationRulePolicy::class);
         Gate::policy(Tag::class,            TagPolicy::class);
         Gate::policy(User::class,           UserPolicy::class);
+        Gate::policy(CannedResponse::class, CannedResponsePolicy::class);
 
         // ── Gates for non-model authorization ────────────────────────────────────
         // Reports has no model — gate is the right tool here
