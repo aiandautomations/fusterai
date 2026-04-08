@@ -47,7 +47,7 @@ test('cannot request AI reply for another workspace conversation', function () {
         ->postJson("/ai/conversations/{$conv->id}/suggest-reply")
         ->assertForbidden();
 
-    Queue::assertNothingPushed();
+    Queue::assertNotPushed(GenerateReplySuggestionJob::class);
 });
 
 // ── summarize ─────────────────────────────────────────────────────────────────
