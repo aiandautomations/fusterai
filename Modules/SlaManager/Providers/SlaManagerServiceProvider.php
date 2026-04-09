@@ -23,26 +23,27 @@ class SlaManagerServiceProvider extends ServiceProvider
             $this->attachSla($conversation);
         });
 
-        // ── Re-attach SLA if priority changes ────────────────────────────────
+        // ── Handle priority and status changes ───────────────────────────────
         Hooks::addAction('conversation.updated', function (Conversation $conversation) {
             if ($conversation->wasChanged('priority')) {
                 $this->attachSla($conversation, reattach: true);
             }
-        });
 
-        // ── Pause SLA when conversation is set to pending ─────────────────────
-        // (waiting for customer response — clock should not tick)
-        Hooks::addAction('conversation.updated', function (Conversation $conversation) {
             if (! $conversation->wasChanged('status')) {
                 return;
             }
 
+            // Load SlaStatus once to handle both pause/resume and resolution
             $status = SlaStatus::where('conversation_id', $conversation->id)->first();
             if (! $status) {
                 return;
             }
 
-            if ($conversation->status === ConversationStatus::Pending) {
+            if ($conversation->status === ConversationStatus::Closed) {
+                if (! $status->resolved_at) {
+                    $status->update(['resolved_at' => now(), 'paused_at' => null]);
+                }
+            } elseif ($conversation->status === ConversationStatus::Pending) {
                 $status->pause();
             } elseif ($conversation->status === ConversationStatus::Open && $status->isPaused()) {
                 $status->resume();
@@ -58,15 +59,6 @@ class SlaManagerServiceProvider extends ServiceProvider
             SlaStatus::where('conversation_id', $thread->conversation_id)
                 ->whereNull('first_response_achieved_at')
                 ->update(['first_response_achieved_at' => now()]);
-        });
-
-        // ── Mark resolved when conversation is closed ─────────────────────────
-        Hooks::addAction('conversation.updated', function (Conversation $conversation) {
-            if ($conversation->wasChanged('status') && $conversation->status === ConversationStatus::Closed) {
-                SlaStatus::where('conversation_id', $conversation->id)
-                    ->whereNull('resolved_at')
-                    ->update(['resolved_at' => now(), 'paused_at' => null]);
-            }
         });
 
         // ── Inject SLA data into conversation page props ──────────────────────

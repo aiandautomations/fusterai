@@ -94,15 +94,3 @@ test('ChannelType labels are human readable', function () {
     expect(ChannelType::Sms->label())->toBe('SMS');
 });
 
-// ── Conversation::statusLabel helper ─────────────────────────────────────────
-
-test('Conversation statusLabel returns correct labels', function () {
-    expect(\App\Domains\Conversation\Models\Conversation::statusLabel('open'))->toBe('Open');
-    expect(\App\Domains\Conversation\Models\Conversation::statusLabel('pending'))->toBe('Pending');
-    expect(\App\Domains\Conversation\Models\Conversation::statusLabel('closed'))->toBe('Closed');
-    expect(\App\Domains\Conversation\Models\Conversation::statusLabel('spam'))->toBe('Spam');
-});
-
-test('Conversation statusLabel falls back gracefully for unknown status', function () {
-    expect(\App\Domains\Conversation\Models\Conversation::statusLabel('unknown'))->toBe('Unknown');
-});

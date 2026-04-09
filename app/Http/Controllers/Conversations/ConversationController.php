@@ -230,7 +230,7 @@ class ConversationController extends Controller
         $request->validate(['status' => ['required', Rule::enum(ConversationStatus::class)]]);
 
         $oldStatus = $conversation->status;
-        $newStatus = ConversationStatus::from($request->status);
+        $newStatus = $request->enum('status', ConversationStatus::class);
         $conversation->update(['status' => $newStatus]);
 
         // Block the customer when marked spam so future emails skip auto-reply and
@@ -252,7 +252,8 @@ class ConversationController extends Controller
             'body'    => "{$actor} changed status from <strong>{$oldStatus->label()}</strong> to <strong>{$newStatus->label()}</strong>",
         ]);
 
-        Hooks::doAction('conversation.updated', $conversation->fresh());
+        $conversation->refresh();
+        Hooks::doAction('conversation.updated', $conversation);
         broadcast(new ConversationUpdated($conversation));
 
         if ($newStatus === ConversationStatus::Closed) {
@@ -289,10 +290,11 @@ class ConversationController extends Controller
             'body'    => $body,
         ]);
 
-        Hooks::doAction('conversation.updated', $conversation->fresh());
+        $conversation->refresh();
+        Hooks::doAction('conversation.updated', $conversation);
         broadcast(new ConversationUpdated($conversation));
 
-        $assignee?->notify(new ConversationAssignedNotification($conversation->fresh()));
+        $assignee?->notify(new ConversationAssignedNotification($conversation));
 
         return back();
     }
@@ -321,7 +323,7 @@ class ConversationController extends Controller
         $request->validate(['priority' => ['required', Rule::enum(ConversationPriority::class)]]);
 
         $oldPriority = $conversation->priority;
-        $newPriority = ConversationPriority::from($request->priority);
+        $newPriority = $request->enum('priority', ConversationPriority::class);
         $conversation->update(['priority' => $newPriority]);
 
         $conversation->threads()->create([
@@ -331,7 +333,8 @@ class ConversationController extends Controller
             'body'    => "{$request->user()->name} changed priority from <strong>{$oldPriority->label()}</strong> to <strong>{$newPriority->label()}</strong>",
         ]);
 
-        Hooks::doAction('conversation.updated', $conversation->fresh());
+        $conversation->refresh();
+        Hooks::doAction('conversation.updated', $conversation);
         broadcast(new ConversationUpdated($conversation));
 
         return back();
@@ -499,7 +502,7 @@ class ConversationController extends Controller
             };
 
             if (!in_array($validated['action'], ['mark_read', 'mark_unread'])) {
-                broadcast(new ConversationUpdated($conversation->fresh()));
+                broadcast(new ConversationUpdated($conversation));
             }
         }
 

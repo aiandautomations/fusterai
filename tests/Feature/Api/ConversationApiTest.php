@@ -2,6 +2,8 @@
 
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Enums\ConversationPriority;
+use App\Enums\ConversationStatus;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Event;
@@ -206,7 +208,7 @@ test('can filter api conversations by priority', function () {
 test('create accepts all valid statuses', function () {
     Passport::actingAs($this->user);
 
-    foreach (['open', 'pending', 'closed', 'spam'] as $status) {
+    foreach (array_column(ConversationStatus::cases(), 'value') as $status) {
         $response = $this->postJson('/api/conversations', [
             'subject'        => "Test {$status}",
             'customer_email' => "{$status}@example.com",
@@ -221,7 +223,7 @@ test('create accepts all valid statuses', function () {
 test('create accepts all valid priorities', function () {
     Passport::actingAs($this->user);
 
-    foreach (['low', 'normal', 'high', 'urgent'] as $priority) {
+    foreach (array_column(ConversationPriority::cases(), 'value') as $priority) {
         $response = $this->postJson('/api/conversations', [
             'subject'        => "Test {$priority}",
             'customer_email' => "{$priority}@example.com",

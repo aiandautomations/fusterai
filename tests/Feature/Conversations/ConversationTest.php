@@ -4,14 +4,15 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
-use App\Models\User;
+use App\Enums\ConversationPriority;
+use App\Enums\ConversationStatus;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user      = agentUser($this->workspace);
     $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
     $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 });
@@ -123,7 +124,7 @@ test('updateStatus accepts all valid statuses', function () {
     Queue::fake();
     Event::fake();
 
-    foreach (['pending', 'closed', 'spam', 'open'] as $status) {
+    foreach (array_column(ConversationStatus::cases(), 'value') as $status) {
         $conversation = Conversation::factory()->create([
             'workspace_id' => $this->workspace->id,
             'mailbox_id'   => $this->mailbox->id,
@@ -221,7 +222,7 @@ test('updatePriority accepts all valid priorities', function () {
     Queue::fake();
     Event::fake();
 
-    foreach (['low', 'normal', 'high', 'urgent'] as $priority) {
+    foreach (array_column(ConversationPriority::cases(), 'value') as $priority) {
         $conversation = Conversation::factory()->create([
             'workspace_id' => $this->workspace->id,
             'mailbox_id'   => $this->mailbox->id,

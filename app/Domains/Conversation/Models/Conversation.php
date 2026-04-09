@@ -27,12 +27,6 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Conversation extends Model
 {
-    /** Return a human-readable label for a raw status string. */
-    public static function statusLabel(string $status): string
-    {
-        return ConversationStatus::tryFrom($status)?->label() ?? ucfirst($status);
-    }
-
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
     use Searchable;
