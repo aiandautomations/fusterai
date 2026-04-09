@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Conversations;
 use App\Domains\Conversation\Jobs\SendReplyJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
+use App\Enums\ChannelType;
 use App\Enums\ThreadType;
 use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
@@ -30,7 +31,7 @@ class ThreadController extends Controller
             'attachments.*'   => ['file', 'max:20480'],
         ]);
 
-        $isChat = $conversation->channel_type === 'chat';
+        $isChat = $conversation->channel_type === ChannelType::Chat;
 
         /** @var Thread $thread */
         $thread = $conversation->threads()->create([
@@ -55,7 +56,7 @@ class ThreadController extends Controller
             }
         }
 
-        if ($validated['type'] === 'message') {
+        if ($validated['type'] === ThreadType::Message->value) {
             $conversation->update(['last_reply_at' => now()]);
 
             // Mark conversation as read for the agent who just replied
@@ -86,7 +87,7 @@ class ThreadController extends Controller
         }
 
         // Notify @mentioned agents in notes
-        if ($validated['type'] === 'note') {
+        if ($validated['type'] === ThreadType::Note->value) {
             $this->notifyMentions($thread, $conversation, $request->user());
         }
 

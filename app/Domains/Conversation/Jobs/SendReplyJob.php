@@ -4,6 +4,7 @@ namespace App\Domains\Conversation\Jobs;
 
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
+use App\Enums\ChannelType;
 use App\Events\NewThreadReceived;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,7 +36,7 @@ class SendReplyJob implements ShouldQueue
         $customer     = $conversation->customer;
 
         // Route to correct channel driver
-        if ($conversation->channel_type === 'whatsapp') {
+        if ($conversation->channel_type === ChannelType::WhatsApp) {
             app(\App\Domains\Channel\Drivers\WhatsAppDriver::class)->send($this->thread);
             broadcast(new NewThreadReceived($this->thread));
             return;

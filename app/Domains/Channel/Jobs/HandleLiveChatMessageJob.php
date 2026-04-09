@@ -5,6 +5,7 @@ namespace App\Domains\Channel\Jobs;
 use App\Domains\AI\Jobs\GenerateReplySuggestionJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Customer\Models\Customer;
+use App\Enums\ChannelType;
 use App\Events\ConversationUpdated;
 use App\Events\NewThreadReceived;
 use Illuminate\Bus\Queueable;
@@ -45,7 +46,7 @@ class HandleLiveChatMessageJob implements ShouldQueue
         broadcast(new ConversationUpdated($this->conversation->fresh()));
 
         // Skip AI reply suggestions for live chat — agent is present in real-time
-        if (config('ai.features.reply_suggestions', true) && $this->conversation->channel_type !== 'chat') {
+        if (config('ai.features.reply_suggestions', true) && $this->conversation->channel_type !== ChannelType::Chat) {
             GenerateReplySuggestionJob::dispatch($this->conversation)->onQueue('ai');
         }
     }

@@ -4,6 +4,7 @@ namespace App\Domains\Conversation\Models;
 
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Enums\ChannelType;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
 use Database\Factories\ConversationFactory;
@@ -70,6 +71,7 @@ class Conversation extends Model
     protected $casts = [
         'status'        => ConversationStatus::class,
         'priority'      => ConversationPriority::class,
+        'channel_type'  => ChannelType::class,
         'ai_tags'       => 'array',
         'last_reply_at' => 'datetime',
         'snoozed_until' => 'datetime',
@@ -193,12 +195,12 @@ class Conversation extends Model
 
     public function isOpen(): bool
     {
-        return $this->status === 'open';
+        return $this->status === ConversationStatus::Open;
     }
 
     public function isClosed(): bool
     {
-        return $this->status === 'closed';
+        return $this->status === ConversationStatus::Closed;
     }
 
     public function isSnoozed(): bool

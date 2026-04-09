@@ -187,7 +187,7 @@ class ConversationApiController extends Controller
         $fresh = $conversation->fresh();
         Hooks::doAction('conversation.updated', $fresh);
 
-        if (isset($validated['status']) && $validated['status'] === 'closed') {
+        if (isset($validated['status']) && $validated['status'] === ConversationStatus::Closed->value) {
             Hooks::doAction('conversation.closed', $fresh);
             RunAutomationRulesJob::dispatch('conversation.closed', $fresh);
         }
