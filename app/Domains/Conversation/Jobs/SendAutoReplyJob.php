@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Mail\Message;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class SendAutoReplyJob implements ShouldQueue
 {
@@ -39,7 +40,9 @@ class SendAutoReplyJob implements ShouldQueue
         $smtp   = $mailbox->smtp_config;
         $mailer = $smtp ? app(DynamicMailerService::class)->fromSmtpConfig($smtp) : \Illuminate\Support\Facades\Mail::mailer('smtp');
 
-        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $subject, $body) {
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['customer' => $customer->id]);
+
+        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $subject, $body, $unsubscribeUrl) {
             $msg->to($customer->email, $customer->name)
                 ->from($mailbox->email, $mailbox->name)
                 ->subject($subject)
@@ -48,6 +51,15 @@ class SendAutoReplyJob implements ShouldQueue
             $msgId = '<conversation-' . $conversation->id . '@fusterai>';
             $msg->getHeaders()->addTextHeader('Message-ID', $msgId);
             $msg->getHeaders()->addTextHeader('X-FusterAI-AutoReply', '1');
+            $msg->getHeaders()->addTextHeader('List-Unsubscribe', "<{$unsubscribeUrl}>, <mailto:{$mailbox->email}?subject=Unsubscribe>");
+            $msg->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
         });
+
+        // Log so agents can see the auto-reply was sent
+        $conversation->threads()->create([
+            'type'   => 'activity',
+            'source' => 'web',
+            'body'   => 'Auto-reply sent to customer.',
+        ]);
     }
 }

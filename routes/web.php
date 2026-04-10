@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect('/conversations'));
 
+// ── Unsubscribe (public, signed URL) ─────────────────────────────────────────
+Route::get('/unsubscribe/{customer}', [\App\Http\Controllers\UnsubscribeController::class, 'show'])->name('unsubscribe');
+Route::delete('/unsubscribe/{customer}', [\App\Http\Controllers\UnsubscribeController::class, 'destroy'])->name('unsubscribe.destroy');
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 // ── Accept invite ─────────────────────────────────────────────────────────────

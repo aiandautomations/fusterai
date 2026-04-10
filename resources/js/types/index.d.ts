@@ -118,7 +118,7 @@ export interface Thread {
     type: 'message' | 'note' | 'activity' | 'ai_suggestion';
     body: string;
     body_plain?: string;
-    source: 'email' | 'chat' | 'whatsapp' | 'slack' | 'api';
+    source: 'email' | 'web' | 'chat' | 'whatsapp' | 'slack' | 'api';
     meta?: Record<string, unknown>;
     created_at: string;
 

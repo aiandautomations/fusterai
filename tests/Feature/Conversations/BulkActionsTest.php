@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
@@ -173,4 +174,117 @@ test('date_to must be after or equal to date_from', function () {
     $this->actingAs($this->user)
         ->get('/conversations?date_from=2026-04-10&date_to=2026-04-01')
         ->assertSessionHasErrors('date_to');
+});
+
+// ── Bulk activity threads ─────────────────────────────────────────────────────
+
+test('bulk close creates an activity thread for each conversation', function () {
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'    => [$this->conv1->id, $this->conv2->id],
+            'action' => 'close',
+        ])
+        ->assertOk();
+
+    foreach ([$this->conv1, $this->conv2] as $conv) {
+        $activity = Thread::where('conversation_id', $conv->id)
+            ->where('type', 'activity')
+            ->first();
+
+        expect($activity)->not->toBeNull();
+        expect($activity->body)->toContain('closed');
+    }
+});
+
+test('bulk reopen creates an activity thread for each conversation', function () {
+    $this->conv1->update(['status' => 'closed']);
+    $this->conv2->update(['status' => 'closed']);
+
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'    => [$this->conv1->id, $this->conv2->id],
+            'action' => 'reopen',
+        ])
+        ->assertOk();
+
+    foreach ([$this->conv1, $this->conv2] as $conv) {
+        $activity = Thread::where('conversation_id', $conv->id)
+            ->where('type', 'activity')
+            ->first();
+
+        expect($activity)->not->toBeNull();
+        expect($activity->body)->toContain('reopened');
+    }
+});
+
+test('bulk assign creates an activity thread naming the assignee', function () {
+    $other = User::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'role'         => 'agent',
+        'name'         => 'Jane Doe',
+    ]);
+
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'         => [$this->conv1->id],
+            'action'      => 'assign',
+            'assigned_to' => $other->id,
+        ])
+        ->assertOk();
+
+    $activity = Thread::where('conversation_id', $this->conv1->id)
+        ->where('type', 'activity')
+        ->first();
+
+    expect($activity)->not->toBeNull();
+    expect($activity->body)->toContain('Jane Doe');
+});
+
+test('bulk unassign creates an activity thread', function () {
+    $this->conv1->update(['assigned_user_id' => $this->user->id]);
+
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'         => [$this->conv1->id],
+            'action'      => 'assign',
+            'assigned_to' => null,
+        ])
+        ->assertOk();
+
+    $activity = Thread::where('conversation_id', $this->conv1->id)
+        ->where('type', 'activity')
+        ->first();
+
+    expect($activity)->not->toBeNull();
+    expect($activity->body)->toContain('unassigned');
+});
+
+test('bulk spam creates an activity thread', function () {
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'    => [$this->conv1->id],
+            'action' => 'spam',
+        ])
+        ->assertOk();
+
+    $activity = Thread::where('conversation_id', $this->conv1->id)
+        ->where('type', 'activity')
+        ->first();
+
+    expect($activity)->not->toBeNull();
+    expect($activity->body)->toContain('spam');
+});
+
+test('bulk priority does not create activity threads', function () {
+    $this->actingAs($this->user)
+        ->postJson('/conversations/bulk', [
+            'ids'      => [$this->conv1->id],
+            'action'   => 'priority',
+            'priority' => 'urgent',
+        ])
+        ->assertOk();
+
+    expect(
+        Thread::where('conversation_id', $this->conv1->id)->where('type', 'activity')->count()
+    )->toBe(0);
 });

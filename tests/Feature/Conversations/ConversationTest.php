@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Conversation\Jobs\SendReplyJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
@@ -260,4 +261,41 @@ test('changing priority creates an activity thread', function () {
     expect($activity)->not->toBeNull();
     expect($activity->body)->toContain('Low');
     expect($activity->body)->toContain('Urgent');
+});
+
+// ── Outbound conversation ─────────────────────────────────────────────────────
+
+test('creating an outbound conversation dispatches SendReplyJob to email-outbound queue', function () {
+    Queue::fake();
+    Event::fake();
+
+    $this->actingAs($this->user)
+        ->post('/conversations', [
+            'mailbox_id'  => $this->mailbox->id,
+            'customer_id' => $this->customer->id,
+            'subject'     => 'Following up on your account',
+            'body'        => '<p>Hi there, just checking in.</p>',
+        ])
+        ->assertRedirect();
+
+    Queue::assertPushedOn('email-outbound', SendReplyJob::class);
+});
+
+test('creating an outbound conversation also creates a thread', function () {
+    Queue::fake();
+    Event::fake();
+
+    $this->actingAs($this->user)
+        ->post('/conversations', [
+            'mailbox_id'  => $this->mailbox->id,
+            'customer_id' => $this->customer->id,
+            'subject'     => 'Hello',
+            'body'        => '<p>Welcome!</p>',
+        ])
+        ->assertRedirect();
+
+    $conversation = Conversation::where('subject', 'Hello')->first();
+
+    expect($conversation)->not->toBeNull();
+    expect($conversation->threads()->where('type', 'message')->count())->toBe(1);
 });

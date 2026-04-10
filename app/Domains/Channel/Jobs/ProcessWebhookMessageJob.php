@@ -49,16 +49,30 @@ class ProcessWebhookMessageJob implements ShouldQueue
         // Find or create customer by email — consistent with email and API channels
         $customer = Customer::resolveOrCreate($mailbox->workspace_id, $fromEmail, $fromName);
 
-        // Create new conversation
-        $conversation = Conversation::create([
-            'workspace_id'  => $mailbox->workspace_id,
-            'mailbox_id'    => $mailbox->id,
-            'customer_id'   => $customer->id,
-            'subject'       => $subject,
-            'status'        => 'open',
-            'channel_type'  => 'api',
-            'last_reply_at' => now(),
-        ]);
+        // Thread into an existing conversation when conversation_id is provided.
+        // This lets integrations append follow-up messages to an open ticket
+        // rather than always opening a new one.
+        $isNew        = false;
+        $conversation = null;
+
+        if (!empty($payload['conversation_id'])) {
+            $conversation = Conversation::where('workspace_id', $mailbox->workspace_id)
+                ->where('mailbox_id', $mailbox->id)
+                ->find((int) $payload['conversation_id']);
+        }
+
+        if (!$conversation) {
+            $isNew        = true;
+            $conversation = Conversation::create([
+                'workspace_id'  => $mailbox->workspace_id,
+                'mailbox_id'    => $mailbox->id,
+                'customer_id'   => $customer->id,
+                'subject'       => $subject,
+                'status'        => 'open',
+                'channel_type'  => 'api',
+                'last_reply_at' => now(),
+            ]);
+        }
 
         // Create thread
         $thread = $conversation->threads()->create([
@@ -70,12 +84,16 @@ class ProcessWebhookMessageJob implements ShouldQueue
             'meta'        => [
                 'from_email' => $fromEmail,
                 'from_name'  => $fromName,
-                'payload'    => array_diff_key($payload, array_flip(['from_name', 'from_email', 'subject', 'body'])),
+                'payload'    => array_diff_key($payload, array_flip(['from_name', 'from_email', 'subject', 'body', 'conversation_id'])),
             ],
         ]);
 
+        $conversation->update(['status' => 'open', 'last_reply_at' => now()]);
+
         // Fire module hooks
-        Hooks::doAction('conversation.created', $conversation);
+        if ($isNew) {
+            Hooks::doAction('conversation.created', $conversation);
+        }
         Hooks::doAction('thread.created', $thread);
 
         // Broadcast real-time update
@@ -88,7 +106,7 @@ class ProcessWebhookMessageJob implements ShouldQueue
         if ($ai->isFeatureEnabled($mailbox->workspace_id, 'reply_suggestions')) {
             GenerateReplySuggestionJob::dispatch($conversation)->onQueue('ai');
         }
-        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'auto_categorization')) {
+        if ($ai->isFeatureEnabled($mailbox->workspace_id, 'auto_categorization') && $isNew) {
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         }
     }

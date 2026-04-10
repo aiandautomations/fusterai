@@ -41,6 +41,11 @@ class ProcessInboundEmailJob implements ShouldQueue
 
         $data = $this->emailData;
 
+        // Silently drop auto-replies/OOO emails to prevent infinite loops.
+        if ($this->isAutoReply($data)) {
+            return;
+        }
+
         // Build thread body — prefer HTML, fallback to text
         $body = $data['body_html'] ?: nl2br(e($data['body_text'] ?? ''));
         $body = $this->stripQuotedReply($body);
@@ -67,6 +72,7 @@ class ProcessInboundEmailJob implements ShouldQueue
                     'message_id'  => $data['message_id'],
                     'in_reply_to' => $data['in_reply_to'],
                     'from_email'  => $data['from_email'],
+                    'cc'          => $data['cc'] ?? [],
                 ],
             ]);
 
@@ -147,12 +153,68 @@ class ProcessInboundEmailJob implements ShouldQueue
             [
                 'workspace_id'  => $mailbox->workspace_id,
                 'customer_id'   => $customer->id,
-                'subject'       => $data['subject'] ?: '(No Subject)',
+                'subject'       => $this->normalizeSubject($data['subject'] ?: '(No Subject)'),
                 'status'        => 'open',
                 'channel_type'  => 'email',
                 'last_reply_at' => now(),
             ],
         );
+    }
+
+    /**
+     * Strip common forward prefixes so "Fwd: Fw: Your invoice" becomes "Your invoice".
+     */
+    private function normalizeSubject(string $subject): string
+    {
+        // Iteratively strip leading Fwd:/Fw:/Re: prefixes (any combination)
+        do {
+            $prev    = $subject;
+            $subject = preg_replace('/^(fwd?|re)\s*:\s*/i', '', trim($subject));
+        } while ($subject !== $prev);
+
+        return $subject ?: '(No Subject)';
+    }
+
+    /**
+     * Detect auto-replies, out-of-office, and our own auto-reply emails.
+     * Returns true if the email should be silently dropped.
+     */
+    private function isAutoReply(array $data): bool
+    {
+        $headers = $data['headers'] ?? [];
+
+        // Our own auto-reply header
+        if (!empty($headers['x_fusterai_auto_reply'])) {
+            return true;
+        }
+
+        // RFC 3834 — Auto-Submitted header (anything except "no")
+        $autoSubmitted = strtolower(trim($headers['auto_submitted'] ?? ''));
+        if ($autoSubmitted && $autoSubmitted !== 'no') {
+            return true;
+        }
+
+        // X-Auto-Response-Suppress present means the sender requests no auto-reply
+        // but it also signals this email itself is automated
+        if (!empty($headers['x_auto_response_suppress'])) {
+            return true;
+        }
+
+        // Precedence: bulk/junk/list are mass-mailing signals — skip auto-reply
+        $precedence = strtolower(trim($headers['precedence'] ?? ''));
+        if (in_array($precedence, ['bulk', 'junk', 'list'], true)) {
+            return true;
+        }
+
+        // Subject-line heuristics for OOO when headers are missing
+        $subject = strtolower($data['subject'] ?? '');
+        foreach (['out of office', 'automatic reply', 'auto-reply', 'autoreply', 'vacation reply'] as $marker) {
+            if (str_contains($subject, $marker)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

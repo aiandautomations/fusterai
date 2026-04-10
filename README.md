@@ -654,6 +654,77 @@ Edit `config/horizon.php` to tune workers per environment:
 
 ---
 
+## Upgrading
+
+FusterAI follows a rolling-release model — `main` is always the latest stable code. There are no versioned releases yet; upgrading means pulling the latest commits and running a standard post-update checklist.
+
+### Standard upgrade steps
+
+```bash
+# 1. Pull latest code
+git pull origin main
+
+# 2. Install/update PHP dependencies
+composer install --no-dev --optimize-autoloader
+
+# 3. Install/update JS dependencies
+npm install
+
+# 4. Run any new migrations
+php artisan migrate --force
+
+# 5. Rebuild frontend assets
+npm run build
+
+# 6. Clear and re-cache config/routes/views
+php artisan optimize:clear
+php artisan optimize
+
+# 7. Restart queue workers (picks up code changes)
+php artisan horizon:terminate
+# Horizon will restart automatically if managed by Supervisor.
+# Otherwise: php artisan horizon
+
+# 8. Restart the WebSocket server
+php artisan reverb:start
+```
+
+> **Docker users:** Run `docker compose pull && docker compose up -d --build` to rebuild containers, then `docker compose exec app php artisan migrate --force`.
+
+### Post-upgrade checklist
+
+| Step | Command | Why |
+|---|---|---|
+| Run migrations | `php artisan migrate --force` | Apply schema changes |
+| Clear caches | `php artisan optimize:clear` | Stale config/route/view caches cause 500 errors |
+| Rebuild assets | `npm run build` | New JS/CSS changes won't appear until rebuilt |
+| Restart Horizon | `php artisan horizon:terminate` | Queue workers run old code until restarted |
+| Restart Reverb | `php artisan reverb:start` | WebSocket server runs old code until restarted |
+| Re-index search | `php artisan scout:import "App\Domains\Conversation\Models\Conversation"` | Only needed if search schema changed |
+
+### Checking your current version
+
+```bash
+# Show the latest commit on your installation
+git log --oneline -1
+
+# Compare with upstream
+git fetch origin
+git log HEAD..origin/main --oneline
+```
+
+An empty output from the last command means you are fully up to date.
+
+### Breaking changes
+
+Check the [commit log](https://github.com/your-org/fusterai/commits/main) before upgrading in production. Commits prefixed `BREAKING:` or touching `database/migrations/` require extra care — always back up your database first:
+
+```bash
+pg_dump fusterai > fusterai_backup_$(date +%Y%m%d).sql
+```
+
+---
+
 ## Documentation
 
 Detailed guides in the [`docs/`](docs/) folder:

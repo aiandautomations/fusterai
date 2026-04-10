@@ -72,7 +72,13 @@ class FetchEmails extends Command
                     'in_reply_to' => $message->getInReplyTo()->first() ?? '',
                     'references'  => $message->getReferences()->first() ?? '',
                     'attachments' => $this->extractAttachments($message),
-                    'headers'     => [],
+                    'cc'          => $this->extractCc($message),
+                    'headers'     => [
+                        'auto_submitted'           => (string) ($message->getHeader('Auto-Submitted') ?? ''),
+                        'x_auto_response_suppress' => (string) ($message->getHeader('X-Auto-Response-Suppress') ?? ''),
+                        'precedence'               => (string) ($message->getHeader('Precedence') ?? ''),
+                        'x_fusterai_auto_reply'    => (string) ($message->getHeader('X-FusterAI-AutoReply') ?? ''),
+                    ],
                 ])->onQueue('email-inbound');
 
                 // Mark as seen
@@ -101,5 +107,20 @@ class FetchEmails extends Command
             ];
         }
         return $attachments;
+    }
+
+    private function extractCc($message): array
+    {
+        $cc = [];
+        try {
+            foreach ($message->getCC() as $address) {
+                if (!empty($address->mail)) {
+                    $cc[] = ['email' => $address->mail, 'name' => $address->personal ?? ''];
+                }
+            }
+        } catch (\Throwable) {
+            // Some IMAP servers return malformed CC — skip silently
+        }
+        return $cc;
     }
 }

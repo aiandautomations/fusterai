@@ -14,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
 use App\Services\DynamicMailerService;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class SendReplyJob implements ShouldQueue
@@ -61,18 +62,42 @@ class SendReplyJob implements ShouldQueue
 
         $agentSignature = $this->thread->user?->signature;
 
-        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature) {
+        // Collect CC recipients from the most recent inbound customer thread
+        $ccRecipients = $this->resolveCcRecipients($conversation);
+
+        // Generate a stable per-thread message ID for bounce tracking.
+        // Stored without angle brackets; Symfony IdentificationHeader adds them when serialising.
+        $outboundMsgId = 'thread-' . $thread->id . '-' . Str::uuid() . '@fusterai';
+
+        // Store with angle brackets so bounce lookups use the same format mail servers return.
+        // Merge into the existing meta array rather than using JSON path syntax, which
+        // fails on PostgreSQL when the column is initially NULL.
+        $thread->update(['meta' => array_merge($thread->meta ?? [], [
+            'outbound_message_id' => "<{$outboundMsgId}>",
+        ])]);
+
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['customer' => $customer->id]);
+
+        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature, $ccRecipients, $outboundMsgId, $unsubscribeUrl) {
             $msg->to($customer->email, $customer->name)
                 ->from($mailbox->email, $mailbox->name)
                 ->subject($this->buildSubject($conversation))
                 ->html($this->buildHtmlBody($thread, $mailbox, $agentSignature))
                 ->text(strip_tags($thread->body));
 
+            foreach ($ccRecipients as $cc) {
+                $msg->cc($cc['email'], $cc['name'] ?? null);
+            }
+
             // Set In-Reply-To header to thread the email
             $msgId = $this->conversationMessageId($conversation);
+            // Message-ID requires Symfony's IdentificationHeader (not plain text)
+            $msg->getHeaders()->addIdHeader('Message-ID', $outboundMsgId);
             $msg->getHeaders()->addTextHeader('In-Reply-To', $msgId);
             $msg->getHeaders()->addTextHeader('References', $msgId);
             $msg->getHeaders()->addTextHeader('X-FusterAI-Conversation', (string) $conversation->id);
+            $msg->getHeaders()->addTextHeader('List-Unsubscribe', "<{$unsubscribeUrl}>, <mailto:{$mailbox->email}?subject=Unsubscribe>");
+            $msg->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
 
             // Attach files
             foreach ($thread->attachments as $attachment) {
@@ -117,5 +142,21 @@ class SendReplyJob implements ShouldQueue
     private function conversationMessageId(Conversation $conversation): string
     {
         return '<conversation-' . $conversation->id . '@fusterai>';
+    }
+
+    /**
+     * Pull CC recipients from the last inbound customer thread's meta.
+     * This lets agents reply-all to threads that had CC recipients.
+     *
+     * @return array<int, array{email: string, name: string}>
+     */
+    private function resolveCcRecipients(Conversation $conversation): array
+    {
+        $lastCustomerThread = $conversation->threads
+            ->whereNotNull('customer_id')
+            ->sortByDesc('created_at')
+            ->first();
+
+        return $lastCustomerThread?->meta['cc'] ?? [];
     }
 }

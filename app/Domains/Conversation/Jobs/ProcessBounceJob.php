@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use App\Enums\ThreadType;
 
 /**
  * Records an email bounce as an activity note on the conversation
@@ -32,12 +33,7 @@ class ProcessBounceJob implements ShouldQueue
 
     public function handle(): void
     {
-        $conversation = null;
-
-        if ($this->originalMessageId) {
-            $thread       = Thread::whereJsonContains('meta->message_id', $this->originalMessageId)->first();
-            $conversation = $thread?->conversation;
-        }
+        [$conversation, $bouncedThread] = $this->resolveConversation();
 
         if (! $conversation) {
             Log::warning('ProcessBounceJob: no conversation found', [
@@ -53,7 +49,6 @@ class ProcessBounceJob implements ShouldQueue
             'body'       => "<p>⚠️ Email bounced ({$this->bounceType}): {$this->bounceMessage}</p>",
             'body_plain' => "Email bounced ({$this->bounceType}): {$this->bounceMessage}",
             'source'     => 'email',
-            'status'     => 'note',
             'meta'       => [
                 'bounce_type'    => $this->bounceType,
                 'bounce_to'      => $this->toEmail,
@@ -62,12 +57,51 @@ class ProcessBounceJob implements ShouldQueue
         ]);
 
         if ($this->bounceType === 'hard') {
+            // Hard bounce — move to pending so an agent reviews delivery failure
             $conversation->update(['status' => 'pending']);
+        } elseif ($this->bounceType === 'soft' && $bouncedThread) {
+            // Soft bounce — temporary failure; retry the send after 30 minutes
+            SendReplyJob::dispatch($bouncedThread, $conversation)
+                ->onQueue('email-outbound')
+                ->delay(now()->addMinutes(30));
         }
 
         Log::info('ProcessBounceJob: bounce recorded', [
             'conversation_id' => $conversation->id,
             'bounce_type'     => $this->bounceType,
         ]);
+    }
+
+    /**
+     * Resolve the conversation from the bounced message ID.
+     *
+     * Tries two strategies:
+     * 1. Match by outbound_message_id stored in thread meta (precise, for our own emails)
+     * 2. Match by inbound message_id stored in thread meta (legacy / fallback)
+     *
+     * @return array{0: \App\Domains\Conversation\Models\Conversation|null, 1: Thread|null}
+     */
+    private function resolveConversation(): array
+    {
+        if (!$this->originalMessageId) {
+            return [null, null];
+        }
+
+        // Strategy 1: outbound thread (agent reply that bounced)
+        $outboundThread = Thread::where('type', ThreadType::Message)
+            ->whereJsonContains('meta->outbound_message_id', $this->originalMessageId)
+            ->with('conversation')
+            ->first();
+
+        if ($outboundThread?->conversation) {
+            return [$outboundThread->conversation, $outboundThread];
+        }
+
+        // Strategy 2: inbound thread message_id (older behaviour / inbound emails)
+        $inboundThread = Thread::whereJsonContains('meta->message_id', $this->originalMessageId)
+            ->with('conversation')
+            ->first();
+
+        return [$inboundThread?->conversation, null];
     }
 }

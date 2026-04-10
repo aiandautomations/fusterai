@@ -9,6 +9,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
 use App\Events\ConversationUpdated;
+use App\Domains\Conversation\Jobs\SendReplyJob;
 use App\Http\Controllers\Controller;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
 use App\Domains\AI\Jobs\SummarizeConversationJob;
@@ -199,7 +200,7 @@ class ConversationController extends Controller
             'body'        => ['required', 'string'],
         ]);
 
-        $conversation = DB::transaction(function () use ($workspaceId, $validated, $request) {
+        [$conversation, $thread] = DB::transaction(function () use ($workspaceId, $validated, $request) {
             $conversation = Conversation::create([
                 'workspace_id'  => $workspaceId,
                 'mailbox_id'    => $validated['mailbox_id'],
@@ -210,15 +211,18 @@ class ConversationController extends Controller
                 'last_reply_at' => now(),
             ]);
 
-            $conversation->threads()->create([
+            $thread = $conversation->threads()->create([
                 'user_id' => $request->user()->id,
                 'type'    => 'message',
                 'body'    => $validated['body'],
                 'source'  => 'web',
             ]);
 
-            return $conversation;
+            return [$conversation, $thread];
         });
+
+        // Send the initial email to the customer
+        SendReplyJob::dispatch($thread, $conversation)->onQueue('email-outbound');
 
         RunAutomationRulesJob::dispatch('conversation.created', $conversation);
         Hooks::doAction('conversation.created', $conversation);
@@ -491,20 +495,48 @@ class ConversationController extends Controller
 
         $userId = $request->user()->id;
 
+        $actor    = $request->user()->name;
+        $assignee = isset($validated['assigned_to']) ? \App\Models\User::find($validated['assigned_to']) : null;
+
         foreach ($conversations as $conversation) {
+            $activityBody = null;
+
             match ((string) $validated['action']) {
-                'close'        => $conversation->update(['status' => 'closed']),
-                'reopen'       => $conversation->update(['status' => 'open', 'snoozed_until' => null]),
-                'spam'         => $conversation->update(['status' => 'spam']),
-                'assign'       => $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]),
-                'snooze'       => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
-                'priority'     => $conversation->update(['priority' => $validated['priority']]),
-                'mark_read'    => ConversationRead::markRead($userId, $conversation->id),
-                'mark_unread'  => ConversationRead::where('user_id', $userId)
+                'close'  => (function () use ($conversation, $actor, &$activityBody) {
+                    $conversation->update(['status' => 'closed']);
+                    $activityBody = "{$actor} closed this conversation.";
+                })(),
+                'reopen' => (function () use ($conversation, $actor, &$activityBody) {
+                    $conversation->update(['status' => 'open', 'snoozed_until' => null]);
+                    $activityBody = "{$actor} reopened this conversation.";
+                })(),
+                'spam'   => (function () use ($conversation, $actor, &$activityBody) {
+                    $conversation->update(['status' => 'spam']);
+                    $activityBody = "{$actor} marked this conversation as spam.";
+                })(),
+                'assign' => (function () use ($conversation, $actor, $assignee, $validated, &$activityBody) {
+                    $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]);
+                    $activityBody = $assignee
+                        ? "{$actor} assigned this conversation to <strong>{$assignee->name}</strong>."
+                        : "{$actor} unassigned this conversation.";
+                })(),
+                'snooze'      => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
+                'priority'    => $conversation->update(['priority' => $validated['priority']]),
+                'mark_read'   => ConversationRead::markRead($userId, $conversation->id),
+                'mark_unread' => ConversationRead::where('user_id', $userId)
                     ->where('conversation_id', $conversation->id)
                     ->delete(),
-                default        => null,
+                default => null,
             };
+
+            if ($activityBody) {
+                $conversation->threads()->create([
+                    'user_id' => $userId,
+                    'type'    => 'activity',
+                    'source'  => 'web',
+                    'body'    => $activityBody,
+                ]);
+            }
 
             if (!in_array($validated['action'], ['mark_read', 'mark_unread'])) {
                 broadcast(new ConversationUpdated($conversation));

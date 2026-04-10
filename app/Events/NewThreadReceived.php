@@ -40,6 +40,8 @@ class NewThreadReceived implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        $this->thread->loadMissing('attachments');
+
         return [
             'thread' => [
                 'id'              => $this->thread->id,
@@ -52,6 +54,13 @@ class NewThreadReceived implements ShouldBroadcast
                 'created_at'      => $this->thread->created_at,
                 'user'            => $this->thread->user?->only(['id', 'name', 'avatar']),
                 'customer'        => $this->thread->customer?->only(['id', 'name', 'avatar']),
+                'attachments'     => $this->thread->attachments->map(fn($a) => [
+                    'id'        => $a->id,
+                    'filename'  => $a->filename,
+                    'mime_type' => $a->mime_type,
+                    'size'      => $a->size,
+                    'url'       => $a->url,
+                ])->all(),
             ],
         ];
     }
