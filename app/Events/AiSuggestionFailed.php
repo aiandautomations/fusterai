@@ -8,14 +8,13 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AiSuggestionReady implements ShouldBroadcast
+class AiSuggestionFailed implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         public readonly int    $conversationId,
-        public readonly string $content,
-        public readonly int    $suggestionId,
+        public readonly string $reason = 'An error occurred while generating the suggestion.',
     ) {}
 
     public function broadcastOn(): PrivateChannel
@@ -25,15 +24,14 @@ class AiSuggestionReady implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'ai.suggestion.ready';
+        return 'ai.suggestion.failed';
     }
 
     public function broadcastWith(): array
     {
         return [
             'conversation_id' => $this->conversationId,
-            'suggestion_id'   => $this->suggestionId,
-            'content'         => $this->content,
+            'reason'          => $this->reason,
         ];
     }
 }

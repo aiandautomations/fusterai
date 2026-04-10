@@ -54,13 +54,22 @@ class SearchKnowledgeBase implements Tool
             ->whereNotNull('embedding')
             ->exists();
 
+        $docs = collect();
+
         if ($hasEmbeddings) {
-            $docs = KbDocument::whereIn('kb_id', $kbIds)
-                ->whereNotNull('embedding')
-                ->whereVectorSimilarTo('embedding', $query, minSimilarity: $this->minScore)
-                ->limit($this->topK)
-                ->get(['title', 'content']);
-        } else {
+            try {
+                $docs = KbDocument::whereIn('kb_id', $kbIds)
+                    ->whereNotNull('embedding')
+                    ->whereVectorSimilarTo('embedding', $query, minSimilarity: $this->minScore)
+                    ->limit($this->topK)
+                    ->get(['title', 'content']);
+            } catch (\Illuminate\Database\QueryException) {
+                // pgvector extension unavailable — fall through to full-text search
+                $hasEmbeddings = false;
+            }
+        }
+
+        if (! $hasEmbeddings) {
             // Fall back to case-insensitive full-text (LIKE is case-insensitive in SQLite, use ILIKE in Postgres)
             $operator = config('database.default') === 'pgsql' ? 'ilike' : 'like';
             $docs = KbDocument::whereIn('kb_id', $kbIds)

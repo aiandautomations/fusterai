@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import RichTextEditor from '@/Components/RichTextEditor';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
@@ -21,7 +21,6 @@ import {
     CheckIcon,
     XIcon,
     AlertTriangleIcon,
-    MergeIcon,
     ChevronDownIcon,
     EyeIcon,
     PanelRightOpenIcon,
@@ -34,7 +33,7 @@ interface SurveyData {
 
 interface Props {
     conversation: Conversation & {
-        aiSuggestions?: { content: string }[];
+        aiSuggestions?: { id: number; content: string }[];
         followers?: Pick<User, 'id' | 'name' | 'avatar'>[];
     };
     agents: User[];
@@ -54,9 +53,16 @@ const priorityConfig = {
 } as const;
 
 export default function ConversationShow({ conversation, agents, tags, folders, convFolders, mailboxes, survey, isFollowing }: Props) {
-    const [aiSuggestion, setAiSuggestion] = useState<string | null>(
-        conversation.aiSuggestions?.[0]?.content ?? null,
+    const { aiConfigured } = usePage<{ aiConfigured: boolean }>().props;
+
+    const [aiSuggestion, setAiSuggestion] = useState<{ id: number | null; content: string } | null>(
+        conversation.aiSuggestions?.[0]
+            ? { id: conversation.aiSuggestions[0].id ?? null, content: conversation.aiSuggestions[0].content }
+            : null,
     );
+    const [streamingText, setStreamingText] = useState('');
+    const [aiError, setAiError] = useState<string | null>(null);
+    const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorFocusRef = useRef<(() => void) | null>(null);
     const [isRequestingAi, setIsRequestingAi] = useState(false);
     const [viewers, setViewers] = useState<{ id: number; name: string }[]>([]);
@@ -94,9 +100,23 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
             });
         });
 
-        ch?.listen('.ai.suggestion.ready', (e: { content: string }) => {
-            setAiSuggestion(e.content);
+        ch?.listen('.text_delta', (e: { delta: string }) => {
+            setStreamingText((prev) => prev + e.delta);
+        });
+
+        ch?.listen('.ai.suggestion.ready', (e: { suggestion_id: number; content: string }) => {
+            if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+            setStreamingText('');
+            setAiSuggestion({ id: e.suggestion_id, content: e.content });
             setIsRequestingAi(false);
+            setAiError(null);
+        });
+
+        ch?.listen('.ai.suggestion.failed', (e: { reason: string }) => {
+            if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+            setStreamingText('');
+            setIsRequestingAi(false);
+            setAiError(e.reason);
         });
 
         // Presence: collision detection
@@ -113,6 +133,7 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         return () => {
             window.Echo?.leave(`conversation.${conversation.id}`);
             window.Echo?.leave(`conversation.${conversation.id}.presence`);
+            clearAiTimeout();
         };
     }, [conversation.id]);
 
@@ -124,22 +145,50 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         });
     }
 
+    const clearAiTimeout = useCallback(() => {
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    }, []);
+
     async function requestAiSuggestion() {
         setIsRequestingAi(true);
         setAiSuggestion(null);
-        try {
-            await fetch(`/ai/conversations/${conversation.id}/suggest-reply`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('[name="csrf-token"]')?.content ?? '' },
-            });
-        } catch {
+        setStreamingText('');
+        setAiError(null);
+
+        // Safety-net: if no response in 90s, unblock the UI
+        clearAiTimeout();
+        aiTimeoutRef.current = setTimeout(() => {
             setIsRequestingAi(false);
+            setStreamingText('');
+            setAiError('Request timed out. The AI may be unavailable or overloaded.');
+        }, 90_000);
+
+        try {
+            const res = await fetch(`/ai/conversations/${conversation.id}/suggest-reply`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': globalThis.document.querySelector<HTMLMetaElement>('[name="csrf-token"]')?.content ?? '' },
+            });
+            if (!res.ok) {
+                clearAiTimeout();
+                setIsRequestingAi(false);
+                setAiError('Failed to queue suggestion. Please try again.');
+            }
+        } catch {
+            clearAiTimeout();
+            setIsRequestingAi(false);
+            setAiError('Network error. Please check your connection.');
         }
     }
 
     function acceptAiSuggestion() {
         if (!aiSuggestion) return;
-        setData('body', aiSuggestion);
+        setData('body', aiSuggestion.content);
+        if (aiSuggestion.id) {
+            fetch(`/ai/suggestions/${aiSuggestion.id}/accept`, {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('[name="csrf-token"]')?.content ?? '' },
+            });
+        }
         setAiSuggestion(null);
     }
 
@@ -344,7 +393,8 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                     size="sm"
                                     className="text-info hover:bg-info/10 h-8"
                                     onClick={requestAiSuggestion}
-                                    disabled={isRequestingAi}
+                                    disabled={isRequestingAi || !aiConfigured}
+                                    title={!aiConfigured ? 'AI not configured — add an API key in Settings' : undefined}
                                 >
                                     <BrainIcon className={cn('h-3.5 w-3.5 mr-1.5', isRequestingAi && 'animate-pulse')} />
                                     {isRequestingAi ? 'Generating…' : 'AI Suggest'}
@@ -381,7 +431,31 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                         </div>
                     )}
 
-                    {/* AI Suggestion */}
+                    {/* AI config warning */}
+                    {!aiConfigured && (
+                        <div className="mx-4 mt-4 flex items-start gap-2 text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2.5">
+                            <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                            <span>AI is not configured. <a href={route('settings.ai')} className="underline font-medium">Add an API key</a> to enable suggestions.</span>
+                        </div>
+                    )}
+
+                    {/* AI error */}
+                    {aiError && (
+                        <div className="p-4 border-b border-border bg-destructive/10">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangleIcon className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-destructive">AI suggestion failed</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{aiError}</p>
+                                </div>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => setAiError(null)}>
+                                    <XIcon className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* AI Suggestion panel */}
                     {(aiSuggestion || isRequestingAi) && (
                         <div className="p-4 border-b border-border bg-info/10">
                             <div className="flex items-center gap-1.5 mb-2">
@@ -389,16 +463,25 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                 <span className="text-xs font-semibold text-info">AI Suggestion</span>
                             </div>
                             {isRequestingAi ? (
-                                <div className="space-y-2 py-1">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className={`h-3 bg-info/25 rounded animate-pulse ${i === 3 ? 'w-3/5' : ''}`} />
-                                    ))}
-                                </div>
+                                streamingText ? (
+                                    // Streaming in progress — show live text with cursor
+                                    <div className="text-xs text-foreground leading-relaxed bg-background rounded-md p-2.5 border border-info/20 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                        {streamingText}
+                                        <span className="inline-block w-0.5 h-3 bg-info ml-0.5 animate-pulse align-middle" />
+                                    </div>
+                                ) : (
+                                    // Waiting for first token
+                                    <div className="space-y-2 py-1">
+                                        {[1, 2, 3].map((i) => (
+                                            <div key={i} className={`h-3 bg-info/25 rounded animate-pulse ${i === 3 ? 'w-3/5' : ''}`} />
+                                        ))}
+                                    </div>
+                                )
                             ) : (
                                 <>
                                     <div
                                         className="text-xs text-foreground leading-relaxed bg-background rounded-md p-2.5 mb-2 border border-info/20 max-h-40 overflow-y-auto"
-                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(aiSuggestion ?? '') }}
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(aiSuggestion?.content ?? '') }}
                                     />
                                     <div className="flex gap-2">
                                         <Button size="sm" className="flex-1 h-7 text-xs" onClick={acceptAiSuggestion}>

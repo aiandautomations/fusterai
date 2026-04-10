@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Ai\Agents\SummarizationAgent;
 use App\Http\Controllers\Controller;
 use App\Models\Workspace;
 use App\Services\AiSettingsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -118,6 +120,31 @@ class SettingsController extends Controller
         app(AiSettingsService::class)->saveForWorkspace($request->user()->workspace_id, $validated);
 
         return redirect()->back()->with('success', 'AI settings saved.');
+    }
+
+    public function testAiConnection(Request $request): JsonResponse
+    {
+        $this->authorize('manage-settings');
+
+        $workspaceId = $request->user()->workspace_id;
+        $aiService   = app(AiSettingsService::class);
+        $config      = $aiService->getForWorkspace($workspaceId);
+
+        if (! $config['key_set']) {
+            return response()->json(['ok' => false, 'message' => 'No API key saved. Save your settings first.']);
+        }
+
+        try {
+            ['lab' => $lab, 'model' => $model] = $aiService->configureForWorkspace($workspaceId);
+
+            // Make the smallest possible real API call — one sentence in, one word out.
+            $agent = new SummarizationAgent();
+            $agent->prompt('Reply with the single word: ok', provider: $lab, model: $model);
+
+            return response()->json(['ok' => true, 'message' => 'Connection successful — API key is valid.']);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => 'Connection failed: ' . $e->getMessage()]);
+        }
     }
 
     public function modules(): Response

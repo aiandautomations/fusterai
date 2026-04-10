@@ -87,7 +87,8 @@ test('agent can accept an AI suggestion', function () {
 
     $this->actingAs($this->user)
         ->patch("/ai/suggestions/{$suggestion->id}/accept")
-        ->assertRedirect();
+        ->assertOk()
+        ->assertJson(['ok' => true]);
 
     expect($suggestion->fresh()->accepted)->toBeTrue();
 });

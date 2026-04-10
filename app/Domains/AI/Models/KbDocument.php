@@ -12,7 +12,7 @@ class KbDocument extends Model
 {
     protected $table = 'kb_documents';
 
-    protected $fillable = ['kb_id', 'title', 'content', 'source_url', 'meta', 'indexed_at'];
+    protected $fillable = ['kb_id', 'title', 'content', 'embedding', 'source_url', 'meta', 'indexed_at'];
 
     protected $casts = [
         'meta'       => 'array',

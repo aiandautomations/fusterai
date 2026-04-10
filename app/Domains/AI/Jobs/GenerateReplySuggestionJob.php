@@ -5,6 +5,7 @@ namespace App\Domains\AI\Jobs;
 use App\Ai\Agents\ReplySuggestionAgent;
 use App\Domains\Conversation\Models\AiSuggestion;
 use App\Domains\Conversation\Models\Conversation;
+use App\Events\AiSuggestionFailed;
 use App\Events\AiSuggestionReady;
 use App\Services\AiSettingsService;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -49,7 +50,7 @@ class GenerateReplySuggestionJob implements ShouldQueue
             // populates $stream->text and $stream->usage after completion.
             $content = $stream->text ?? '';
 
-            AiSuggestion::create([
+            $suggestion = AiSuggestion::create([
                 'conversation_id'   => $conversation->id,
                 'type'              => 'reply',
                 'content'           => $content,
@@ -58,7 +59,7 @@ class GenerateReplySuggestionJob implements ShouldQueue
                 'completion_tokens' => $stream->usage->completionTokens ?? 0,
             ]);
 
-            broadcast(new AiSuggestionReady($conversation->id, $content));
+            broadcast(new AiSuggestionReady($conversation->id, $content, $suggestion->id));
         } catch (\Throwable $e) {
             Log::error('GenerateReplySuggestionJob failed', [
                 'conversation_id' => $conversation->id,
@@ -66,5 +67,13 @@ class GenerateReplySuggestionJob implements ShouldQueue
             ]);
             $this->fail($e);
         }
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        broadcast(new AiSuggestionFailed(
+            $this->conversation->id,
+            'Could not generate a suggestion. Please check your AI configuration.',
+        ));
     }
 }

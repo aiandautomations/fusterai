@@ -11,6 +11,8 @@ use App\Enums\ConversationStatus;
 use App\Events\ConversationUpdated;
 use App\Http\Controllers\Controller;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
+use App\Domains\AI\Jobs\SummarizeConversationJob;
+use App\Services\AiSettingsService;
 use App\Models\ConversationRead;
 use App\Notifications\ConversationAssignedNotification;
 use App\Support\Hooks;
@@ -259,6 +261,9 @@ class ConversationController extends Controller
         if ($newStatus === ConversationStatus::Closed) {
             Hooks::doAction('conversation.closed', $conversation);
             RunAutomationRulesJob::dispatch('conversation.closed', $conversation);
+            if (app(AiSettingsService::class)->isFeatureEnabled($conversation->workspace_id, 'summarization')) {
+                SummarizeConversationJob::dispatch($conversation)->onQueue('ai');
+            }
         }
 
         return back();

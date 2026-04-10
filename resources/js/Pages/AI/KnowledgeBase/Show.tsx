@@ -4,10 +4,13 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent } from '@/Components/ui/card';
+import { CheckCircleIcon, Loader2Icon, AlertTriangleIcon } from 'lucide-react';
 
 interface Document {
     id: number;
     title: string;
+    indexed_at: string | null;
+    meta: { index_error?: string } | null;
     created_at: string;
     updated_at: string;
 }
@@ -80,12 +83,27 @@ export default function Show({ kb, documents }: Props) {
                         {documents.map((doc) => (
                             <div key={doc.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/25">
                                 <div>
-                                    <Link
-                                        href={route('ai.kb.documents.edit', { knowledgeBase: kb.id, document: doc.id })}
-                                        className="font-medium hover:underline"
-                                    >
-                                        {doc.title}
-                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <Link
+                                            href={route('ai.kb.documents.edit', { knowledgeBase: kb.id, document: doc.id })}
+                                            className="font-medium hover:underline"
+                                        >
+                                            {doc.title}
+                                        </Link>
+                                        {doc.meta?.index_error ? (
+                                            <span title={doc.meta.index_error} className="flex items-center gap-1 text-[11px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                                                <AlertTriangleIcon className="h-3 w-3" /> Index failed
+                                            </span>
+                                        ) : doc.indexed_at ? (
+                                            <span className="flex items-center gap-1 text-[11px] text-success bg-success/10 px-1.5 py-0.5 rounded">
+                                                <CheckCircleIcon className="h-3 w-3" /> Indexed
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                                <Loader2Icon className="h-3 w-3 animate-spin" /> Indexing…
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                         Updated {new Date(doc.updated_at).toLocaleDateString()}
                                     </p>

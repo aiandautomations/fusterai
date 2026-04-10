@@ -22,6 +22,17 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        // Load the workspace once and memoize across all closures below.
+        // Avoids redundant DB queries when branding, appearance, and aiConfigured
+        // all need the same workspace row.
+        $workspace = null;
+        $getWorkspace = function () use ($request, &$workspace) {
+            if ($workspace === null && $request->user()) {
+                $workspace = \App\Models\Workspace::find($request->user()->workspace_id);
+            }
+            return $workspace;
+        };
+
         return array_merge(parent::share($request), [
             'ziggy' => fn () => (new Ziggy)->toArray(),
             'auth'  => [
@@ -42,6 +53,7 @@ class HandleInertiaRequests extends Middleware
             'notifications' => [
                 'unread_count' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
+            'aiConfigured' => fn () => ! empty($getWorkspace()?->settings['ai_api_key']),
             'mailboxes' => fn () => $request->user()
                 ? \App\Domains\Mailbox\Models\Mailbox::where('workspace_id', $request->user()->workspace_id)
                     ->get(['id', 'name'])
@@ -50,38 +62,27 @@ class HandleInertiaRequests extends Middleware
                 ? \App\Domains\Conversation\Models\Tag::where('workspace_id', $request->user()->workspace_id)
                     ->get(['id', 'name', 'color'])
                 : [],
-            'branding' => fn () => (function () use ($request) {
-                $workspaceId = $request->user()?->workspace_id;
-                $workspace   = $workspaceId
-                    ? \App\Models\Workspace::find($workspaceId)
-                    : \App\Models\Workspace::first();
-                $branding = $workspace?->settings['branding'] ?? [];
+            'branding' => function () use ($getWorkspace) {
+                $branding = $getWorkspace()?->settings['branding'] ?? [];
                 return [
-                    'name'     => $branding['name'] ?? null,
+                    'name'     => $branding['name']     ?? null,
                     'logo_url' => $branding['logo_url'] ?? null,
-                    'website'  => $branding['website'] ?? null,
+                    'website'  => $branding['website']  ?? null,
                 ];
-            })(),
-            'appearance' => fn () => $request->user()
-                ? (function () use ($request) {
-                    $workspace = \App\Models\Workspace::find($request->user()->workspace_id);
-                    $appearance = $workspace?->settings['appearance'] ?? [];
-
-                    return [
-                        'mode'     => $appearance['mode'] ?? 'system',
-                        'color'    => $appearance['color'] ?? 'violet',
-                        'font'     => $appearance['font'] ?? 'figtree',
-                        'radius'   => $appearance['radius'] ?? 'sm',
-                        'contrast' => $appearance['contrast'] ?? 'balanced',
-                    ];
-                })()
-                : [
-                    'mode'     => 'system',
-                    'color'    => 'violet',
-                    'font'     => 'figtree',
-                    'radius'   => 'sm',
-                    'contrast' => 'balanced',
-                ],
+            },
+            'appearance' => function () use ($request, $getWorkspace) {
+                if (! $request->user()) {
+                    return ['mode' => 'system', 'color' => 'violet', 'font' => 'figtree', 'radius' => 'sm', 'contrast' => 'balanced'];
+                }
+                $appearance = $getWorkspace()?->settings['appearance'] ?? [];
+                return [
+                    'mode'     => $appearance['mode']     ?? 'system',
+                    'color'    => $appearance['color']    ?? 'violet',
+                    'font'     => $appearance['font']     ?? 'figtree',
+                    'radius'   => $appearance['radius']   ?? 'sm',
+                    'contrast' => $appearance['contrast'] ?? 'balanced',
+                ];
+            },
         ]);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\AI\Jobs\FetchUrlAndIndexJob;
 use App\Domains\AI\Jobs\IndexKbDocumentJob;
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
@@ -153,6 +154,62 @@ test('manager can delete a document', function () {
         ->assertRedirect();
 
     expect(KbDocument::find($doc->id))->toBeNull();
+});
+
+// ── URL import ─────────────────────────────────────────────────────────────────
+
+test('import url queues FetchUrlAndIndexJob for valid public URL', function () {
+    Queue::fake();
+
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+
+    $this->actingAs($this->user)
+        ->postJson("/ai/knowledge-bases/{$kb->id}/documents/import-url", [
+            'url' => 'https://example.com/article',
+        ])
+        ->assertOk()
+        ->assertJson(['status' => 'queued']);
+
+    Queue::assertPushed(FetchUrlAndIndexJob::class, fn ($job) => $job->url === 'https://example.com/article');
+});
+
+test('import url rejects private IP addresses with 422', function () {
+    Queue::fake();
+
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+
+    $this->actingAs($this->user)
+        ->postJson("/ai/knowledge-bases/{$kb->id}/documents/import-url", [
+            'url' => 'http://192.168.1.1/admin',
+        ])
+        ->assertStatus(422);
+
+    Queue::assertNotPushed(FetchUrlAndIndexJob::class);
+});
+
+test('import url rejects invalid URL format', function () {
+    Queue::fake();
+
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+
+    $this->actingAs($this->user)
+        ->postJson("/ai/knowledge-bases/{$kb->id}/documents/import-url", [
+            'url' => 'not-a-url',
+        ])
+        ->assertStatus(422);
+
+    Queue::assertNotPushed(FetchUrlAndIndexJob::class);
+});
+
+test('import url requires manager permissions', function () {
+    $other = \App\Models\User::factory()->create(['workspace_id' => $this->workspace->id, 'role' => 'agent']);
+    $kb    = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+
+    $this->actingAs($other)
+        ->postJson("/ai/knowledge-bases/{$kb->id}/documents/import-url", [
+            'url' => 'https://example.com/article',
+        ])
+        ->assertForbidden();
 });
 
 test('document from a different KB returns 403', function () {

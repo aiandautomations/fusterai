@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AI;
 
+use App\Domains\AI\Jobs\FetchUrlAndIndexJob;
+use App\Support\SsrfGuard;
 use App\Domains\AI\Jobs\IndexKbDocumentJob;
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
@@ -59,7 +61,7 @@ class KnowledgeBaseController extends Controller
 
         $documents = $knowledgeBase->documents()
             ->orderBy('title')
-            ->get(['id', 'title', 'created_at', 'updated_at']);
+            ->get(['id', 'title', 'indexed_at', 'meta', 'created_at', 'updated_at']);
 
         return Inertia::render('AI/KnowledgeBase/Show', [
             'kb'        => $knowledgeBase,
@@ -157,6 +159,25 @@ class KnowledgeBaseController extends Controller
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document updated.');
+    }
+
+    public function importUrl(Request $request, KnowledgeBase $knowledgeBase): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $knowledgeBase);
+
+        $validated = $request->validate([
+            'url' => ['required', 'url', 'max:2048'],
+        ]);
+
+        try {
+            SsrfGuard::validate($validated['url']);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        FetchUrlAndIndexJob::dispatch($knowledgeBase, $validated['url']);
+
+        return response()->json(['status' => 'queued']);
     }
 
     public function destroyDocument(Request $request, KnowledgeBase $knowledgeBase, KbDocument $document): RedirectResponse

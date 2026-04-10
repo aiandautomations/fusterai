@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
@@ -105,6 +105,29 @@ function Field({ label, hint, children, error }: {
 }
 
 export default function AIConfig({ aiConfig }: Props) {
+    const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
+    const [testMessage, setTestMessage] = useState('');
+
+    async function testConnection() {
+        setTestStatus('loading');
+        setTestMessage('');
+        try {
+            const res = await fetch(route('settings.ai.test'), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': (document.querySelector('[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '',
+                    'Accept': 'application/json',
+                },
+            });
+            const body = await res.json();
+            setTestStatus(body.ok ? 'ok' : 'fail');
+            setTestMessage(body.message ?? '');
+        } catch {
+            setTestStatus('fail');
+            setTestMessage('Network error. Could not reach the server.');
+        }
+    }
+
     const { data, setData, patch, processing, errors } = useForm({
         provider:                    aiConfig.provider   ?? 'anthropic' as Provider,
         api_key:                     '',
@@ -338,7 +361,24 @@ export default function AIConfig({ aiConfig }: Props) {
                         </div>
                     </section>
 
-                    <div className="flex justify-end">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div className="flex items-center gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={testConnection}
+                                disabled={testStatus === 'loading' || !aiConfig.key_set}
+                                title={!aiConfig.key_set ? 'Save an API key first' : undefined}
+                            >
+                                {testStatus === 'loading' ? 'Testing…' : 'Test connection'}
+                            </Button>
+                            {testStatus === 'ok' && (
+                                <span className="text-sm text-success font-medium">{testMessage}</span>
+                            )}
+                            {testStatus === 'fail' && (
+                                <span className="text-sm text-destructive">{testMessage}</span>
+                            )}
+                        </div>
                         <Button type="submit" disabled={processing}>
                             {processing ? 'Saving…' : 'Save AI settings'}
                         </Button>

@@ -6,6 +6,8 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Automation\Jobs\RunAutomationRulesJob;
+use App\Domains\AI\Jobs\SummarizeConversationJob;
+use App\Services\AiSettingsService;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
 use App\Events\ConversationUpdated;
@@ -190,6 +192,9 @@ class ConversationApiController extends Controller
         if (isset($validated['status']) && $validated['status'] === ConversationStatus::Closed->value) {
             Hooks::doAction('conversation.closed', $fresh);
             RunAutomationRulesJob::dispatch('conversation.closed', $fresh);
+            if (app(AiSettingsService::class)->isFeatureEnabled($fresh->workspace_id, 'summarization')) {
+                SummarizeConversationJob::dispatch($fresh)->onQueue('ai');
+            }
         }
 
         broadcast(new ConversationUpdated($fresh));

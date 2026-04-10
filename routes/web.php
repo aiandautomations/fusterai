@@ -142,6 +142,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/settings/modules/{alias}', [SettingsController::class, 'toggleModule'])->name('settings.modules.toggle');
     Route::get('/settings/ai', [SettingsController::class, 'ai'])->name('settings.ai');
     Route::patch('/settings/ai', [SettingsController::class, 'updateAi'])->name('settings.ai.update');
+    Route::post('/settings/ai/test-connection', [SettingsController::class, 'testAiConnection'])->name('settings.ai.test');
     Route::get('/settings/email', [SettingsController::class, 'email'])->name('settings.email');
     Route::get('/settings/live-chat', [SettingsController::class, 'liveChat'])->name('settings.livechat');
     Route::patch('/settings/live-chat', [SettingsController::class, 'updateLiveChat'])->name('settings.livechat.update');
@@ -162,6 +163,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/knowledge-bases/{knowledgeBase}/documents/{document}/edit', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'editDocument'])->name('kb.documents.edit');
         Route::patch('/knowledge-bases/{knowledgeBase}/documents/{document}', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'updateDocument'])->name('kb.documents.update');
         Route::delete('/knowledge-bases/{knowledgeBase}/documents/{document}', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'destroyDocument'])->name('kb.documents.destroy');
+        Route::post('/knowledge-bases/{knowledgeBase}/documents/import-url', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'importUrl'])->name('kb.documents.import-url');
 
         Route::post('/conversations/{conversation}/suggest-reply', [\App\Http\Controllers\AI\AiController::class, 'suggestReply'])->name('suggest-reply');
         Route::post('/conversations/{conversation}/summarize', [\App\Http\Controllers\AI\AiController::class, 'summarize'])->name('summarize');

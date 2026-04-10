@@ -1,6 +1,11 @@
 <?php
 
+use App\Ai\Agents\SummarizationAgent;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\Crypt;
+use Laravel\Ai\Responses\AgentResponse;
+use Laravel\Ai\Responses\Data\Meta;
+use Laravel\Ai\Responses\Data\Usage;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
@@ -60,6 +65,41 @@ test('admin can update AI settings', function () {
             'rag_min_score'               => 0.7,
         ])
         ->assertRedirect();
+});
+
+test('test-connection returns ok when API key is valid', function () {
+    SummarizationAgent::fake([
+        new AgentResponse(
+            invocationId: 'test',
+            text: 'ok',
+            usage: new Usage,
+            meta: new Meta('anthropic', 'claude-haiku-4-5-20251001'),
+        ),
+    ]);
+
+    $this->workspace->update([
+        'settings' => ['ai_api_key' => Crypt::encryptString('sk-test-key'), 'ai_provider' => 'anthropic'],
+    ]);
+
+    $this->actingAs($this->admin)
+        ->postJson('/settings/ai/test-connection')
+        ->assertOk()
+        ->assertJson(['ok' => true]);
+});
+
+test('test-connection returns error when no API key is saved', function () {
+    $this->actingAs($this->admin)
+        ->postJson('/settings/ai/test-connection')
+        ->assertOk()
+        ->assertJson(['ok' => false]);
+});
+
+test('test-connection is forbidden for non-admin users', function () {
+    $manager = managerUser($this->workspace);
+
+    $this->actingAs($manager)
+        ->postJson('/settings/ai/test-connection')
+        ->assertForbidden();
 });
 
 test('admin can view live chat settings', function () {

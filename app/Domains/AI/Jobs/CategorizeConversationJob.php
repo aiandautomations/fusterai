@@ -50,8 +50,16 @@ class CategorizeConversationJob implements ShouldQueue
             $data = $response->toArray();
 
             // Update priority
+            $updates = [];
             if (!empty($data['priority']) && ConversationPriority::tryFrom($data['priority']) !== null) {
-                $conversation->update(['priority' => $data['priority']]);
+                $updates['priority'] = $data['priority'];
+            }
+            // Save the AI-generated short summary from categorization
+            if (!empty($data['summary'])) {
+                $updates['ai_summary'] = $data['summary'];
+            }
+            if ($updates) {
+                $conversation->update($updates);
             }
 
             // Sync tags

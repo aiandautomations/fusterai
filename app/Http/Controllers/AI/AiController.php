@@ -8,7 +8,6 @@ use App\Domains\AI\Jobs\GenerateReplySuggestionJob;
 use App\Domains\AI\Jobs\SummarizeConversationJob;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AiController extends Controller
@@ -31,12 +30,12 @@ class AiController extends Controller
         return response()->json(['status' => 'queued']);
     }
 
-    public function acceptSuggestion(Request $request, AiSuggestion $suggestion): RedirectResponse
+    public function acceptSuggestion(Request $request, AiSuggestion $suggestion): JsonResponse
     {
         $this->authorize('update', $suggestion->conversation);
 
         $suggestion->update(['accepted' => true]);
 
-        return back();
+        return response()->json(['ok' => true]);
     }
 }
