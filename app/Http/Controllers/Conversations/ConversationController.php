@@ -34,9 +34,10 @@ class ConversationController extends Controller
             'status'    => ['nullable', Rule::in([...array_column(ConversationStatus::cases(), 'value'), 'snoozed'])],
             'priority'  => ['nullable', Rule::enum(ConversationPriority::class)],
             'mailbox'   => 'nullable|integer',
-            'assigned'  => 'nullable|in:me,none,all',
+            'assigned'  => ['nullable', 'regex:/^(me|none|all|\d+)$/'],
             'tag'       => 'nullable|integer',
             'folder'    => 'nullable|integer',
+            'view'      => 'nullable|integer',
             'date_from' => 'nullable|date',
             'date_to'   => 'nullable|date|after_or_equal:date_from',
         ]);
@@ -45,6 +46,31 @@ class ConversationController extends Controller
             ->where('workspace_id', $user->workspace_id)
             ->with(['customer', 'mailbox', 'assignedUser', 'tags'])
             ->orderByDesc('last_reply_at');
+
+        // Resolve custom view and merge its filters (URL params take precedence)
+        $activeView = null;
+        if ($viewId = $request->get('view')) {
+            $activeView = \App\Domains\Conversation\Models\CustomView::where('workspace_id', $user->workspace_id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('is_shared', true);
+                })
+                ->find($viewId);
+
+            if ($activeView) {
+                $vf = $activeView->filters ?? [];
+                $request->mergeIfMissing(array_filter([
+                    'status'   => $vf['status']     ?? null,
+                    'assigned' => $vf['assigned']   ?? null,
+                    'mailbox'  => isset($vf['mailbox_id']) ? (string) $vf['mailbox_id'] : null,
+                    'tag'      => isset($vf['tag_id'])     ? (string) $vf['tag_id']     : null,
+                    'priority' => $vf['priority']   ?? null,
+                ], fn ($v) => $v !== null));
+
+                if (!empty($vf['channel_type']) && !$request->has('channel_type')) {
+                    $query->where('channel_type', $vf['channel_type']);
+                }
+            }
+        }
 
         $status = $request->get('status', 'open');
         if ($status === 'snoozed') {
@@ -62,6 +88,8 @@ class ConversationController extends Controller
             $query->where('assigned_user_id', $user->id);
         } elseif ($assigned === 'none') {
             $query->whereNull('assigned_user_id');
+        } elseif (is_numeric($assigned)) {
+            $query->where('assigned_user_id', (int) $assigned);
         }
 
         if ($tagId = $request->get('tag')) {
@@ -105,7 +133,7 @@ class ConversationController extends Controller
         $tags          = Tag::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'color']);
         $folders       = Folder::where('workspace_id', $user->workspace_id)->orderBy('order')->get(['id', 'name', 'color', 'icon']);
         $counts        = $this->folderCounts($user);
-        $agents        = \App\Models\User::where('workspace_id', $user->workspace_id)->get(['id', 'name']);
+        $agents        = \App\Models\User::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'avatar', 'status']);
 
         $selected = null;
         $isFollowing = false;
@@ -139,7 +167,13 @@ class ConversationController extends Controller
             'agents'        => $agents,
             'selected'      => $selected,
             'isFollowing'   => $isFollowing,
-            'filters'       => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to']),
+            'filters'    => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to', 'view']),
+            'activeView' => $activeView ? [
+                'id'      => $activeView->id,
+                'name'    => $activeView->name,
+                'color'   => $activeView->color,
+                'filters' => $activeView->filters,
+            ] : null,
             ...$extra,
         ]);
     }

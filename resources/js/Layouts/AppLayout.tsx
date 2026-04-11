@@ -2,7 +2,9 @@ import React from 'react';
 import { usePage, Link, router } from '@inertiajs/react';
 import SlotRenderer from '@/Components/SlotRenderer';
 import NotificationBell from '@/Components/NotificationBell';
+import StatusDot from '@/Components/StatusDot';
 import { type PageProps, type Folder } from '@/types';
+import { type AgentStatus, AGENT_STATUS_COLORS, AGENT_STATUS_LABELS } from '@/lib/agentStatus';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import GlobalSearch from '@/Components/GlobalSearch';
 import {
@@ -51,6 +53,10 @@ import {
     MenuIcon,
     XIcon,
     ClockIcon,
+    MailIcon,
+    KeyIcon,
+    ClipboardListIcon,
+    LayoutDashboardIcon,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -58,27 +64,33 @@ interface AppLayoutProps {
     title?: string;
     /** Set true for full-height fixed panels (conversations view). Disables main scroll. */
     fullHeight?: boolean;
+    /** Callback to open the ViewBuilderModal in the parent page. */
+    onCreateView?: () => void;
 }
 
 interface SidebarMailbox { id: number; name: string }
 interface SidebarTag    { id: number; name: string; color: string }
 
-export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
-    const { auth, flash, counts, mailboxes, tags, folders, appearance: appearanceDefaults, branding } = usePage<PageProps & {
+export default function AppLayout({ children, fullHeight, onCreateView }: AppLayoutProps) {
+    const { auth, flash, counts, mailboxes, tags, folders, customViews, appearance: appearanceDefaults, branding, agentStatuses: initialAgentStatuses } = usePage<PageProps & {
         counts?: Record<string, number>
         mailboxes?: SidebarMailbox[]
         tags?: SidebarTag[]
         folders?: Folder[]
+        customViews?: import('@/types').CustomView[]
         [key: string]: unknown
     }>().props;
+    const [agentStatuses, setAgentStatuses] = React.useState<Record<number, string>>(initialAgentStatuses ?? {});
     const [collapsed, setCollapsed] = React.useState(false);
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [inboxOpen, setInboxOpen] = React.useState(true);
     const [tagsOpen, setTagsOpen] = React.useState(false);
     const [foldersOpen, setFoldersOpen] = React.useState(true);
+    const [viewsOpen, setViewsOpen] = React.useState(true);
     const toastShown = React.useRef<string | null>(null);
     const [appearance, setAppearance] = React.useState(() => readStoredAppearance(appearanceDefaults));
     const path = window.location.pathname;
+    const currentUserStatus = (agentStatuses[auth.user?.id] ?? auth.user?.status ?? 'offline') as AgentStatus;
     const fullPath = path + window.location.search;
     const searchParams = new URLSearchParams(window.location.search);
     const activeMailbox = searchParams.get('mailbox') ?? 'all';
@@ -103,6 +115,16 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
         if (flash?.error) toast.error(flash.error);
         toastShown.current = message;
     }, [flash?.success, flash?.error]);
+
+    // Real-time agent status updates via Reverb
+    React.useEffect(() => {
+        if (!auth.user?.workspace_id) return;
+        const channel = window.Echo.private(`workspace.${auth.user.workspace_id}`);
+        channel.listen('.agent.status.changed', (e: { user_id: number; status: string }) => {
+            setAgentStatuses((prev) => ({ ...prev, [e.user_id]: e.status }));
+        });
+        return () => { channel.stopListening('.agent.status.changed'); };
+    }, [auth.user?.workspace_id]);
 
     function cycleTheme() {
         setAppearance((current) => ({
@@ -150,10 +172,12 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
 
     const isCommunicationWorkspace = path.startsWith('/conversations') || path.startsWith('/live-chat');
     const sidebarCollapsed = collapsed;
-    const mailboxNavActive   = ['/mailboxes', '/customers', '/reports', '/tags'].some(h => path.startsWith(h));
+    const inboxNavActive     = ['/mailboxes', '/tags', '/settings/folders', '/settings/canned-responses'].some(h => path.startsWith(h));
+    const customersNavActive = path.startsWith('/customers');
+    const analyticsNavActive = path.startsWith('/reports');
     const aiNavActive        = ['/automation', '/ai/', '/settings/ai'].some(h => path.startsWith(h));
     const customNavActive    = ['/settings/appearance', '/settings/live-chat'].some(h => path.startsWith(h));
-    const settingsNavActive  = ['/settings/general', '/settings/users', '/settings/modules', '/settings'].some(h => path.startsWith(h))
+    const settingsNavActive  = ['/settings/general', '/settings/users', '/settings/modules', '/settings/email', '/settings/api-keys', '/settings/audit-log', '/settings'].some(h => path.startsWith(h))
                                 && !customNavActive && !aiNavActive;
 
     React.useEffect(() => {
@@ -193,7 +217,7 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                 {/* Logo + toggle */}
                 <div className="relative z-10 flex h-16 items-center justify-between px-3.5 border-b border-border/60 shrink-0">
                     {(!sidebarCollapsed || mobileOpen) && (
-                        <Link href="/conversations" className="flex items-center gap-2.5 min-w-0">
+                        <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
                             {branding?.logo_url ? (
                                 <img
                                     src={branding.logo_url}
@@ -254,6 +278,9 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                 <nav className="relative z-10 flex-1 overflow-y-auto py-3 px-2.5 space-y-1">
                     {sidebarCollapsed ? (
                         <>
+                            <Link href="/dashboard" className={navClass('/dashboard')} title="Dashboard">
+                                <LayoutDashboardIcon className="h-4 w-4 shrink-0" />
+                            </Link>
                             <Link href="/conversations" className={navClass('/conversations')} title="Inbox">
                                 <InboxIcon className="h-4 w-4 shrink-0" />
                             </Link>
@@ -404,6 +431,55 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                                 )}
                             </div>
 
+                            {/* My Views */}
+                            <div className="mt-1 space-y-1">
+                                <button type="button" onClick={() => setViewsOpen((v) => !v)} className={sectionHeaderClass()}>
+                                    {viewsOpen ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />}
+                                    <span className="flex-1">My Views</span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); onCreateView?.(); }}
+                                        className="rounded p-0.5 hover:bg-sidebar-accent/60 transition-colors"
+                                        title="New view"
+                                    >
+                                        <PlusIcon className="h-3 w-3" />
+                                    </button>
+                                </button>
+                                {viewsOpen && (
+                                    <div className="ml-4 space-y-0.5 pr-1">
+                                        {customViews && customViews.length > 0 ? customViews.map((view) => {
+                                            const href = `/conversations?view=${view.id}`;
+                                            return (
+                                                <Link
+                                                    key={view.id}
+                                                    href={href}
+                                                    className={cn(
+                                                        'flex items-center gap-2 rounded-lg px-2.5 py-1 text-[13px] transition-colors',
+                                                        fullPath === href
+                                                            ? 'text-sidebar-primary font-semibold'
+                                                            : 'text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+                                                    )}
+                                                >
+                                                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: view.color }} />
+                                                    <span className="flex-1 truncate">{view.name}</span>
+                                                    {view.is_shared && (
+                                                        <span className="text-[9px] text-sidebar-foreground/35 uppercase tracking-wide shrink-0">shared</span>
+                                                    )}
+                                                </Link>
+                                            );
+                                        }) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => onCreateView?.()}
+                                                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-sidebar-foreground/45 hover:text-sidebar-foreground/65 transition-colors italic"
+                                            >
+                                                + Create your first view
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="my-1.5 h-px bg-sidebar-muted/75" />
                             <Link href="/live-chat" className={navClass('/live-chat')}>
                                 <MessageSquareIcon className="h-4 w-4 shrink-0" />
@@ -412,7 +488,11 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                         </>
                     ) : (
                         <div className="space-y-1">
-                            <p className="px-2.5 py-1 text-[11px] font-semibold text-sidebar-foreground/50 uppercase tracking-[0.12em]">
+                            <Link href="/dashboard" className={navClass('/dashboard')}>
+                                <LayoutDashboardIcon className="h-4 w-4 shrink-0" />
+                                <span>Dashboard</span>
+                            </Link>
+                            <p className="px-2.5 pt-3 pb-1 text-[11px] font-semibold text-sidebar-foreground/50 uppercase tracking-[0.12em]">
                                 Communication
                             </p>
                             <Link href="/conversations" className={navClass('/conversations')}>
@@ -447,37 +527,22 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
 
                         <nav className="hidden items-center gap-0.5 lg:flex">
 
-                            {/* Mailbox ▾ */}
+                            {/* Inbox ▾ */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className={cn('inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-all', mailboxNavActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground')}>
+                                    <button className={cn('inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-all', inboxNavActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground')}>
                                         <MailboxIcon className="h-3.5 w-3.5" />
-                                        <span>Mailbox</span>
+                                        <span>Inbox</span>
                                         <ChevronDownIcon className="h-3 w-3 opacity-50" />
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" className="w-52 border-0 bg-popover/95 shadow-xl backdrop-blur">
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Manage</DropdownMenuLabel>
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem asChild>
                                             <Link href="/mailboxes" className={cn('w-full', path.startsWith('/mailboxes') && 'text-primary')}>
                                                 <MailboxIcon className="h-4 w-4" /><span>Mailboxes</span>
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link href="/customers" className={cn('w-full', path.startsWith('/customers') && 'text-primary')}>
-                                                <UsersIcon className="h-4 w-4" /><span>Customers</span>
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link href="/reports" className={cn('w-full', path.startsWith('/reports') && 'text-primary')}>
-                                                <BarChartIcon className="h-4 w-4" /><span>Reports</span>
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Organise</DropdownMenuLabel>
-                                    <DropdownMenuGroup>
                                         <DropdownMenuItem asChild>
                                             <Link href="/tags" className={cn('w-full', path.startsWith('/tags') && 'text-primary')}>
                                                 <TagIcon className="h-4 w-4" /><span>Tags</span>
@@ -496,6 +561,24 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                                     </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            {/* Customers */}
+                            <Link
+                                href="/customers"
+                                className={cn('inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-all', customersNavActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground')}
+                            >
+                                <UsersIcon className="h-3.5 w-3.5" />
+                                <span>Customers</span>
+                            </Link>
+
+                            {/* Analytics */}
+                            <Link
+                                href="/reports"
+                                className={cn('inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-all', analyticsNavActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground')}
+                            >
+                                <BarChartIcon className="h-3.5 w-3.5" />
+                                <span>Analytics</span>
+                            </Link>
 
                             {/* AI ▾ */}
                             <DropdownMenu>
@@ -578,6 +661,21 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                                                 <PuzzleIcon className="h-4 w-4" /><span>Modules</span>
                                             </Link>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/settings/email" className={cn('w-full', path.startsWith('/settings/email') && 'text-primary')}>
+                                                <MailIcon className="h-4 w-4" /><span>Email</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/settings/api-keys" className={cn('w-full', path.startsWith('/settings/api-keys') && 'text-primary')}>
+                                                <KeyIcon className="h-4 w-4" /><span>API Keys</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/settings/audit-log" className={cn('w-full', path.startsWith('/settings/audit-log') && 'text-primary')}>
+                                                <ClipboardListIcon className="h-4 w-4" /><span>Audit Log</span>
+                                            </Link>
+                                        </DropdownMenuItem>
                                         {(usePage<PageProps>().props as any).activeModules?.includes('SlaManager') && (<>
                                             <DropdownMenuItem asChild>
                                                 <Link href="/settings/sla" className={cn('w-full', path === '/settings/sla' && 'text-primary')}>
@@ -617,17 +715,20 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
 
                             <NotificationBell />
 
-                            {/* Avatar — profile + sign out only */}
+                            {/* Avatar — profile + status + sign out */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
                                         className="inline-flex h-10 items-center gap-2 rounded-xl px-2.5 text-left transition-colors hover:bg-muted/70"
                                     >
-                                        <Avatar className="size-8">
-                                            <AvatarImage src={auth.user?.avatar ?? undefined} alt={auth.user?.name ?? 'User'} />
-                                            <AvatarFallback>{getInitials(auth.user?.name)}</AvatarFallback>
-                                        </Avatar>
+                                        <div className="relative shrink-0">
+                                            <Avatar className="size-8">
+                                                <AvatarImage src={auth.user?.avatar ?? undefined} alt={auth.user?.name ?? 'User'} />
+                                                <AvatarFallback>{getInitials(auth.user?.name)}</AvatarFallback>
+                                            </Avatar>
+                                            <StatusDot status={currentUserStatus} />
+                                        </div>
                                         <div className="hidden min-w-0 sm:block">
                                             <p className="truncate text-sm font-semibold">{auth.user?.name}</p>
                                             <p className="truncate text-xs text-muted-foreground capitalize">{auth.user?.role}</p>
@@ -635,10 +736,26 @@ export default function AppLayout({ children, fullHeight }: AppLayoutProps) {
                                         <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48 border-0 bg-popover/95 shadow-xl backdrop-blur">
+                                <DropdownMenuContent align="end" className="w-52 border-0 bg-popover/95 shadow-xl backdrop-blur">
                                     <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                         {auth.user?.name} · <span className="capitalize">{auth.user?.role}</span>
                                     </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuGroup>
+                                        {(Object.keys(AGENT_STATUS_LABELS) as AgentStatus[]).map((s) => (
+                                            <DropdownMenuItem
+                                                key={s}
+                                                onSelect={() => router.patch('/profile/status', { status: s })}
+                                                className="gap-2"
+                                            >
+                                                <span className={cn('size-2 rounded-full shrink-0', AGENT_STATUS_COLORS[s])} />
+                                                <span>{AGENT_STATUS_LABELS[s]}</span>
+                                                {currentUserStatus === s && (
+                                                    <span className="ml-auto text-[10px] text-primary font-medium">✓</span>
+                                                )}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuGroup>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <Link href="/profile">

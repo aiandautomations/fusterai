@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\AgentStatusChanged;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,11 +37,21 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/conversations');
+        $user = $request->user();
+        $user->update(['status' => 'online']);
+        broadcast(new AgentStatusChanged($user->workspace_id, $user->id, 'online'))->toOthers();
+
+        return redirect()->intended('/dashboard');
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        if ($user) {
+            $user->update(['status' => 'offline']);
+            broadcast(new AgentStatusChanged($user->workspace_id, $user->id, 'offline'))->toOthers();
+        }
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

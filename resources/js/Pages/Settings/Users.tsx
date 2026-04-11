@@ -8,6 +8,8 @@ import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
 import { cn, getInitials } from '@/lib/utils'
 import { type PageProps } from '@/types'
+import StatusDot from '@/Components/StatusDot'
+import { type AgentStatus } from '@/lib/agentStatus'
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
     DropdownMenuSeparator, DropdownMenuTrigger,
@@ -155,17 +157,22 @@ function UserRow({
 }) {
     const isEditing = editingId === user.id
     const showMailbox = mailboxPanel === user.id
+    const { agentStatuses } = usePage<PageProps & { agentStatuses: Record<number, string> }>().props;
+    const agentStatus = (agentStatuses?.[user.id] ?? 'offline') as AgentStatus;
 
     return (
         <div className={cn('rounded-xl border border-border bg-background overflow-hidden transition-shadow', (isEditing || showMailbox) && 'shadow-sm')}>
             <div className="flex items-center gap-4 px-4 py-3.5">
                 {/* Avatar */}
-                <Avatar className="size-9 shrink-0">
-                    <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
-                    <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
-                        {getInitials(user.name)}
-                    </AvatarFallback>
-                </Avatar>
+                <div className="relative shrink-0">
+                    <Avatar className="size-9">
+                        <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                        <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                            {getInitials(user.name)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <StatusDot status={agentStatus} />
+                </div>
 
                 {/* Name / email */}
                 <div className="flex-1 min-w-0">

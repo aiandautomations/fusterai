@@ -4,7 +4,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent } from '@/Components/ui/card';
-import { CheckCircleIcon, Loader2Icon, AlertTriangleIcon } from 'lucide-react';
+import { CheckCircleIcon, Loader2Icon, AlertTriangleIcon, LinkIcon } from 'lucide-react';
 
 interface Document {
     id: number;
@@ -56,6 +56,9 @@ export default function Show({ kb, documents }: Props) {
                     <div className="flex gap-2">
                         <Link href={route('ai.knowledge-bases.edit', kb.id)}>
                             <Button variant="outline" size="sm">Settings</Button>
+                        </Link>
+                        <Link href={route('ai.kb.documents.create', { knowledgeBase: kb.id }) + '?tab=url'}>
+                            <Button variant="outline" size="sm"><LinkIcon className="h-3.5 w-3.5 mr-1.5" />Import URL</Button>
                         </Link>
                         <Link href={route('ai.kb.documents.create', { knowledgeBase: kb.id })}>
                             <Button size="sm">+ New Document</Button>

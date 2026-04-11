@@ -27,7 +27,8 @@ interface Props {
 
 export default function EditDocument({ kb, document }: Props) {
     const isEditing = !!document;
-    const [tab, setTab] = useState<'write' | 'url'>('write');
+    const defaultTab = new URLSearchParams(window.location.search).get('tab') === 'url' ? 'url' : 'write';
+    const [tab, setTab] = useState<'write' | 'url'>(defaultTab);
 
     const { data, setData, post, patch, processing, errors } = useForm({
         title:   document?.title ?? '',

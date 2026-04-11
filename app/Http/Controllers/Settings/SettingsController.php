@@ -330,4 +330,35 @@ class SettingsController extends Controller
             ],
         ]);
     }
+
+    public function auditLog(Request $request): Response
+    {
+        $this->authorize('manage-settings');
+
+        $workspaceId = $request->user()->workspace_id;
+        $days   = (int) $request->get('days', 30);
+        $days   = in_array($days, [7, 30, 90]) ? $days : 30;
+        $search = (string) $request->get('search', '');
+
+        $userIds = \App\Models\User::where('workspace_id', $workspaceId)->pluck('id');
+
+        $query = \Spatie\Activitylog\Models\Activity::with('causer')
+            ->where('causer_type', \App\Models\User::class)
+            ->whereIn('causer_id', $userIds)
+            ->where('created_at', '>=', now()->subDays($days));
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'ilike', "%{$search}%")
+                  ->orWhere('log_name', 'ilike', "%{$search}%")
+                  ->orWhere('subject_type', 'ilike', "%{$search}%");
+            });
+        }
+
+        return Inertia::render('Settings/AuditLog', [
+            'logs'   => $query->latest()->paginate(50)->withQueryString(),
+            'days'   => $days,
+            'search' => $search,
+        ]);
+    }
 }

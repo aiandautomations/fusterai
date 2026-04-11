@@ -44,11 +44,18 @@ class HandleInertiaRequests extends Middleware
                     'avatar'       => $request->user()->avatar,
                     'workspace_id' => $request->user()->workspace_id,
                     'preferences'  => $request->user()->preferences,
+                    'status'       => $request->user()->status ?? 'offline',
                 ] : null,
             ],
+            'agentStatuses' => fn () => $request->user()
+                ? \App\Models\User::where('workspace_id', $request->user()->workspace_id)
+                    ->get(['id', 'status'])
+                    ->pluck('status', 'id')
+                : [],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
+                'token'   => fn () => $request->session()->get('token'),
             ],
             'notifications' => [
                 'unread_count' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
@@ -61,6 +68,15 @@ class HandleInertiaRequests extends Middleware
             'tags' => fn () => $request->user()
                 ? \App\Domains\Conversation\Models\Tag::where('workspace_id', $request->user()->workspace_id)
                     ->get(['id', 'name', 'color'])
+                : [],
+            'customViews' => fn () => $request->user()
+                ? \App\Domains\Conversation\Models\CustomView::where('workspace_id', $request->user()->workspace_id)
+                    ->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user()->id)
+                          ->orWhere('is_shared', true);
+                    })
+                    ->orderBy('order')
+                    ->get(['id', 'name', 'color', 'filters', 'is_shared', 'user_id'])
                 : [],
             'branding' => function () use ($getWorkspace) {
                 $branding = $getWorkspace()?->settings['branding'] ?? [];

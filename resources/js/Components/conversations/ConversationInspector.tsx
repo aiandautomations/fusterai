@@ -8,6 +8,7 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { cn, getInitials } from '@/lib/utils';
 import type { Conversation, Folder, Mailbox, Tag, User } from '@/types';
+import StatusDot from '@/Components/StatusDot';
 import { EyeIcon, EyeOffIcon, XIcon, ChevronDownIcon, ArrowUpRightIcon, UserCheckIcon } from 'lucide-react';
 import type { PageProps } from '@/types';
 
@@ -22,7 +23,7 @@ type InspectorConversation = Conversation & {
 
 interface Props {
     conversation: InspectorConversation;
-    agents: { id: number; name: string }[];
+    agents: { id: number; name: string; avatar?: string; status?: string }[];
     tags: Tag[];
     folders?: Folder[];
     mailboxes?: Pick<Mailbox, 'id' | 'name'>[];
@@ -213,11 +214,14 @@ export default function ConversationInspector({
                         <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors group border border-transparent hover:border-border">
                             {assignedAgent ? (
                                 <>
-                                    <Avatar className="size-5 shrink-0">
-                                        <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
-                                            {getInitials(assignedAgent.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative shrink-0">
+                                        <Avatar className="size-5">
+                                            <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
+                                                {getInitials(assignedAgent.name)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <StatusDot status={assignedAgent.status} size="sm" />
+                                    </div>
                                     <span className="text-[12px] font-medium text-foreground/90 flex-1 text-left truncate">{assignedAgent.name}</span>
                                 </>
                             ) : (
@@ -242,11 +246,14 @@ export default function ConversationInspector({
                                     onSelect={() => onAssignChange(String(agent.id))}
                                     className={cn('text-xs', agent.id === conversation.assigned_user_id && 'text-primary font-medium')}
                                 >
-                                    <Avatar className="size-5 mr-1.5 shrink-0">
-                                        <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
-                                            {getInitials(agent.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative mr-1.5 shrink-0">
+                                        <Avatar className="size-5">
+                                            <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
+                                                {getInitials(agent.name)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <StatusDot status={agent.status} size="sm" />
+                                    </div>
                                     {agent.name}
                                 </DropdownMenuItem>
                             ))}

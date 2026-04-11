@@ -18,7 +18,10 @@ export interface PageProps {
     flash: {
         success?: string;
         error?: string;
+        token?: string;
     };
+    agentStatuses: Record<number, string>;
+    customViews?: CustomView[];
     folders?: Folder[];
     ziggy: {
         url: string;
@@ -47,6 +50,7 @@ export interface User {
     email: string;
     role: 'super_admin' | 'admin' | 'manager' | 'agent';
     avatar?: string;
+    status?: 'online' | 'away' | 'busy' | 'offline';
     preferences?: Record<string, unknown>;
     last_active_at?: string;
     created_at: string;
@@ -153,6 +157,22 @@ export interface Folder {
     order: number;
     open_count?: number;
     conversations_count?: number;
+}
+
+export interface CustomView {
+    id: number;
+    user_id: number | null;
+    name: string;
+    color: string;
+    is_shared: boolean;
+    filters: {
+        status?: string;
+        assigned?: string;
+        mailbox_id?: number;
+        tag_id?: number;
+        priority?: string;
+        channel_type?: string;
+    };
 }
 
 export interface AiSuggestion {

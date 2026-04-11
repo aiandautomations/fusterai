@@ -13,7 +13,7 @@ use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\TagController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect('/conversations'));
+Route::get('/', fn () => redirect('/dashboard'));
 
 // ── Unsubscribe (public, signed URL) ─────────────────────────────────────────
 Route::get('/unsubscribe/{customer}', [\App\Http\Controllers\UnsubscribeController::class, 'show'])->name('unsubscribe');
@@ -46,11 +46,15 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+
     // ── Profile ───────────────────────────────────────────────────────────────
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile');
     Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('/profile/avatar', [\App\Http\Controllers\ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::patch('/profile/status', [\App\Http\Controllers\AgentStatusController::class, 'update'])->name('profile.status');
 
     // ── Conversations ─────────────────────────────────────────────────────────
 
@@ -95,6 +99,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('settings/folders', \App\Http\Controllers\Settings\FolderController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->names('settings.folders');
+
+    // ── Custom Views ──────────────────────────────────────────────────────────────
+
+    Route::post('/views', [\App\Http\Controllers\CustomViewController::class, 'store'])->name('views.store');
+    Route::patch('/views/{customView}', [\App\Http\Controllers\CustomViewController::class, 'update'])->name('views.update');
+    Route::delete('/views/{customView}', [\App\Http\Controllers\CustomViewController::class, 'destroy'])->name('views.destroy');
 
     // ── Conversation folder sync + mailbox move ────────────────────────────────
 
@@ -148,6 +158,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/settings/ai', [SettingsController::class, 'updateAi'])->name('settings.ai.update');
     Route::post('/settings/ai/test-connection', [SettingsController::class, 'testAiConnection'])->name('settings.ai.test');
     Route::get('/settings/email', [SettingsController::class, 'email'])->name('settings.email');
+    Route::get('/settings/audit-log', [SettingsController::class, 'auditLog'])->name('settings.audit-log');
+    Route::get('/settings/api-keys', [\App\Http\Controllers\Settings\ApiKeyController::class, 'index'])->name('settings.api-keys');
+    Route::post('/settings/api-keys', [\App\Http\Controllers\Settings\ApiKeyController::class, 'store'])->name('settings.api-keys.store');
+    Route::delete('/settings/api-keys/{id}', [\App\Http\Controllers\Settings\ApiKeyController::class, 'destroy'])->name('settings.api-keys.destroy');
     Route::get('/settings/live-chat', [SettingsController::class, 'liveChat'])->name('settings.livechat');
     Route::patch('/settings/live-chat', [SettingsController::class, 'updateLiveChat'])->name('settings.livechat.update');
 

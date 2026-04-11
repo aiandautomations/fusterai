@@ -33,8 +33,9 @@ class RoutingSettingsController extends Controller
             ->where('users.workspace_id', $workspaceId)
             ->whereIn('users.role', ['agent', 'admin'])
             ->whereIn('mailbox_user.mailbox_id', $mailboxIds)
+            ->selectRaw('mailbox_user.mailbox_id, COUNT(*) as agent_count')
             ->groupBy('mailbox_user.mailbox_id')
-            ->pluck(DB::raw('COUNT(*)'), 'mailbox_user.mailbox_id');
+            ->pluck('agent_count', 'mailbox_user.mailbox_id');
 
         // Build per-mailbox config rows
         $configs = $mailboxes->map(function (Mailbox $mailbox) use ($routingConfigs, $agentCounts) {

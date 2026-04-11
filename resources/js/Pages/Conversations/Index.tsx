@@ -6,8 +6,9 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
 import { cn, getInitials, sanitizeHtml } from '@/lib/utils';
-import type { Conversation, Mailbox, Tag, Thread, User, Customer, Attachment, Paginated, PageProps, Folder } from '@/types';
-import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon, KeyboardIcon } from 'lucide-react';
+import type { Conversation, Mailbox, Tag, Thread, User, Customer, Attachment, Paginated, PageProps, Folder, CustomView } from '@/types';
+import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon, KeyboardIcon, BookmarkIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import ViewBuilderModal from '@/Components/ViewBuilderModal';
 import { Checkbox } from '@/Components/ui/checkbox';
 import {
     DropdownMenu,
@@ -147,10 +148,12 @@ interface Props {
         conversation?: string;
         date_from?: string;
         date_to?: string;
+        view?: string;
     };
     selected?: FullConversation | null;
-    agents: { id: number; name: string }[];
+    agents: { id: number; name: string; avatar?: string; status?: string }[];
     isFollowing: boolean;
+    activeView?: { id: number; name: string; color: string; filters: CustomView['filters'] } | null;
     survey?: {
         rating: 'good' | 'bad';
         responded_at: string;
@@ -412,12 +415,15 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ConversationsIndex({ conversations, mailboxes, tags, folders, counts, filters, selected, agents, isFollowing, survey }: Props) {
+export default function ConversationsIndex({ conversations, mailboxes, tags, folders, counts, filters, selected, agents, isFollowing, activeView, survey }: Props) {
     const { auth } = usePage<PageProps>().props;
     const isAgent = auth.user?.role === 'agent';
     const activeStatus = filters.status ?? 'open';
     const [showNewConv, setShowNewConv] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showViewBuilder, setShowViewBuilder] = useState(false);
+    const [editingView, setEditingView] = useState<CustomView | null>(null);
+    const [saveAsFilters, setSaveAsFilters] = useState<Record<string, string | undefined> | undefined>(undefined);
     const [mobileShowDetail, setMobileShowDetail] = useState(!!selected);
     const appliedAgentDefaultRef = useRef(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -523,7 +529,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
     const activeTag = tags.find((tag) => String(tag.id) === filters.tag);
 
     return (
-        <AppLayout fullHeight>
+        <AppLayout fullHeight onCreateView={() => { setEditingView(null); setSaveAsFilters(undefined); setShowViewBuilder(true); }}>
             <Head title="Conversations" />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -536,8 +542,60 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                 )}>
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
-                        <h1 className="font-semibold text-lg tracking-tight">Inbox</h1>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                            {activeView ? (
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: activeView.color }} />
+                                    <h1 className="font-semibold text-lg tracking-tight truncate">{activeView.name}</h1>
+                                </div>
+                            ) : (
+                                <h1 className="font-semibold text-lg tracking-tight">Inbox</h1>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {activeView ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingView(activeView as unknown as CustomView);
+                                            setSaveAsFilters(undefined);
+                                            setShowViewBuilder(true);
+                                        }}
+                                        title="Edit view"
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                                    >
+                                        <PencilIcon className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (confirm(`Delete view "${activeView.name}"?`)) {
+                                                router.delete(`/views/${activeView.id}`, {
+                                                    onSuccess: () => router.visit('/conversations'),
+                                                });
+                                            }
+                                        }}
+                                        title="Delete view"
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                    >
+                                        <Trash2Icon className="h-3.5 w-3.5" />
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingView(null);
+                                        setSaveAsFilters(filters);
+                                        setShowViewBuilder(true);
+                                    }}
+                                    title="Save current filters as a view"
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                                >
+                                    <BookmarkIcon className="h-3.5 w-3.5" />
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setShowShortcuts(true)}
@@ -901,6 +959,17 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
             )}
             {showShortcuts && (
                 <ShortcutsModal onClose={() => setShowShortcuts(false)} />
+            )}
+            {showViewBuilder && (
+                <ViewBuilderModal
+                    onClose={() => { setShowViewBuilder(false); setEditingView(null); setSaveAsFilters(undefined); }}
+                    mailboxes={mailboxes}
+                    tags={tags}
+                    agents={agents}
+                    editingView={editingView}
+                    currentFilters={saveAsFilters}
+                    userRole={auth.user.role}
+                />
             )}
         </AppLayout>
     );

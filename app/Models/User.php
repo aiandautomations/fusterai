@@ -40,6 +40,7 @@ class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthe
         'signature',
         'preferences',
         'last_active_at',
+        'status',
     ];
 
     protected $hidden = [
