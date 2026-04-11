@@ -6,16 +6,17 @@ use App\Ai\Agents\SummarizationAgent;
 use App\Http\Controllers\Controller;
 use App\Models\Workspace;
 use App\Services\AiSettingsService;
+use App\Services\WorkspaceSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SettingsController extends Controller
 {
+    public function __construct(private WorkspaceSettingsService $settings) {}
     public function index(): RedirectResponse
     {
         return redirect()->route('settings.general');
@@ -45,17 +46,13 @@ class SettingsController extends Controller
             'timezone' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $workspace = Workspace::findOrFail($request->user()->workspace_id);
+        $workspace       = Workspace::findOrFail($request->user()->workspace_id);
         $workspace->name = $validated['name'];
-
-        $settings = $workspace->settings ?? [];
+        $workspace->save();
 
         if (isset($validated['timezone'])) {
-            $settings['timezone'] = $validated['timezone'];
+            $this->settings->update($workspace, 'timezone', $validated['timezone']);
         }
-
-        $workspace->settings = $settings;
-        $workspace->save();
 
         return redirect()->back()->with('success', 'Workspace settings saved.');
     }
@@ -70,24 +67,16 @@ class SettingsController extends Controller
         ]);
 
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
-        $settings  = $workspace->settings ?? [];
-        $branding  = $settings['branding'] ?? [];
 
+        if ($request->hasFile('branding_logo')) {
+            $this->settings->storeLogo($workspace, $request->file('branding_logo'));
+        }
+
+        $branding            = $this->settings->get($workspace, 'branding', []);
         $branding['name']    = $validated['branding_name'] ?? '';
         $branding['website'] = $validated['branding_website'] ?? '';
 
-        if ($request->hasFile('branding_logo')) {
-            if (!empty($branding['logo_path'])) {
-                Storage::disk('public')->delete($branding['logo_path']);
-            }
-            $path = $request->file('branding_logo')->store('workspace/logos', 'public');
-            $branding['logo_path'] = $path;
-            $branding['logo_url']  = Storage::disk('public')->url($path);
-        }
-
-        $settings['branding'] = $branding;
-        $workspace->settings  = $settings;
-        $workspace->save();
+        $this->settings->update($workspace, 'branding', $branding);
 
         return redirect()->back()->with('success', 'Branding saved.');
     }
@@ -236,25 +225,15 @@ class SettingsController extends Controller
     public function updateAppearance(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'mode'  => ['required', 'in:light,dark,system'],
-            'color' => ['required', 'in:neutral,amber,blue,cyan,emerald,fuchsia,green,indigo,lime,orange,pink,purple,red,rose,sky,teal,violet,yellow'],
-            'font'  => ['required', 'in:inter,figtree,manrope,system'],
-            'radius' => ['required', 'in:sm,md,lg,xl'],
+            'mode'     => ['required', 'in:light,dark,system'],
+            'color'    => ['required', 'in:neutral,amber,blue,cyan,emerald,fuchsia,green,indigo,lime,orange,pink,purple,red,rose,sky,teal,violet,yellow'],
+            'font'     => ['required', 'in:inter,figtree,manrope,system'],
+            'radius'   => ['required', 'in:sm,md,lg,xl'],
             'contrast' => ['required', 'in:soft,balanced,strong'],
         ]);
 
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
-        $settings = $workspace->settings ?? [];
-        $settings['appearance'] = [
-            'mode'     => $validated['mode'],
-            'color'    => $validated['color'],
-            'font'     => $validated['font'],
-            'radius'   => $validated['radius'],
-            'contrast' => $validated['contrast'],
-        ];
-
-        $workspace->settings = $settings;
-        $workspace->save();
+        $this->settings->update($workspace, 'appearance', $validated);
 
         return redirect()->back()->with('success', 'Appearance settings saved.');
     }
@@ -308,10 +287,7 @@ class SettingsController extends Controller
         ]);
 
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
-        $settings = $workspace->settings ?? [];
-        $settings['live_chat'] = $validated;
-        $workspace->settings = $settings;
-        $workspace->save();
+        $this->settings->update($workspace, 'live_chat', $validated);
 
         return redirect()->back()->with('success', 'Live Chat settings saved.');
     }

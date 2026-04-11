@@ -8,24 +8,20 @@ use App\Domains\Conversation\Models\Tag;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
-use App\Events\ConversationUpdated;
-use App\Domains\Conversation\Jobs\SendReplyJob;
 use App\Http\Controllers\Controller;
-use App\Domains\Automation\Jobs\RunAutomationRulesJob;
-use App\Domains\AI\Jobs\SummarizeConversationJob;
-use App\Services\AiSettingsService;
 use App\Models\ConversationRead;
-use App\Notifications\ConversationAssignedNotification;
+use App\Services\ConversationService;
 use App\Support\Hooks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ConversationController extends Controller
 {
+    public function __construct(private ConversationService $service) {}
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -234,32 +230,7 @@ class ConversationController extends Controller
             'body'        => ['required', 'string'],
         ]);
 
-        [$conversation, $thread] = DB::transaction(function () use ($workspaceId, $validated, $request) {
-            $conversation = Conversation::create([
-                'workspace_id'  => $workspaceId,
-                'mailbox_id'    => $validated['mailbox_id'],
-                'customer_id'   => $validated['customer_id'],
-                'subject'       => $validated['subject'],
-                'status'        => 'open',
-                'channel_type'  => 'email',
-                'last_reply_at' => now(),
-            ]);
-
-            $thread = $conversation->threads()->create([
-                'user_id' => $request->user()->id,
-                'type'    => 'message',
-                'body'    => $validated['body'],
-                'source'  => 'web',
-            ]);
-
-            return [$conversation, $thread];
-        });
-
-        // Send the initial email to the customer
-        SendReplyJob::dispatch($thread, $conversation)->onQueue('email-outbound');
-
-        RunAutomationRulesJob::dispatch('conversation.created', $conversation);
-        Hooks::doAction('conversation.created', $conversation);
+        ['conversation' => $conversation] = $this->service->create($validated, $workspaceId, $request->user());
 
         return redirect()->route('conversations.show', $conversation);
     }
@@ -269,40 +240,11 @@ class ConversationController extends Controller
         $this->authorize('update', $conversation);
         $request->validate(['status' => ['required', Rule::enum(ConversationStatus::class)]]);
 
-        $oldStatus = $conversation->status;
-        $newStatus = $request->enum('status', ConversationStatus::class);
-        $conversation->update(['status' => $newStatus]);
-
-        // Block the customer when marked spam so future emails skip auto-reply and
-        // are auto-marked spam. Unblock if the conversation is reopened/closed.
-        $customer = $conversation->customer;
-        if ($customer) {
-            if ($newStatus === ConversationStatus::Spam) {
-                $customer->update(['is_blocked' => true]);
-            } elseif ($oldStatus === ConversationStatus::Spam) {
-                $customer->update(['is_blocked' => false]);
-            }
-        }
-
-        $actor  = $request->user()->name;
-        $conversation->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'source'  => 'web',
-            'body'    => "{$actor} changed status from <strong>{$oldStatus->label()}</strong> to <strong>{$newStatus->label()}</strong>",
-        ]);
-
-        $conversation->refresh();
-        Hooks::doAction('conversation.updated', $conversation);
-        broadcast(new ConversationUpdated($conversation));
-
-        if ($newStatus === ConversationStatus::Closed) {
-            Hooks::doAction('conversation.closed', $conversation);
-            RunAutomationRulesJob::dispatch('conversation.closed', $conversation);
-            if (app(AiSettingsService::class)->isFeatureEnabled($conversation->workspace_id, 'summarization')) {
-                SummarizeConversationJob::dispatch($conversation)->onQueue('ai');
-            }
-        }
+        $this->service->changeStatus(
+            $conversation,
+            $request->enum('status', ConversationStatus::class),
+            $request->user(),
+        );
 
         return back();
     }
@@ -310,34 +252,9 @@ class ConversationController extends Controller
     public function assign(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $workspaceId = $request->user()->workspace_id;
-        $request->validate(['user_id' => ['nullable', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)]]);
+        $request->validate(['user_id' => ['nullable', Rule::exists('users', 'id')->where('workspace_id', $request->user()->workspace_id)]]);
 
-        $conversation->update(['assigned_user_id' => $request->user_id]);
-
-        $actor = $request->user()->name;
-        if ($request->user_id) {
-            $assignee = \App\Models\User::find($request->user_id);
-            $body = $assignee->id === $request->user()->id
-                ? "{$actor} self-assigned this conversation"
-                : "{$actor} assigned this conversation to <strong>{$assignee->name}</strong>";
-        } else {
-            $body = "{$actor} unassigned this conversation";
-            $assignee = null;
-        }
-
-        $conversation->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'source'  => 'web',
-            'body'    => $body,
-        ]);
-
-        $conversation->refresh();
-        Hooks::doAction('conversation.updated', $conversation);
-        broadcast(new ConversationUpdated($conversation));
-
-        $assignee?->notify(new ConversationAssignedNotification($conversation));
+        $this->service->assign($conversation, $request->user_id, $request->user());
 
         return back();
     }
@@ -347,15 +264,7 @@ class ConversationController extends Controller
         $this->authorize('update', $conversation);
         $request->validate(['until' => ['required', 'date', 'after:now']]);
 
-        $conversation->update(['snoozed_until' => $request->until]);
-
-        $until = \Carbon\Carbon::parse($request->until)->format('M j, Y g:i A');
-        $conversation->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'source'  => 'web',
-            'body'    => "{$request->user()->name} snoozed this conversation until <strong>{$until}</strong>",
-        ]);
+        $this->service->snooze($conversation, \Carbon\Carbon::parse($request->until), $request->user());
 
         return back();
     }
@@ -365,20 +274,11 @@ class ConversationController extends Controller
         $this->authorize('update', $conversation);
         $request->validate(['priority' => ['required', Rule::enum(ConversationPriority::class)]]);
 
-        $oldPriority = $conversation->priority;
-        $newPriority = $request->enum('priority', ConversationPriority::class);
-        $conversation->update(['priority' => $newPriority]);
-
-        $conversation->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'source'  => 'web',
-            'body'    => "{$request->user()->name} changed priority from <strong>{$oldPriority->label()}</strong> to <strong>{$newPriority->label()}</strong>",
-        ]);
-
-        $conversation->refresh();
-        Hooks::doAction('conversation.updated', $conversation);
-        broadcast(new ConversationUpdated($conversation));
+        $this->service->changePriority(
+            $conversation,
+            $request->enum('priority', ConversationPriority::class),
+            $request->user(),
+        );
 
         return back();
     }
@@ -386,8 +286,7 @@ class ConversationController extends Controller
     public function merge(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $workspaceId = $request->user()->workspace_id;
-        $request->validate(['into_id' => ['required', Rule::exists('conversations', 'id')->where('workspace_id', $workspaceId)]]);
+        $request->validate(['into_id' => ['required', Rule::exists('conversations', 'id')->where('workspace_id', $request->user()->workspace_id)]]);
 
         if ((int) $request->into_id === $conversation->id) {
             return back()->with('error', 'A conversation cannot be merged into itself.');
@@ -396,17 +295,7 @@ class ConversationController extends Controller
         $target = Conversation::findOrFail($request->into_id);
         $this->authorize('update', $target);
 
-        $conversation->threads()->update(['conversation_id' => $target->id]);
-
-        $target->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'body'    => "Conversation #{$conversation->id} was merged into this conversation.",
-            'source'  => 'web',
-        ]);
-
-        $target->update(['last_reply_at' => now()]);
-        $conversation->delete();
+        $this->service->merge($conversation, $target, $request->user());
 
         return redirect()->route('conversations.show', $target);
     }
@@ -440,24 +329,12 @@ class ConversationController extends Controller
     public function changeMailbox(Request $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $workspaceId = $request->user()->workspace_id;
 
         $request->validate([
-            'mailbox_id' => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
+            'mailbox_id' => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 
-        $conversation->update(['mailbox_id' => $request->mailbox_id]);
-
-        $conversation->refresh()->load('mailbox');
-
-        $conversation->threads()->create([
-            'user_id' => $request->user()->id,
-            'type'    => 'activity',
-            'body'    => "Conversation moved to mailbox: {$conversation->mailbox->name}",
-            'source'  => 'web',
-        ]);
-
-        broadcast(new ConversationUpdated($conversation->fresh()));
+        $this->service->changeMailbox($conversation, $request->mailbox_id, $request->user());
 
         return back();
     }
@@ -512,14 +389,15 @@ class ConversationController extends Controller
     public function bulk(Request $request): \Illuminate\Http\JsonResponse
     {
         $workspaceId = $request->user()->workspace_id;
+        $actor       = $request->user();
 
         $validated = $request->validate([
-            'ids'         => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*'       => ['integer'],
-            'action'      => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
-            'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
-            'snooze_until'=> ['nullable', 'date', 'after:now'],
-            'priority'    => ['nullable', Rule::enum(ConversationPriority::class)],
+            'ids'          => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*'        => ['integer'],
+            'action'       => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
+            'assigned_to'  => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
+            'snooze_until' => ['nullable', 'date', 'after:now'],
+            'priority'     => ['nullable', Rule::enum(ConversationPriority::class)],
         ]);
 
         // Scope all IDs to the workspace — prevents cross-workspace access
@@ -527,54 +405,18 @@ class ConversationController extends Controller
             ->whereIn('id', $validated['ids'])
             ->get();
 
-        $userId = $request->user()->id;
-
-        $actor    = $request->user()->name;
-        $assignee = isset($validated['assigned_to']) ? \App\Models\User::find($validated['assigned_to']) : null;
-
         foreach ($conversations as $conversation) {
-            $activityBody = null;
-
-            match ((string) $validated['action']) {
-                'close'  => (function () use ($conversation, $actor, &$activityBody) {
-                    $conversation->update(['status' => 'closed']);
-                    $activityBody = "{$actor} closed this conversation.";
-                })(),
-                'reopen' => (function () use ($conversation, $actor, &$activityBody) {
-                    $conversation->update(['status' => 'open', 'snoozed_until' => null]);
-                    $activityBody = "{$actor} reopened this conversation.";
-                })(),
-                'spam'   => (function () use ($conversation, $actor, &$activityBody) {
-                    $conversation->update(['status' => 'spam']);
-                    $activityBody = "{$actor} marked this conversation as spam.";
-                })(),
-                'assign' => (function () use ($conversation, $actor, $assignee, $validated, &$activityBody) {
-                    $conversation->update(['assigned_user_id' => $validated['assigned_to'] ?: null]);
-                    $activityBody = $assignee
-                        ? "{$actor} assigned this conversation to <strong>{$assignee->name}</strong>."
-                        : "{$actor} unassigned this conversation.";
-                })(),
-                'snooze'      => $conversation->update(['snoozed_until' => $validated['snooze_until']]),
-                'priority'    => $conversation->update(['priority' => $validated['priority']]),
-                'mark_read'   => ConversationRead::markRead($userId, $conversation->id),
-                'mark_unread' => ConversationRead::where('user_id', $userId)
-                    ->where('conversation_id', $conversation->id)
-                    ->delete(),
-                default => null,
+            match ($validated['action']) {
+                'close'      => $this->service->changeStatus($conversation, ConversationStatus::Closed, $actor),
+                'reopen'     => $this->service->changeStatus($conversation, ConversationStatus::Open, $actor),
+                'spam'       => $this->service->changeStatus($conversation, ConversationStatus::Spam, $actor),
+                'assign'     => $this->service->assign($conversation, $validated['assigned_to'] ?: null, $actor),
+                'snooze'     => $this->service->snooze($conversation, \Carbon\Carbon::parse($validated['snooze_until']), $actor, silent: true),
+                'priority'   => $this->service->changePriority($conversation, ConversationPriority::from($validated['priority']), $actor, silent: true),
+                'mark_read'  => ConversationRead::markRead($actor->id, $conversation->id),
+                'mark_unread'=> ConversationRead::where('user_id', $actor->id)->where('conversation_id', $conversation->id)->delete(),
+                default      => null,
             };
-
-            if ($activityBody) {
-                $conversation->threads()->create([
-                    'user_id' => $userId,
-                    'type'    => 'activity',
-                    'source'  => 'web',
-                    'body'    => $activityBody,
-                ]);
-            }
-
-            if (!in_array($validated['action'], ['mark_read', 'mark_unread'])) {
-                broadcast(new ConversationUpdated($conversation));
-            }
         }
 
         return response()->json(['updated' => $conversations->count()]);

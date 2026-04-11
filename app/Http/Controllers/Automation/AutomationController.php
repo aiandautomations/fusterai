@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Automation;
 
 use App\Domains\Automation\Models\AutomationRule;
 use App\Http\Controllers\Controller;
+use App\Services\AutomationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,7 @@ use Inertia\Response;
 
 class AutomationController extends Controller
 {
+    public function __construct(private AutomationService $service) {}
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', AutomationRule::class);
@@ -49,11 +51,7 @@ class AutomationController extends Controller
             'active'      => ['boolean'],
         ]);
 
-        AutomationRule::create([
-            ...$validated,
-            'workspace_id' => $request->user()->workspace_id,
-            'order'        => AutomationRule::where('workspace_id', $request->user()->workspace_id)->max('order') + 1,
-        ]);
+        $this->service->create($validated, $request->user()->workspace_id);
 
         return redirect()->route('automation.index')->with('success', 'Automation rule created.');
     }
@@ -83,7 +81,7 @@ class AutomationController extends Controller
             'active'      => ['boolean'],
         ]);
 
-        $automation->update($validated);
+        $this->service->update($automation, $validated);
 
         return redirect()->route('automation.index')->with('success', 'Rule updated.');
     }
@@ -91,7 +89,7 @@ class AutomationController extends Controller
     public function destroy(Request $request, AutomationRule $automation): RedirectResponse
     {
         $this->authorize('delete', $automation);
-        $automation->delete();
+        $this->service->delete($automation);
 
         return redirect()->route('automation.index')->with('success', 'Rule deleted.');
     }
@@ -99,7 +97,7 @@ class AutomationController extends Controller
     public function toggle(Request $request, AutomationRule $automation): RedirectResponse
     {
         $this->authorize('update', $automation);
-        $automation->update(['active' => ! $automation->active]);
+        $this->service->toggle($automation);
 
         return back();
     }

@@ -9,5 +9,8 @@ parameters:
 
     treatPhpDocTypesAsCertain: false
 
+    parallel:
+        maximumNumberOfProcesses: 1
+
     excludePaths:
         - app/Http/Middleware/HandleInertiaRequests.php

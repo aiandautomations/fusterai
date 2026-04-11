@@ -192,7 +192,7 @@ test('bulk close creates an activity thread for each conversation', function () 
             ->first();
 
         expect($activity)->not->toBeNull();
-        expect($activity->body)->toContain('closed');
+        expect($activity->body)->toContain('Closed');
     }
 });
 
@@ -213,7 +213,7 @@ test('bulk reopen creates an activity thread for each conversation', function ()
             ->first();
 
         expect($activity)->not->toBeNull();
-        expect($activity->body)->toContain('reopened');
+        expect($activity->body)->toContain('Open');  // service: "changed status from Closed to Open"
     }
 });
 
@@ -272,7 +272,7 @@ test('bulk spam creates an activity thread', function () {
         ->first();
 
     expect($activity)->not->toBeNull();
-    expect($activity->body)->toContain('spam');
+    expect($activity->body)->toContain('Spam');  // service: "changed status from Open to Spam"
 });
 
 test('bulk priority does not create activity threads', function () {

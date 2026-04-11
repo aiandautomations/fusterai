@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Mailboxes;
 
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
+use App\Services\MailboxService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,7 @@ use Inertia\Response;
 
 class MailboxController extends Controller
 {
+    public function __construct(private MailboxService $service) {}
     public function index(Request $request): Response
     {
         $mailboxes = Mailbox::where('workspace_id', $request->user()->workspace_id)
@@ -42,11 +44,7 @@ class MailboxController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        Mailbox::create([
-            'workspace_id'  => $request->user()->workspace_id,
-            'webhook_token' => bin2hex(random_bytes(16)),
-            ...$validated,
-        ]);
+        $this->service->create($validated, $request->user()->workspace_id);
 
         return redirect()->route('mailboxes.index')->with('success', 'Mailbox created.');
     }
@@ -71,14 +69,14 @@ class MailboxController extends Controller
             'active'      => ['sometimes', 'boolean'],
             'imap_config' => ['nullable', 'array'],
             'smtp_config' => ['nullable', 'array'],
-            'auto_reply_config'                            => ['nullable', 'array'],
-            'auto_reply_config.enabled'                    => ['boolean'],
-            'auto_reply_config.subject'                    => ['nullable', 'string', 'max:255'],
-            'auto_reply_config.body'                       => ['nullable', 'string'],
-            'auto_reply_config.auto_close_pending_days'    => ['nullable', 'integer', 'min:0', 'max:365'],
+            'auto_reply_config'                         => ['nullable', 'array'],
+            'auto_reply_config.enabled'                 => ['boolean'],
+            'auto_reply_config.subject'                 => ['nullable', 'string', 'max:255'],
+            'auto_reply_config.body'                    => ['nullable', 'string'],
+            'auto_reply_config.auto_close_pending_days' => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
 
-        $mailbox->update($validated);
+        $this->service->update($mailbox, $validated);
 
         return back()->with('success', 'Mailbox updated.');
     }
@@ -86,8 +84,7 @@ class MailboxController extends Controller
     public function destroy(Request $request, Mailbox $mailbox): RedirectResponse
     {
         $this->authorize('delete', $mailbox);
-
-        $mailbox->delete();
+        $this->service->delete($mailbox);
 
         return redirect()->route('mailboxes.index')->with('success', 'Mailbox deleted.');
     }

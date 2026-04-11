@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\AI;
 
-use App\Domains\AI\Jobs\FetchUrlAndIndexJob;
-use App\Support\SsrfGuard;
-use App\Domains\AI\Jobs\IndexKbDocumentJob;
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
 use App\Http\Controllers\Controller;
+use App\Services\KnowledgeBaseService;
+use App\Support\SsrfGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +14,7 @@ use Inertia\Response;
 
 class KnowledgeBaseController extends Controller
 {
+    public function __construct(private KnowledgeBaseService $service) {}
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', KnowledgeBase::class);
@@ -123,10 +123,7 @@ class KnowledgeBaseController extends Controller
             'content' => 'required|string',
         ]);
 
-        /** @var \App\Domains\AI\Models\KbDocument $document */
-        $document = $knowledgeBase->documents()->create($validated);
-
-        IndexKbDocumentJob::dispatch($document);
+        $this->service->createDocument($knowledgeBase, $validated);
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document saved.');
@@ -153,9 +150,7 @@ class KnowledgeBaseController extends Controller
             'content' => 'required|string',
         ]);
 
-        $document->update($validated);
-
-        IndexKbDocumentJob::dispatch($document);
+        $this->service->updateDocument($document, $validated);
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document updated.');
@@ -175,7 +170,7 @@ class KnowledgeBaseController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        FetchUrlAndIndexJob::dispatch($knowledgeBase, $validated['url']);
+        $this->service->importUrl($knowledgeBase, $validated['url']);
 
         return response()->json(['status' => 'queued']);
     }
@@ -185,7 +180,7 @@ class KnowledgeBaseController extends Controller
         $this->authorize('update', $knowledgeBase);
         abort_unless($document->kb_id === $knowledgeBase->id, 403);
 
-        $document->delete();
+        $this->service->deleteDocument($document);
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document deleted.');

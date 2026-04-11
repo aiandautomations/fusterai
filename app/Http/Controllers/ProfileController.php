@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ProfileService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
+    public function __construct(private ProfileService $service) {}
+
     public function show(Request $request)
     {
         return Inertia::render('Profile/Index', [
@@ -27,7 +28,7 @@ class ProfileController extends Controller
             'signature' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $user->update($validated);
+        $this->service->update($user, $validated);
 
         return back()->with('success', 'Profile updated successfully.');
     }
@@ -38,17 +39,7 @@ class ProfileController extends Controller
             'avatar' => ['required', 'file', 'image', 'max:2048', 'mimes:jpg,jpeg,png,gif,webp'],
         ]);
 
-        $user = $request->user();
-
-        // Delete old avatar if stored in public disk
-        if ($user->avatar && str_contains($user->avatar, '/storage/users/avatars/')) {
-            $oldPath = str_replace(url('/storage') . '/', '', $user->avatar);
-            Storage::disk('public')->delete($oldPath);
-        }
-
-        $path = $request->file('avatar')->store('users/avatars', 'public');
-        $user->avatar = Storage::disk('public')->url($path);
-        $user->save();
+        $this->service->updateAvatar($request->user(), $request->file('avatar'));
 
         return back()->with('success', 'Avatar updated successfully.');
     }
@@ -60,9 +51,7 @@ class ProfileController extends Controller
             'password'         => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
-            'password' => Hash::make($request->password),
-        ]);
+        $this->service->updatePassword($request->user(), $request->password);
 
         return back()->with('success', 'Password updated successfully.');
     }

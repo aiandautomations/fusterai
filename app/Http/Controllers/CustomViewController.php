@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Domains\Conversation\Models\CustomView;
+use App\Services\CustomViewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class CustomViewController extends Controller
 {
+    public function __construct(private CustomViewService $service) {}
+
     public function store(Request $request): RedirectResponse
     {
         $user        = $request->user();
@@ -33,15 +36,7 @@ class CustomViewController extends Controller
             abort(403, 'Only managers can create shared views.');
         }
 
-        CustomView::create([
-            'workspace_id' => $workspaceId,
-            'user_id'      => $isShared ? null : $user->id,
-            'name'         => $validated['name'],
-            'color'        => $validated['color'],
-            'filters'      => $this->stripEmpty($validated['filters']),
-            'is_shared'    => $isShared,
-            'order'        => CustomView::where('workspace_id', $workspaceId)->max('order') + 1,
-        ]);
+        $this->service->create($validated, $user);
 
         return back()->with('success', 'View created.');
     }
@@ -71,18 +66,9 @@ class CustomViewController extends Controller
             'filters.channel_type' => ['nullable', 'in:email,chat,whatsapp,slack,api,sms'],
         ]);
 
-        if (isset($validated['filters'])) {
-            $validated['filters'] = $this->stripEmpty($validated['filters']);
-        }
-
-        $customView->update($validated);
+        $this->service->update($customView, $validated);
 
         return back()->with('success', 'View updated.');
-    }
-
-    private function stripEmpty(array $data): array
-    {
-        return array_filter($data, fn ($v) => $v !== null && $v !== '');
     }
 
     public function destroy(Request $request, CustomView $customView): RedirectResponse
@@ -97,7 +83,7 @@ class CustomViewController extends Controller
             abort_if($customView->user_id !== $user->id, 403);
         }
 
-        $customView->delete();
+        $this->service->delete($customView);
 
         return back()->with('success', 'View deleted.');
     }

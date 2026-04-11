@@ -3,20 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domains\Conversation\Models\Conversation;
-use App\Domains\Conversation\Models\Thread;
-use App\Domains\Customer\Models\Customer;
-use App\Domains\Automation\Jobs\RunAutomationRulesJob;
-use App\Domains\AI\Jobs\SummarizeConversationJob;
-use App\Services\AiSettingsService;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
-use App\Events\ConversationUpdated;
-use App\Events\NewThreadReceived;
 use App\Http\Controllers\Controller;
-use App\Support\Hooks;
+use App\Services\ConversationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -24,6 +16,7 @@ use Illuminate\Validation\Rule;
  */
 class ConversationApiController extends Controller
 {
+    public function __construct(private ConversationService $service) {}
     /**
      * List conversations
      *
@@ -124,38 +117,7 @@ class ConversationApiController extends Controller
             'status'         => ['nullable', Rule::enum(ConversationStatus::class)],
         ]);
 
-        [$conversation, $thread] = DB::transaction(function () use ($user, $validated) {
-            $customer = Customer::resolveOrCreate(
-                $user->workspace_id,
-                $validated['customer_email'],
-                $validated['customer_name'] ?? '',
-            );
-
-            $conversation = Conversation::create([
-                'workspace_id'  => $user->workspace_id,
-                'mailbox_id'    => $validated['mailbox_id'] ?? null,
-                'customer_id'   => $customer->id,
-                'subject'       => $validated['subject'],
-                'status'        => $validated['status'] ?? 'open',
-                'priority'      => $validated['priority'] ?? 'normal',
-                'channel_type'  => 'api',
-                'last_reply_at' => now(),
-            ]);
-
-            /** @var Thread $thread */
-            $thread = $conversation->threads()->create([
-                'customer_id' => $customer->id,
-                'type'        => 'message',
-                'body'        => nl2br(e($validated['body'])),
-                'body_plain'  => $validated['body'],
-                'source'      => 'api',
-            ]);
-
-            return [$conversation, $thread];
-        });
-
-        broadcast(new NewThreadReceived($thread));
-        broadcast(new ConversationUpdated($conversation->fresh()));
+        ['conversation' => $conversation] = $this->service->createViaApi($validated, $user->workspace_id, $user);
 
         return response()->json($conversation->load(['customer', 'threads']), 201);
     }
@@ -184,20 +146,7 @@ class ConversationApiController extends Controller
             'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 
-        $conversation->update(array_filter($validated, fn($v) => $v !== null));
-
-        $fresh = $conversation->fresh();
-        Hooks::doAction('conversation.updated', $fresh);
-
-        if (isset($validated['status']) && $validated['status'] === ConversationStatus::Closed->value) {
-            Hooks::doAction('conversation.closed', $fresh);
-            RunAutomationRulesJob::dispatch('conversation.closed', $fresh);
-            if (app(AiSettingsService::class)->isFeatureEnabled($fresh->workspace_id, 'summarization')) {
-                SummarizeConversationJob::dispatch($fresh)->onQueue('ai');
-            }
-        }
-
-        broadcast(new ConversationUpdated($fresh));
+        $fresh = $this->service->updateViaApi($conversation, array_filter($validated, fn ($v) => $v !== null), $request->user());
 
         return response()->json($fresh);
     }
@@ -226,21 +175,12 @@ class ConversationApiController extends Controller
             'type' => 'nullable|in:message,note',
         ]);
 
-        $user = $request->user();
-
-        /** @var Thread $thread */
-        $thread = $conversation->threads()->create([
-            'user_id'    => $user->id,
-            'type'       => $validated['type'] ?? 'message',
-            'body'       => $validated['body'],
-            'body_plain' => strip_tags($validated['body']),
-            'source'     => 'api',
-        ]);
-
-        $conversation->update(['last_reply_at' => now()]);
-
-        broadcast(new NewThreadReceived($thread->load('user')));
-        broadcast(new ConversationUpdated($conversation->fresh()));
+        $thread = $this->service->replyViaApi(
+            $conversation,
+            $validated['body'],
+            $validated['type'] ?? 'message',
+            $request->user(),
+        );
 
         return response()->json($thread->load('user'), 201);
     }

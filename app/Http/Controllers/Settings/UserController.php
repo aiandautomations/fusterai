@@ -5,15 +5,14 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class UserController extends Controller
 {
+    public function __construct(private UserService $service) {}
     public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
@@ -53,17 +52,7 @@ class UserController extends Controller
             'role'  => ['required', 'in:super_admin,admin,manager,agent'],
         ]);
 
-        $user = User::create([
-            'workspace_id' => $request->user()->workspace_id,
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
-            'role'         => $validated['role'],
-            // Placeholder password — user will set their own via invite link
-            'password'     => Hash::make(Str::random(32)),
-        ]);
-
-        // Send invite email so the user can set their own password
-        Password::sendResetLink(['email' => $user->email]);
+        $user = $this->service->invite($validated, $request->user()->workspace_id);
 
         return redirect()->back()->with('success', 'Invitation sent to ' . $user->email . '.');
     }
@@ -72,12 +61,10 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $validated = $request->validate([
+        $this->service->update($user, $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'in:super_admin,admin,manager,agent'],
-        ]);
-
-        $user->update($validated);
+        ]));
 
         return redirect()->back()->with('success', 'User updated successfully.');
     }
@@ -85,8 +72,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user)
     {
         $this->authorize('delete', $user);
-
-        $user->delete();
+        $this->service->delete($user);
 
         return redirect()->back()->with('success', 'User removed successfully.');
     }
@@ -95,13 +81,12 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $workspaceId = $request->user()->workspace_id;
         $request->validate([
             'mailbox_ids'   => ['nullable', 'array'],
-            'mailbox_ids.*' => ['integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
+            'mailbox_ids.*' => ['integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
         ]);
 
-        $user->mailboxes()->sync($request->mailbox_ids ?? []);
+        $this->service->syncMailboxes($user, $request->mailbox_ids ?? []);
 
         return redirect()->back()->with('success', 'Mailbox access updated.');
     }

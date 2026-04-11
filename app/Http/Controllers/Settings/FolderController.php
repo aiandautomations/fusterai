@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Domains\Conversation\Models\Folder;
 use App\Http\Controllers\Controller;
+use App\Services\FolderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,8 @@ use Inertia\Response;
 
 class FolderController extends Controller
 {
+    public function __construct(private FolderService $service) {}
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Folder::class);
@@ -33,16 +36,7 @@ class FolderController extends Controller
             'icon'  => ['nullable', 'string', 'max:50'],
         ]);
 
-        $workspaceId = $request->user()->workspace_id;
-
-        Folder::create([
-            'workspace_id'       => $workspaceId,
-            'created_by_user_id' => $request->user()->id,
-            'name'               => $validated['name'],
-            'color'              => $validated['color'],
-            'icon'               => $validated['icon'] ?? 'folder',
-            'order'              => Folder::where('workspace_id', $workspaceId)->max('order') + 1,
-        ]);
+        $this->service->create($validated, $request->user()->workspace_id, $request->user());
 
         return back()->with('success', 'Folder created.');
     }
@@ -57,7 +51,7 @@ class FolderController extends Controller
             'icon'  => ['sometimes', 'string', 'max:50'],
         ]);
 
-        $folder->update($validated);
+        $this->service->update($folder, $validated);
 
         return back()->with('success', 'Folder updated.');
     }
@@ -65,7 +59,7 @@ class FolderController extends Controller
     public function destroy(Folder $folder): RedirectResponse
     {
         $this->authorize('delete', $folder);
-        $folder->delete();
+        $this->service->delete($folder);
 
         return back()->with('success', 'Folder deleted.');
     }

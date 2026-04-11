@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Workspace;
+use App\Services\RegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegisterController extends Controller
 {
+    public function __construct(private RegistrationService $service) {}
+
     /**
      * Show the registration form.
      * Only accessible when no users exist (fresh install).
@@ -44,18 +44,7 @@ class RegisterController extends Controller
             'password'       => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $workspace = Workspace::create([
-            'name' => $validated['workspace_name'],
-            'slug' => Str::slug($validated['workspace_name']),
-        ]);
-
-        $user = User::create([
-            'workspace_id' => $workspace->id,
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
-            'password'     => Hash::make($validated['password']),
-            'role'         => 'super_admin',
-        ]);
+        $user = $this->service->register($validated);
 
         Auth::login($user);
 
