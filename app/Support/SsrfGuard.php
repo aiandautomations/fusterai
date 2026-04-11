@@ -47,7 +47,7 @@ class SsrfGuard
 
         // If the host is already a raw IP address, check it directly.
         if (filter_var($host, FILTER_VALIDATE_IP)) {
-            static::assertPublicIp($host);
+            self::assertPublicIp($host);
             return;
         }
 
@@ -56,7 +56,7 @@ class SsrfGuard
         // so we only check when it actually resolved.
         $resolved = gethostbyname($host);
         if ($resolved !== $host && filter_var($resolved, FILTER_VALIDATE_IP)) {
-            static::assertPublicIp($resolved);
+            self::assertPublicIp($resolved);
         }
     }
 

@@ -17,7 +17,7 @@ test('user can login with valid credentials', function () {
     $this->post('/login', [
         'email'    => $user->email,
         'password' => 'password',
-    ])->assertRedirect('/conversations');
+    ])->assertRedirect('/dashboard');
 
     $this->assertAuthenticatedAs($user);
 });
