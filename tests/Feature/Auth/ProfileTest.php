@@ -72,3 +72,35 @@ test('avatar upload rejects files over 2MB', function () {
         ->post('/profile/avatar', ['avatar' => $file])
         ->assertSessionHasErrors('avatar');
 });
+
+test('password can be updated', function () {
+    $this->actingAs($this->user)
+        ->patch('/profile/password', [
+            'current_password' => 'password',
+            'password'         => 'new-password123',
+            'password_confirmation' => 'new-password123',
+        ])
+        ->assertRedirect();
+
+    expect(\Illuminate\Support\Facades\Hash::check('new-password123', $this->user->fresh()->password))->toBeTrue();
+});
+
+test('password update rejects wrong current password', function () {
+    $this->actingAs($this->user)
+        ->patch('/profile/password', [
+            'current_password'      => 'wrong-password',
+            'password'              => 'new-password123',
+            'password_confirmation' => 'new-password123',
+        ])
+        ->assertSessionHasErrors('current_password');
+});
+
+test('password update requires confirmation to match', function () {
+    $this->actingAs($this->user)
+        ->patch('/profile/password', [
+            'current_password'      => 'password',
+            'password'              => 'new-password123',
+            'password_confirmation' => 'different456',
+        ])
+        ->assertSessionHasErrors('password');
+});

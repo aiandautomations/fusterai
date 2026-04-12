@@ -50,3 +50,34 @@ test('invalid days value falls back to 30', function () {
         ->assertOk()
         ->assertInertia(fn ($p) => $p->where('days', 30));
 });
+
+test('stats response contains all expected keys', function () {
+    $manager = managerUser($this->workspace);
+
+    $this->actingAs($manager)
+        ->get('/reports')
+        ->assertOk()
+        ->assertInertia(fn ($p) => $p
+            ->has('stats.total')
+            ->has('stats.open')
+            ->has('stats.pending')
+            ->has('stats.closed')
+            ->has('stats.trend')
+            ->has('stats.by_channel')
+            ->has('stats.by_mailbox')
+            ->has('stats.by_priority')
+            ->has('stats.top_agents')
+            ->has('stats.avg_resolution_hours')
+        );
+});
+
+test('allowed days values are 7, 14, 30, 90', function () {
+    $manager = managerUser($this->workspace);
+
+    foreach ([7, 14, 30, 90] as $days) {
+        $this->actingAs($manager)
+            ->get("/reports?days={$days}")
+            ->assertOk()
+            ->assertInertia(fn ($p) => $p->where('days', $days));
+    }
+});

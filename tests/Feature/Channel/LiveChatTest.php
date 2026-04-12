@@ -86,6 +86,42 @@ test('HandleLiveChatMessageJob creates a thread on the conversation', function (
     expect(Thread::where('conversation_id', $conversation->id)->exists())->toBeTrue();
 });
 
+test('messages endpoint returns threads for a visitor conversation', function () {
+    Queue::fake([]);
+
+    $customer = Customer::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'email'        => 'visitor_msg-test-visitor@livechat.local',
+    ]);
+    $conversation = Conversation::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'customer_id'  => $customer->id,
+        'channel_type' => 'chat',
+    ]);
+    $conversation->threads()->create([
+        'customer_id' => $customer->id,
+        'type'        => 'message',
+        'body'        => 'Hello agent',
+        'source'      => 'chat',
+    ]);
+
+    $this->getJson('/api/livechat/messages?' . http_build_query([
+        'visitor_id'      => 'msg-test-visitor',
+        'conversation_id' => $conversation->id,
+    ]))
+        ->assertOk()
+        ->assertJsonCount(1, 'threads');
+});
+
+test('messages endpoint returns empty threads for unknown visitor', function () {
+    $this->getJson('/api/livechat/messages?' . http_build_query([
+        'visitor_id'      => 'unknown-xyz',
+        'conversation_id' => 999,
+    ]))
+        ->assertOk()
+        ->assertJson(['threads' => []]);
+});
+
 test('subsequent messages from same visitor append threads to the same conversation', function () {
     Queue::fake([]);
 
