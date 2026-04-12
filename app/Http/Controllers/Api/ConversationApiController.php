@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domains\Conversation\Models\Conversation;
-use App\Enums\ConversationPriority;
-use App\Enums\ConversationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ConversationIndexRequest;
+use App\Http\Requests\Api\ReplyConversationRequest;
+use App\Http\Requests\Api\StoreConversationRequest;
+use App\Http\Requests\Api\UpdateConversationRequest;
 use App\Services\ConversationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * @tags Conversations
@@ -32,17 +33,10 @@ class ConversationApiController extends Controller
      * @response 200 scenario="Success" {"data": [], "current_page": 1, "per_page": 30, "total": 0}
      * @response 401 scenario="Unauthenticated" {"message": "Unauthenticated."}
      */
-    public function index(Request $request): JsonResponse
+    public function index(ConversationIndexRequest $request): JsonResponse
     {
-        $user = $request->user();
-
-        $filters = $request->validate([
-            'status'           => ['nullable', Rule::enum(ConversationStatus::class)],
-            'mailbox_id'       => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $user->workspace_id)],
-            'priority'         => ['nullable', Rule::enum(ConversationPriority::class)],
-            'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $user->workspace_id)],
-            'per_page'         => 'nullable|integer|min:1|max:100',
-        ]);
+        $user    = $request->user();
+        $filters = $request->validated();
 
         $query = Conversation::query()
             ->where('workspace_id', $user->workspace_id)
@@ -103,21 +97,11 @@ class ConversationApiController extends Controller
      * @response 201 scenario="Created" {"id": 42, "subject": "Billing question", "status": "open"}
      * @response 422 scenario="Validation error" {"message": "The given data was invalid.", "errors": {}}
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreConversationRequest $request): JsonResponse
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'subject'        => 'required|string|max:500',
-            'customer_email' => 'required|email|max:255',
-            'customer_name'  => 'nullable|string|max:255',
-            'body'           => 'required|string',
-            'mailbox_id'     => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $user->workspace_id)],
-            'priority'       => ['nullable', Rule::enum(ConversationPriority::class)],
-            'status'         => ['nullable', Rule::enum(ConversationStatus::class)],
-        ]);
-
-        ['conversation' => $conversation] = $this->service->createViaApi($validated, $user->workspace_id, $user);
+        ['conversation' => $conversation] = $this->service->createViaApi($request->validated(), $user->workspace_id, $user);
 
         return response()->json($conversation->load(['customer', 'threads']), 201);
     }
@@ -134,19 +118,13 @@ class ConversationApiController extends Controller
      * @response 200 scenario="Success" {"id": 1, "status": "closed", "priority": "urgent"}
      * @response 404 scenario="Not found" {"message": "Resource not found."}
      */
-    public function update(Request $request, Conversation $conversation): JsonResponse
+    public function update(UpdateConversationRequest $request, Conversation $conversation): JsonResponse
     {
         if ($conversation->workspace_id !== $request->user()->workspace_id) {
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'status'           => ['nullable', Rule::enum(ConversationStatus::class)],
-            'priority'         => ['nullable', Rule::enum(ConversationPriority::class)],
-            'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $request->user()->workspace_id)],
-        ]);
-
-        $fresh = $this->service->updateViaApi($conversation, array_filter($validated, fn ($v) => $v !== null), $request->user());
+        $fresh = $this->service->updateViaApi($conversation, array_filter($request->validated(), fn ($v) => $v !== null), $request->user());
 
         return response()->json($fresh);
     }
@@ -164,16 +142,13 @@ class ConversationApiController extends Controller
      * @response 404 scenario="Not found" {"message": "Resource not found."}
      * @response 422 scenario="Validation error" {"message": "The given data was invalid.", "errors": {}}
      */
-    public function reply(Request $request, Conversation $conversation): JsonResponse
+    public function reply(ReplyConversationRequest $request, Conversation $conversation): JsonResponse
     {
         if ($conversation->workspace_id !== $request->user()->workspace_id) {
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'body' => 'required|string',
-            'type' => 'nullable|in:message,note',
-        ]);
+        $validated = $request->validated();
 
         $thread = $this->service->replyViaApi(
             $conversation,

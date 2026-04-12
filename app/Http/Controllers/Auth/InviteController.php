@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\AcceptInviteRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
@@ -40,14 +41,9 @@ class InviteController extends Controller
     /**
      * Complete account setup: validate token, set name + password, log in.
      */
-    public function store(Request $request): \Illuminate\Http\RedirectResponse
+    public function store(AcceptInviteRequest $request): \Illuminate\Http\RedirectResponse
     {
-        $validated = $request->validate([
-            'token'    => ['required'],
-            'email'    => ['required', 'email'],
-            'name'     => ['required', 'string', 'max:100'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        $validated = $request->validated();
 
         $status = Password::reset(
             [

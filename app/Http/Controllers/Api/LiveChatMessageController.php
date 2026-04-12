@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreLiveChatMessageRequest;
 use App\Models\Workspace;
 use App\Services\LiveChatService;
 use Illuminate\Http\JsonResponse;
@@ -39,16 +40,8 @@ class LiveChatMessageController extends Controller
         return response()->json(['threads' => $threads]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreLiveChatMessageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'workspace_id'  => 'required|integer|exists:workspaces,id',
-            'visitor_id'    => 'required|string|max:100',
-            'visitor_name'  => 'nullable|string|max:100',
-            'visitor_email' => 'nullable|email|max:255',
-            'message'       => 'required|string|max:5000',
-        ]);
-
-        return response()->json($this->service->store($validated));
+        return response()->json($this->service->store($request->validated()));
     }
 }

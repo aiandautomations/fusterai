@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreUserRequest;
+use App\Http\Requests\Settings\UpdateMailboxesRequest;
+use App\Http\Requests\Settings\UpdateUserRequest;
 use App\Models\User;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -42,29 +44,20 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
         $this->authorize('create', User::class);
 
-        $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'role'  => ['required', 'in:super_admin,admin,manager,agent'],
-        ]);
-
-        $user = $this->service->invite($validated, $request->user()->workspace_id);
+        $user = $this->service->invite($request->validated(), $request->user()->workspace_id);
 
         return redirect()->back()->with('success', 'Invitation sent to ' . $user->email . '.');
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
         $this->authorize('update', $user);
 
-        $this->service->update($user, $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'in:super_admin,admin,manager,agent'],
-        ]));
+        $this->service->update($user, $request->validated());
 
         return redirect()->back()->with('success', 'User updated successfully.');
     }
@@ -77,14 +70,9 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'User removed successfully.');
     }
 
-    public function updateMailboxes(Request $request, User $user)
+    public function updateMailboxes(UpdateMailboxesRequest $request, User $user)
     {
         $this->authorize('update', $user);
-
-        $request->validate([
-            'mailbox_ids'   => ['nullable', 'array'],
-            'mailbox_ids.*' => ['integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
-        ]);
 
         $this->service->syncMailboxes($user, $request->mailbox_ids ?? []);
 

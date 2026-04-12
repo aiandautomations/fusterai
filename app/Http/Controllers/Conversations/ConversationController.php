@@ -9,34 +9,32 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Conversations\AssignConversationRequest;
+use App\Http\Requests\Conversations\BulkConversationRequest;
+use App\Http\Requests\Conversations\ChangeMailboxRequest;
+use App\Http\Requests\Conversations\ConversationIndexRequest;
+use App\Http\Requests\Conversations\MergeConversationRequest;
+use App\Http\Requests\Conversations\SnoozeConversationRequest;
+use App\Http\Requests\Conversations\StoreConversationRequest;
+use App\Http\Requests\Conversations\SyncFoldersRequest;
+use App\Http\Requests\Conversations\SyncTagsRequest;
+use App\Http\Requests\Conversations\UpdatePriorityRequest;
+use App\Http\Requests\Conversations\UpdateStatusRequest;
 use App\Models\ConversationRead;
 use App\Services\ConversationService;
 use App\Support\Hooks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ConversationController extends Controller
 {
     public function __construct(private ConversationService $service) {}
-    public function index(Request $request): Response
+    public function index(ConversationIndexRequest $request): Response
     {
         $user = $request->user();
-
-        $request->validate([
-            'status'    => ['nullable', Rule::in([...array_column(ConversationStatus::cases(), 'value'), 'snoozed'])],
-            'priority'  => ['nullable', Rule::enum(ConversationPriority::class)],
-            'mailbox'   => 'nullable|integer',
-            'assigned'  => ['nullable', 'regex:/^(me|none|all|\d+)$/'],
-            'tag'       => 'nullable|integer',
-            'folder'    => 'nullable|integer',
-            'view'      => 'nullable|integer',
-            'date_from' => 'nullable|date',
-            'date_to'   => 'nullable|date|after_or_equal:date_from',
-        ]);
 
         $query = Conversation::query()
             ->where('workspace_id', $user->workspace_id)
@@ -219,26 +217,16 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreConversationRequest $request): RedirectResponse
     {
-        $workspaceId = $request->user()->workspace_id;
-
-        $validated = $request->validate([
-            'mailbox_id'  => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
-            'subject'     => ['required', 'string', 'max:255'],
-            'customer_id' => ['required', Rule::exists('customers', 'id')->where('workspace_id', $workspaceId)],
-            'body'        => ['required', 'string'],
-        ]);
-
-        ['conversation' => $conversation] = $this->service->create($validated, $workspaceId, $request->user());
+        ['conversation' => $conversation] = $this->service->create($request->validated(), $request->user()->workspace_id, $request->user());
 
         return redirect()->route('conversations.show', $conversation);
     }
 
-    public function updateStatus(Request $request, Conversation $conversation): RedirectResponse
+    public function updateStatus(UpdateStatusRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['status' => ['required', Rule::enum(ConversationStatus::class)]]);
 
         $this->service->changeStatus(
             $conversation,
@@ -249,30 +237,27 @@ class ConversationController extends Controller
         return back();
     }
 
-    public function assign(Request $request, Conversation $conversation): RedirectResponse
+    public function assign(AssignConversationRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['user_id' => ['nullable', Rule::exists('users', 'id')->where('workspace_id', $request->user()->workspace_id)]]);
 
         $this->service->assign($conversation, $request->user_id, $request->user());
 
         return back();
     }
 
-    public function snooze(Request $request, Conversation $conversation): RedirectResponse
+    public function snooze(SnoozeConversationRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['until' => ['required', 'date', 'after:now']]);
 
         $this->service->snooze($conversation, \Carbon\Carbon::parse($request->until), $request->user());
 
         return back();
     }
 
-    public function updatePriority(Request $request, Conversation $conversation): RedirectResponse
+    public function updatePriority(UpdatePriorityRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['priority' => ['required', Rule::enum(ConversationPriority::class)]]);
 
         $this->service->changePriority(
             $conversation,
@@ -283,10 +268,9 @@ class ConversationController extends Controller
         return back();
     }
 
-    public function merge(Request $request, Conversation $conversation): RedirectResponse
+    public function merge(MergeConversationRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $request->validate(['into_id' => ['required', Rule::exists('conversations', 'id')->where('workspace_id', $request->user()->workspace_id)]]);
 
         if ((int) $request->into_id === $conversation->id) {
             return back()->with('error', 'A conversation cannot be merged into itself.');
@@ -300,39 +284,27 @@ class ConversationController extends Controller
         return redirect()->route('conversations.show', $target);
     }
 
-    public function syncTags(Request $request, Conversation $conversation): RedirectResponse
+    public function syncTags(SyncTagsRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $workspaceId = $request->user()->workspace_id;
-        $request->validate(['tag_ids' => ['array'], 'tag_ids.*' => [Rule::exists('tags', 'id')->where('workspace_id', $workspaceId)]]);
 
         $conversation->tags()->sync($request->tag_ids ?? []);
 
         return back();
     }
 
-    public function syncFolders(Request $request, Conversation $conversation): RedirectResponse
+    public function syncFolders(SyncFoldersRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-        $workspaceId = $request->user()->workspace_id;
-
-        $request->validate([
-            'folder_ids'   => ['array'],
-            'folder_ids.*' => [Rule::exists('folders', 'id')->where('workspace_id', $workspaceId)],
-        ]);
 
         $conversation->folders()->sync($request->folder_ids ?? []);
 
         return back();
     }
 
-    public function changeMailbox(Request $request, Conversation $conversation): RedirectResponse
+    public function changeMailbox(ChangeMailboxRequest $request, Conversation $conversation): RedirectResponse
     {
         $this->authorize('update', $conversation);
-
-        $request->validate([
-            'mailbox_id' => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
-        ]);
 
         $this->service->changeMailbox($conversation, $request->mailbox_id, $request->user());
 
@@ -386,19 +358,11 @@ class ConversationController extends Controller
 
     // ── Bulk actions ──────────────────────────────────────────────────────────
 
-    public function bulk(Request $request): \Illuminate\Http\JsonResponse
+    public function bulk(BulkConversationRequest $request): \Illuminate\Http\JsonResponse
     {
         $workspaceId = $request->user()->workspace_id;
         $actor       = $request->user();
-
-        $validated = $request->validate([
-            'ids'          => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*'        => ['integer'],
-            'action'       => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
-            'assigned_to'  => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
-            'snooze_until' => ['nullable', 'date', 'after:now'],
-            'priority'     => ['nullable', Rule::enum(ConversationPriority::class)],
-        ]);
+        $validated   = $request->validated();
 
         // Scope all IDs to the workspace — prevents cross-workspace access
         $conversations = Conversation::where('workspace_id', $workspaceId)

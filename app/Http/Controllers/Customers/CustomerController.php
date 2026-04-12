@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customers;
 
 use App\Domains\Customer\Models\Customer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customers\UpdateCustomerRequest;
 use App\Services\CustomerService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,13 +48,11 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function update(Request $request, Customer $customer): \Illuminate\Http\JsonResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): \Illuminate\Http\JsonResponse
     {
         abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
 
-        $this->service->update($customer, $request->validate([
-            'notes' => 'nullable|string|max:10000',
-        ]));
+        $this->service->update($customer, $request->validated());
 
         return response()->json(['ok' => true]);
     }

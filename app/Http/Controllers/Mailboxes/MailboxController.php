@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Mailboxes;
 
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mailboxes\StoreMailboxRequest;
+use App\Http\Requests\Mailboxes\UpdateMailboxRequest;
 use App\Services\MailboxService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,16 +37,11 @@ class MailboxController extends Controller
         return Inertia::render('Mailboxes/Create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreMailboxRequest $request): RedirectResponse
     {
         $this->authorize('create', Mailbox::class);
 
-        $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email'],
-        ]);
-
-        $this->service->create($validated, $request->user()->workspace_id);
+        $this->service->create($request->validated(), $request->user()->workspace_id);
 
         return redirect()->route('mailboxes.index')->with('success', 'Mailbox created.');
     }
@@ -58,25 +55,11 @@ class MailboxController extends Controller
         ]);
     }
 
-    public function update(Request $request, Mailbox $mailbox): RedirectResponse
+    public function update(UpdateMailboxRequest $request, Mailbox $mailbox): RedirectResponse
     {
         $this->authorize('update', $mailbox);
 
-        $validated = $request->validate([
-            'name'        => ['sometimes', 'string', 'max:100'],
-            'email'       => ['sometimes', 'email'],
-            'signature'   => ['nullable', 'string'],
-            'active'      => ['sometimes', 'boolean'],
-            'imap_config' => ['nullable', 'array'],
-            'smtp_config' => ['nullable', 'array'],
-            'auto_reply_config'                         => ['nullable', 'array'],
-            'auto_reply_config.enabled'                 => ['boolean'],
-            'auto_reply_config.subject'                 => ['nullable', 'string', 'max:255'],
-            'auto_reply_config.body'                    => ['nullable', 'string'],
-            'auto_reply_config.auto_close_pending_days' => ['nullable', 'integer', 'min:0', 'max:365'],
-        ]);
-
-        $this->service->update($mailbox, $validated);
+        $this->service->update($mailbox, $request->validated());
 
         return back()->with('success', 'Mailbox updated.');
     }

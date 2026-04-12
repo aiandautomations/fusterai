@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Settings;
 
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreCannedResponseRequest;
+use App\Http\Requests\Settings\UpdateCannedResponseRequest;
 use App\Models\CannedResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CannedResponseController extends Controller
@@ -31,33 +32,21 @@ class CannedResponseController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCannedResponseRequest $request)
     {
-        $validated = $request->validate([
-            'name'       => ['required', 'string', 'max:100'],
-            'content'    => ['required', 'string'],
-            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
-        ]);
-
         CannedResponse::create([
             'workspace_id' => $request->user()->workspace_id,
-            ...$validated,
+            ...$request->validated(),
         ]);
 
         return back()->with('success', 'Canned response created.');
     }
 
-    public function update(Request $request, CannedResponse $cannedResponse)
+    public function update(UpdateCannedResponseRequest $request, CannedResponse $cannedResponse)
     {
         $this->authorize('update', $cannedResponse);
 
-        $validated = $request->validate([
-            'name'       => ['required', 'string', 'max:100'],
-            'content'    => ['required', 'string'],
-            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $request->user()->workspace_id)],
-        ]);
-
-        $cannedResponse->update($validated);
+        $cannedResponse->update($request->validated());
 
         return back()->with('success', 'Canned response updated.');
     }

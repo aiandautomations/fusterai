@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreApiKeyRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,10 +23,8 @@ class ApiKeyController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreApiKeyRequest $request): RedirectResponse
     {
-        $request->validate(['name' => ['required', 'string', 'max:100']]);
-
         $result = $request->user()->createToken($request->name);
 
         return redirect()->route('settings.api-keys')

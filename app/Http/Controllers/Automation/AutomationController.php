@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Automation;
 
 use App\Domains\Automation\Models\AutomationRule;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Automation\StoreAutomationRequest;
+use App\Http\Requests\Automation\UpdateAutomationRequest;
 use App\Services\AutomationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,20 +40,11 @@ class AutomationController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreAutomationRequest $request): RedirectResponse
     {
         $this->authorize('create', AutomationRule::class);
 
-        $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'trigger'     => ['required', 'string', 'in:' . implode(',', array_column(self::triggers(), 'value'))],
-            'conditions'  => ['array'],
-            'actions'     => ['required', 'array', 'min:1'],
-            'active'      => ['boolean'],
-        ]);
-
-        $this->service->create($validated, $request->user()->workspace_id);
+        $this->service->create($request->validated(), $request->user()->workspace_id);
 
         return redirect()->route('automation.index')->with('success', 'Automation rule created.');
     }
@@ -68,20 +61,11 @@ class AutomationController extends Controller
         ]);
     }
 
-    public function update(Request $request, AutomationRule $automation): RedirectResponse
+    public function update(UpdateAutomationRequest $request, AutomationRule $automation): RedirectResponse
     {
         $this->authorize('update', $automation);
 
-        $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'trigger'     => ['required', 'string'],
-            'conditions'  => ['array'],
-            'actions'     => ['required', 'array', 'min:1'],
-            'active'      => ['boolean'],
-        ]);
-
-        $this->service->update($automation, $validated);
+        $this->service->update($automation, $request->validated());
 
         return redirect()->route('automation.index')->with('success', 'Rule updated.');
     }

@@ -3,17 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Events\AgentStatusChanged;
+use App\Http\Requests\Profile\UpdateAgentStatusRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class AgentStatusController extends Controller
 {
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateAgentStatusRequest $request): RedirectResponse
     {
-        $request->validate([
-            'status' => ['required', 'in:online,away,busy,offline'],
-        ]);
-
         $user = $request->user();
         $user->status = $request->status;
         $user->save();

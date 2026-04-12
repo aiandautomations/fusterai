@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Profile\UpdateAgentStatusRequest;
+use App\Http\Requests\Profile\UpdatePasswordRequest;
+use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Services\ProfileService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class ProfileController extends Controller
@@ -18,17 +20,9 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'signature' => ['nullable', 'string', 'max:5000'],
-        ]);
-
-        $this->service->update($user, $validated);
+        $this->service->update($request->user(), $request->validated());
 
         return back()->with('success', 'Profile updated successfully.');
     }
@@ -44,13 +38,8 @@ class ProfileController extends Controller
         return back()->with('success', 'Avatar updated successfully.');
     }
 
-    public function updatePassword(Request $request)
+    public function updatePassword(UpdatePasswordRequest $request)
     {
-        $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password'         => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
         $this->service->updatePassword($request->user(), $request->password);
 
         return back()->with('success', 'Password updated successfully.');

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Settings;
 
 use App\Domains\Conversation\Models\Tag;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreTagRequest;
+use App\Http\Requests\Settings\UpdateTagRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,34 +25,20 @@ class TagController extends Controller
         return Inertia::render('Settings/Tags', ['tags' => $tags]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreTagRequest $request): RedirectResponse
     {
         $this->authorize('create', Tag::class);
 
-        $workspaceId = $request->user()->workspace_id;
-
-        $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:50', "unique:tags,name,NULL,id,workspace_id,{$workspaceId}"],
-            'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-        ]);
-
-        Tag::create(['workspace_id' => $workspaceId, ...$validated]);
+        Tag::create(['workspace_id' => $request->user()->workspace_id, ...$request->validated()]);
 
         return back();
     }
 
-    public function update(Request $request, Tag $tag): RedirectResponse
+    public function update(UpdateTagRequest $request, Tag $tag): RedirectResponse
     {
         $this->authorize('update', $tag);
 
-        $workspaceId = $request->user()->workspace_id;
-
-        $validated = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:50', "unique:tags,name,{$tag->id},id,workspace_id,{$workspaceId}"],
-            'color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-        ]);
-
-        $tag->update($validated);
+        $tag->update($request->validated());
         return back();
     }
 

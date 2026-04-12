@@ -5,6 +5,10 @@ namespace App\Http\Controllers\AI;
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AI\ImportUrlRequest;
+use App\Http\Requests\AI\StoreKbDocumentRequest;
+use App\Http\Requests\AI\StoreKnowledgeBaseRequest;
+use App\Http\Requests\AI\UpdateKnowledgeBaseRequest;
 use App\Services\KnowledgeBaseService;
 use App\Support\SsrfGuard;
 use Illuminate\Http\RedirectResponse;
@@ -35,14 +39,11 @@ class KnowledgeBaseController extends Controller
         return Inertia::render('AI/KnowledgeBase/CreateKb');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreKnowledgeBaseRequest $request): RedirectResponse
     {
         $this->authorize('create', KnowledgeBase::class);
 
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         $kb = KnowledgeBase::create([
             'workspace_id' => $request->user()->workspace_id,
@@ -78,17 +79,11 @@ class KnowledgeBaseController extends Controller
         ]);
     }
 
-    public function update(Request $request, KnowledgeBase $knowledgeBase): RedirectResponse
+    public function update(UpdateKnowledgeBaseRequest $request, KnowledgeBase $knowledgeBase): RedirectResponse
     {
         $this->authorize('update', $knowledgeBase);
 
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'active'      => 'boolean',
-        ]);
-
-        $knowledgeBase->update($validated);
+        $knowledgeBase->update($request->validated());
 
         return back()->with('success', 'Knowledge base updated.');
     }
@@ -114,16 +109,11 @@ class KnowledgeBaseController extends Controller
         ]);
     }
 
-    public function storeDocument(Request $request, KnowledgeBase $knowledgeBase): RedirectResponse
+    public function storeDocument(StoreKbDocumentRequest $request, KnowledgeBase $knowledgeBase): RedirectResponse
     {
         $this->authorize('update', $knowledgeBase);
 
-        $validated = $request->validate([
-            'title'   => 'required|string|max:255',
-            'content' => 'required|string',
-        ]);
-
-        $this->service->createDocument($knowledgeBase, $validated);
+        $this->service->createDocument($knowledgeBase, $request->validated());
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document saved.');
@@ -140,37 +130,28 @@ class KnowledgeBaseController extends Controller
         ]);
     }
 
-    public function updateDocument(Request $request, KnowledgeBase $knowledgeBase, KbDocument $document): RedirectResponse
+    public function updateDocument(StoreKbDocumentRequest $request, KnowledgeBase $knowledgeBase, KbDocument $document): RedirectResponse
     {
         $this->authorize('update', $knowledgeBase);
         abort_unless($document->kb_id === $knowledgeBase->id, 403);
 
-        $validated = $request->validate([
-            'title'   => 'required|string|max:255',
-            'content' => 'required|string',
-        ]);
-
-        $this->service->updateDocument($document, $validated);
+        $this->service->updateDocument($document, $request->validated());
 
         return redirect()->route('ai.knowledge-bases.show', $knowledgeBase)
             ->with('success', 'Document updated.');
     }
 
-    public function importUrl(Request $request, KnowledgeBase $knowledgeBase): \Illuminate\Http\JsonResponse
+    public function importUrl(ImportUrlRequest $request, KnowledgeBase $knowledgeBase): \Illuminate\Http\JsonResponse
     {
         $this->authorize('update', $knowledgeBase);
 
-        $validated = $request->validate([
-            'url' => ['required', 'url', 'max:2048'],
-        ]);
-
         try {
-            SsrfGuard::validate($validated['url']);
+            SsrfGuard::validate($request->url);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $this->service->importUrl($knowledgeBase, $validated['url']);
+        $this->service->importUrl($knowledgeBase, $request->url);
 
         return response()->json(['status' => 'queued']);
     }

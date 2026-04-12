@@ -4,6 +4,12 @@ namespace App\Http\Controllers\Settings;
 
 use App\Ai\Agents\SummarizationAgent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ToggleModuleRequest;
+use App\Http\Requests\Settings\UpdateAiSettingsRequest;
+use App\Http\Requests\Settings\UpdateAppearanceRequest;
+use App\Http\Requests\Settings\UpdateBrandingRequest;
+use App\Http\Requests\Settings\UpdateGeneralSettingsRequest;
+use App\Http\Requests\Settings\UpdateLiveChatRequest;
 use App\Models\Workspace;
 use App\Services\AiSettingsService;
 use App\Services\WorkspaceSettingsService;
@@ -38,13 +44,10 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateGeneral(Request $request): RedirectResponse
+    public function updateGeneral(UpdateGeneralSettingsRequest $request): RedirectResponse
     {
         $this->authorize('manage-settings');
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'timezone' => ['nullable', 'string', 'max:100'],
-        ]);
+        $validated = $request->validated();
 
         $workspace       = Workspace::findOrFail($request->user()->workspace_id);
         $workspace->name = $validated['name'];
@@ -57,14 +60,10 @@ class SettingsController extends Controller
         return redirect()->back()->with('success', 'Workspace settings saved.');
     }
 
-    public function updateBranding(Request $request): RedirectResponse
+    public function updateBranding(UpdateBrandingRequest $request): RedirectResponse
     {
         $this->authorize('manage-settings');
-        $validated = $request->validate([
-            'branding_name'    => ['nullable', 'string', 'max:255'],
-            'branding_website' => ['nullable', 'url', 'max:255'],
-            'branding_logo'    => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,gif,webp,svg'],
-        ]);
+        $validated = $request->validated();
 
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
 
@@ -91,22 +90,11 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateAi(Request $request): RedirectResponse
+    public function updateAi(UpdateAiSettingsRequest $request): RedirectResponse
     {
         $this->authorize('manage-settings');
-        $validated = $request->validate([
-            'provider'                    => ['required', 'in:anthropic,openai,openai-compatible,openrouter'],
-            'api_key'                     => ['nullable', 'string', 'max:500'],
-            'model'                       => ['nullable', 'string', 'max:100'],
-            'base_url'                    => ['nullable', 'url', 'max:255'],
-            'feature_reply_suggestions'   => ['boolean'],
-            'feature_auto_categorization' => ['boolean'],
-            'feature_summarization'       => ['boolean'],
-            'rag_top_k'                   => ['integer', 'min:1', 'max:10'],
-            'rag_min_score'               => ['numeric', 'min:0', 'max:1'],
-        ]);
 
-        app(AiSettingsService::class)->saveForWorkspace($request->user()->workspace_id, $validated);
+        app(AiSettingsService::class)->saveForWorkspace($request->user()->workspace_id, $request->validated());
 
         return redirect()->back()->with('success', 'AI settings saved.');
     }
@@ -174,10 +162,9 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function toggleModule(Request $request, string $alias): RedirectResponse
+    public function toggleModule(ToggleModuleRequest $request, string $alias): RedirectResponse
     {
         $this->authorize('manage-settings');
-        $request->validate(['active' => ['required', 'boolean']]);
 
         $active = $request->boolean('active');
         $name   = trim(preg_replace('/([A-Z])/', ' $1', $alias));
@@ -222,18 +209,10 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateAppearance(Request $request): RedirectResponse
+    public function updateAppearance(UpdateAppearanceRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'mode'     => ['required', 'in:light,dark,system'],
-            'color'    => ['required', 'in:neutral,amber,blue,cyan,emerald,fuchsia,green,indigo,lime,orange,pink,purple,red,rose,sky,teal,violet,yellow'],
-            'font'     => ['required', 'in:inter,figtree,manrope,system'],
-            'radius'   => ['required', 'in:sm,md,lg,xl'],
-            'contrast' => ['required', 'in:soft,balanced,strong'],
-        ]);
-
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
-        $this->settings->update($workspace, 'appearance', $validated);
+        $this->settings->update($workspace, 'appearance', $request->validated());
 
         return redirect()->back()->with('success', 'Appearance settings saved.');
     }
@@ -276,18 +255,12 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateLiveChat(Request $request): RedirectResponse
+    public function updateLiveChat(UpdateLiveChatRequest $request): RedirectResponse
     {
         $this->authorize('manage-settings');
-        $validated = $request->validate([
-            'greeting'      => ['required', 'string', 'max:200'],
-            'color'         => ['required', 'string', 'max:20'],
-            'position'      => ['required', 'in:bottom-right,bottom-left'],
-            'launcher_text' => ['required', 'string', 'max:60'],
-        ]);
 
         $workspace = Workspace::findOrFail($request->user()->workspace_id);
-        $this->settings->update($workspace, 'live_chat', $validated);
+        $this->settings->update($workspace, 'live_chat', $request->validated());
 
         return redirect()->back()->with('success', 'Live Chat settings saved.');
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Mailboxes;
 use App\Domains\Mailbox\Models\Channel;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mailboxes\UpdateWhatsAppRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,19 +30,13 @@ class WhatsAppMailboxController extends Controller
         ]);
     }
 
-    public function update(Request $request, Mailbox $mailbox)
+    public function update(UpdateWhatsAppRequest $request, Mailbox $mailbox)
     {
         $this->authorize('update', $mailbox);
 
-        $validated = $request->validate([
-            'phone_number_id' => ['required', 'string'],
-            'access_token'    => ['required', 'string'],
-            'app_secret'      => ['required', 'string'],
-        ]);
-
         $mailbox->channels()->updateOrCreate(
             ['type' => 'whatsapp'],
-            ['config' => $validated, 'active' => true],
+            ['config' => $request->validated(), 'active' => true],
         );
 
         return back()->with('success', 'WhatsApp credentials saved.');

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Settings;
 
 use App\Domains\Conversation\Models\Folder;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreFolderRequest;
+use App\Http\Requests\Settings\UpdateFolderRequest;
 use App\Services\FolderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,32 +28,20 @@ class FolderController extends Controller
         return Inertia::render('Settings/Folders', ['folders' => $folders]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreFolderRequest $request): RedirectResponse
     {
         $this->authorize('create', Folder::class);
 
-        $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:100'],
-            'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'icon'  => ['nullable', 'string', 'max:50'],
-        ]);
-
-        $this->service->create($validated, $request->user()->workspace_id, $request->user());
+        $this->service->create($request->validated(), $request->user()->workspace_id, $request->user());
 
         return back()->with('success', 'Folder created.');
     }
 
-    public function update(Request $request, Folder $folder): RedirectResponse
+    public function update(UpdateFolderRequest $request, Folder $folder): RedirectResponse
     {
         $this->authorize('update', $folder);
 
-        $validated = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:100'],
-            'color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'icon'  => ['sometimes', 'string', 'max:50'],
-        ]);
-
-        $this->service->update($folder, $validated);
+        $this->service->update($folder, $request->validated());
 
         return back()->with('success', 'Folder updated.');
     }
