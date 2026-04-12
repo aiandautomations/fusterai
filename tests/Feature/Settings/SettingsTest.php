@@ -107,3 +107,93 @@ test('admin can view live chat settings', function () {
         ->get('/settings/live-chat')
         ->assertOk();
 });
+
+test('admin can update live chat settings', function () {
+    $this->actingAs($this->admin)
+        ->patch('/settings/live-chat', [
+            'greeting'      => 'Hello!',
+            'color'         => '#7c3aed',
+            'position'      => 'bottom-right',
+            'launcher_text' => 'Chat with us',
+        ])
+        ->assertRedirect();
+
+    expect($this->workspace->fresh()->settings['live_chat']['greeting'])->toBe('Hello!');
+});
+
+test('live chat update rejects invalid position', function () {
+    $this->actingAs($this->admin)
+        ->patch('/settings/live-chat', [
+            'greeting'      => 'Hello',
+            'color'         => '#000000',
+            'position'      => 'top-center',
+            'launcher_text' => 'Chat',
+        ])
+        ->assertSessionHasErrors('position');
+});
+
+test('admin can view appearance settings', function () {
+    $this->actingAs($this->admin)
+        ->get('/settings/appearance')
+        ->assertOk()
+        ->assertInertia(fn ($p) => $p
+            ->component('Settings/Appearance')
+            ->has('appearance.mode')
+            ->has('appearance.color')
+        );
+});
+
+test('admin can update appearance settings', function () {
+    $this->actingAs($this->admin)
+        ->patch('/settings/appearance', [
+            'mode'     => 'dark',
+            'color'    => 'blue',
+            'font'     => 'inter',
+            'radius'   => 'md',
+            'contrast' => 'balanced',
+        ])
+        ->assertRedirect();
+
+    expect($this->workspace->fresh()->settings['appearance']['mode'])->toBe('dark');
+    expect($this->workspace->fresh()->settings['appearance']['color'])->toBe('blue');
+});
+
+test('appearance update rejects invalid mode', function () {
+    $this->actingAs($this->admin)
+        ->patch('/settings/appearance', [
+            'mode'     => 'rainbow',
+            'color'    => 'blue',
+            'font'     => 'inter',
+            'radius'   => 'md',
+            'contrast' => 'balanced',
+        ])
+        ->assertSessionHasErrors('mode');
+});
+
+test('admin can view modules settings page', function () {
+    $this->actingAs($this->admin)
+        ->get('/settings/modules')
+        ->assertOk()
+        ->assertInertia(fn ($p) => $p->component('Settings/Modules')->has('modules'));
+});
+
+test('admin can view email settings page', function () {
+    $this->actingAs($this->admin)
+        ->get('/settings/email')
+        ->assertOk()
+        ->assertInertia(fn ($p) => $p->component('Settings/Email'));
+});
+
+test('admin can view audit log page', function () {
+    $this->actingAs($this->admin)
+        ->get('/settings/audit-log')
+        ->assertOk();
+});
+
+test('agent cannot access audit log', function () {
+    $agent = agentUser($this->workspace);
+
+    $this->actingAs($agent)
+        ->get('/settings/audit-log')
+        ->assertForbidden();
+});
