@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +14,7 @@ test('invite page redirects to login when token or email is missing', function (
 });
 
 test('invite page renders when token and email are present', function () {
-    $user  = agentUser($this->workspace);
+    $user = agentUser($this->workspace);
     $token = Password::createToken($user);
 
     $this->get("/invite/accept/{$token}?email={$user->email}")
@@ -28,14 +27,14 @@ test('invite page renders when token and email are present', function () {
 });
 
 test('agent can accept invite and set name and password', function () {
-    $user  = agentUser($this->workspace);
+    $user = agentUser($this->workspace);
     $token = Password::createToken($user);
 
     $this->post('/invite/accept', [
-        'token'                 => $token,
-        'email'                 => $user->email,
-        'name'                  => 'Updated Name',
-        'password'              => 'newpassword123',
+        'token' => $token,
+        'email' => $user->email,
+        'name' => 'Updated Name',
+        'password' => 'newpassword123',
         'password_confirmation' => 'newpassword123',
     ])->assertRedirect('/conversations');
 
@@ -44,14 +43,14 @@ test('agent can accept invite and set name and password', function () {
 });
 
 test('accepting invite logs the user in', function () {
-    $user  = agentUser($this->workspace);
+    $user = agentUser($this->workspace);
     $token = Password::createToken($user);
 
     $this->post('/invite/accept', [
-        'token'                 => $token,
-        'email'                 => $user->email,
-        'name'                  => 'Agent Name',
-        'password'              => 'newpassword123',
+        'token' => $token,
+        'email' => $user->email,
+        'name' => 'Agent Name',
+        'password' => 'newpassword123',
         'password_confirmation' => 'newpassword123',
     ]);
 
@@ -63,10 +62,10 @@ test('invalid token returns error on invite acceptance', function () {
     $user = agentUser($this->workspace);
 
     $this->post('/invite/accept', [
-        'token'                 => 'invalid-token',
-        'email'                 => $user->email,
-        'name'                  => 'Agent',
-        'password'              => 'newpassword123',
+        'token' => 'invalid-token',
+        'email' => $user->email,
+        'name' => 'Agent',
+        'password' => 'newpassword123',
         'password_confirmation' => 'newpassword123',
     ])->assertSessionHasErrors('email');
 });

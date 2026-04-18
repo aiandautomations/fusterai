@@ -13,8 +13,8 @@ beforeEach(function () {
     Event::fake();
 
     $this->workspace = Workspace::factory()->create();
-    $this->user      = User::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('unauthenticated request returns 401', function () {
@@ -24,7 +24,7 @@ test('unauthenticated request returns 401', function () {
 test('authenticated user can list their workspace conversations', function () {
     Conversation::factory()->count(3)->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
+        'mailbox_id' => $this->mailbox->id,
     ]);
 
     Passport::actingAs($this->user);
@@ -38,7 +38,7 @@ test('conversations are scoped to workspace', function () {
     $other = Workspace::factory()->create();
     Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     Conversation::factory()->create(['workspace_id' => $this->workspace->id, 'mailbox_id' => $this->mailbox->id]);
@@ -65,7 +65,7 @@ test('can filter conversations by status', function () {
 test('can show a single conversation', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
+        'mailbox_id' => $this->mailbox->id,
     ]);
 
     Passport::actingAs($this->user);
@@ -76,10 +76,10 @@ test('can show a single conversation', function () {
 });
 
 test('cannot view conversation from another workspace', function () {
-    $other        = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $conversation = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     Passport::actingAs($this->user);
@@ -91,18 +91,18 @@ test('can create a conversation via API', function () {
     Passport::actingAs($this->user);
 
     $this->postJson('/api/conversations', [
-        'subject'        => 'API Test',
+        'subject' => 'API Test',
         'customer_email' => 'api@example.com',
-        'body'           => 'Hello from API',
+        'body' => 'Hello from API',
     ])
-    ->assertCreated()
-    ->assertJsonPath('subject', 'API Test');
+        ->assertCreated()
+        ->assertJsonPath('subject', 'API Test');
 });
 
 test('can reply to a conversation', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
+        'mailbox_id' => $this->mailbox->id,
     ]);
 
     Passport::actingAs($this->user);
@@ -115,8 +115,8 @@ test('can reply to a conversation', function () {
 test('can update conversation status via API', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'status' => 'open',
     ]);
 
     Passport::actingAs($this->user);
@@ -146,10 +146,10 @@ test('create rejects invalid status', function () {
     Passport::actingAs($this->user);
 
     $this->postJson('/api/conversations', [
-        'subject'        => 'Test',
+        'subject' => 'Test',
         'customer_email' => 'test@example.com',
-        'body'           => 'Hello',
-        'status'         => 'invalid',
+        'body' => 'Hello',
+        'status' => 'invalid',
     ])->assertUnprocessable();
 });
 
@@ -157,18 +157,18 @@ test('create rejects invalid priority', function () {
     Passport::actingAs($this->user);
 
     $this->postJson('/api/conversations', [
-        'subject'        => 'Test',
+        'subject' => 'Test',
         'customer_email' => 'test@example.com',
-        'body'           => 'Hello',
-        'priority'       => 'critical',
+        'body' => 'Hello',
+        'priority' => 'critical',
     ])->assertUnprocessable();
 });
 
 test('update rejects invalid status', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'status' => 'open',
     ]);
 
     Passport::actingAs($this->user);
@@ -182,8 +182,8 @@ test('update rejects invalid status', function () {
 test('update rejects invalid priority', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'priority' => 'normal',
     ]);
 
     Passport::actingAs($this->user);
@@ -210,10 +210,10 @@ test('create accepts all valid statuses', function () {
 
     foreach (array_column(ConversationStatus::cases(), 'value') as $status) {
         $response = $this->postJson('/api/conversations', [
-            'subject'        => "Test {$status}",
+            'subject' => "Test {$status}",
             'customer_email' => "{$status}@example.com",
-            'body'           => 'Hello',
-            'status'         => $status,
+            'body' => 'Hello',
+            'status' => $status,
         ])->assertCreated();
 
         expect($response->json('status'))->toBe($status);
@@ -225,10 +225,10 @@ test('create accepts all valid priorities', function () {
 
     foreach (array_column(ConversationPriority::cases(), 'value') as $priority) {
         $response = $this->postJson('/api/conversations', [
-            'subject'        => "Test {$priority}",
+            'subject' => "Test {$priority}",
             'customer_email' => "{$priority}@example.com",
-            'body'           => 'Hello',
-            'priority'       => $priority,
+            'body' => 'Hello',
+            'priority' => $priority,
         ])->assertCreated();
 
         expect($response->json('priority'))->toBe($priority);

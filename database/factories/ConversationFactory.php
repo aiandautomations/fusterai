@@ -16,13 +16,14 @@ class ConversationFactory extends Factory
     public function definition(): array
     {
         $workspace = Workspace::factory()->create();
+
         return [
             'workspace_id' => $workspace->id,
-            'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $workspace->id])->id,
-            'customer_id'  => Customer::factory()->create(['workspace_id' => $workspace->id])->id,
-            'subject'      => fake()->sentence(6),
-            'status'       => 'open',
-            'priority'     => 'normal',
+            'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $workspace->id])->id,
+            'customer_id' => Customer::factory()->create(['workspace_id' => $workspace->id])->id,
+            'subject' => fake()->sentence(6),
+            'status' => 'open',
+            'priority' => 'normal',
             'channel_type' => 'email',
         ];
     }

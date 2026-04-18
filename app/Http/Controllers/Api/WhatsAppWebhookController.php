@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domains\Channel\Jobs\ProcessWhatsAppWebhookJob;
+use App\Domains\Mailbox\Models\Channel;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -20,8 +21,8 @@ class WhatsAppWebhookController extends Controller
             ->where('channel_type', 'whatsapp')
             ->firstOrFail();
 
-        $mode        = $request->query('hub_mode');
-        $challenge   = $request->query('hub_challenge');
+        $mode = $request->query('hub_mode');
+        $challenge = $request->query('hub_challenge');
         $verifyToken = $request->query('hub_verify_token');
 
         if ($mode === 'subscribe' && $verifyToken === $token) {
@@ -40,18 +41,18 @@ class WhatsAppWebhookController extends Controller
             ->where('channel_type', 'whatsapp')
             ->first();
 
-        if (!$mailbox) {
+        if (! $mailbox) {
             return response()->json(['error' => 'Invalid token'], 403);
         }
 
         // Validate Meta's HMAC-SHA256 signature
-        /** @var \App\Domains\Mailbox\Models\Channel|null $channel */
-        $channel   = $mailbox->channels()->where('type', 'whatsapp')->first();
+        /** @var Channel|null $channel */
+        $channel = $mailbox->channels()->where('type', 'whatsapp')->first();
         $appSecret = $channel?->config['app_secret'] ?? null;
         if ($appSecret) {
             $signature = $request->header('X-Hub-Signature-256', '');
-            $expected  = 'sha256=' . hash_hmac('sha256', $request->getContent(), $appSecret);
-            if (!hash_equals($expected, $signature)) {
+            $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);
+            if (! hash_equals($expected, $signature)) {
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
         }

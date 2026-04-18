@@ -20,8 +20,8 @@ return new class extends Migration
 
         // threads.user_id / customer_id — queried when building customer history
         Schema::table('threads', function (Blueprint $table) {
-            $table->index('user_id',      'threads_user_id_idx');
-            $table->index('customer_id',  'threads_customer_id_idx');
+            $table->index('user_id', 'threads_user_id_idx');
+            $table->index('customer_id', 'threads_customer_id_idx');
         });
 
         // conversation_folder.folder_id — needed for whereHas('folders') filter
@@ -32,10 +32,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users',               fn ($t) => $t->dropIndex('users_workspace_id_idx'));
-        Schema::table('customers',           fn ($t) => $t->dropIndex('customers_workspace_id_idx'));
-        Schema::table('threads',             fn ($t) => $t->dropIndex('threads_user_id_idx'));
-        Schema::table('threads',             fn ($t) => $t->dropIndex('threads_customer_id_idx'));
+        Schema::table('users', fn ($t) => $t->dropIndex('users_workspace_id_idx'));
+        Schema::table('customers', fn ($t) => $t->dropIndex('customers_workspace_id_idx'));
+        Schema::table('threads', fn ($t) => $t->dropIndex('threads_user_id_idx'));
+        Schema::table('threads', fn ($t) => $t->dropIndex('threads_customer_id_idx'));
         Schema::table('conversation_folder', fn ($t) => $t->dropIndex('conversation_folder_folder_id_idx'));
     }
 };

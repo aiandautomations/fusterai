@@ -5,8 +5,8 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = adminUser($this->workspace);
-    $this->agent     = agentUser($this->workspace);
+    $this->admin = adminUser($this->workspace);
+    $this->agent = agentUser($this->workspace);
 });
 
 // ── index ──────────────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ test('agent cannot view the create mailbox page', function () {
 test('admin can create a mailbox', function () {
     $this->actingAs($this->admin)
         ->post('/mailboxes', [
-            'name'  => 'Support',
+            'name' => 'Support',
             'email' => 'support@example.com',
         ])
         ->assertRedirect(route('mailboxes.index'));
@@ -55,7 +55,7 @@ test('admin can create a mailbox', function () {
 test('agent cannot create a mailbox', function () {
     $this->actingAs($this->agent)
         ->post('/mailboxes', [
-            'name'  => 'Support',
+            'name' => 'Support',
             'email' => 'support@example.com',
         ])
         ->assertForbidden();
@@ -93,7 +93,7 @@ test('admin can update mailbox name and signature', function () {
 
     $this->actingAs($this->admin)
         ->patch("/mailboxes/{$mailbox->id}", [
-            'name'      => 'Updated Name',
+            'name' => 'Updated Name',
             'signature' => 'Best regards',
         ])
         ->assertRedirect();
@@ -133,7 +133,7 @@ test('agent cannot delete a mailbox', function () {
 // ── cross-workspace security ───────────────────────────────────────────────────
 
 test('cannot edit mailbox from another workspace', function () {
-    $other   = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $mailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->admin)
@@ -142,7 +142,7 @@ test('cannot edit mailbox from another workspace', function () {
 });
 
 test('cannot delete mailbox from another workspace', function () {
-    $other   = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $mailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->admin)

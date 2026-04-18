@@ -17,15 +17,15 @@ class ConversationIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status'    => ['nullable', Rule::in([...array_column(ConversationStatus::cases(), 'value'), 'snoozed'])],
-            'priority'  => ['nullable', Rule::enum(ConversationPriority::class)],
-            'mailbox'   => ['nullable', 'integer'],
-            'assigned'  => ['nullable', 'regex:/^(me|none|all|\d+)$/'],
-            'tag'       => ['nullable', 'integer'],
-            'folder'    => ['nullable', 'integer'],
-            'view'      => ['nullable', 'integer'],
+            'status' => ['nullable', Rule::in([...array_column(ConversationStatus::cases(), 'value'), 'snoozed'])],
+            'priority' => ['nullable', Rule::enum(ConversationPriority::class)],
+            'mailbox' => ['nullable', 'integer'],
+            'assigned' => ['nullable', 'regex:/^(me|none|all|\d+)$/'],
+            'tag' => ['nullable', 'integer'],
+            'folder' => ['nullable', 'integer'],
+            'view' => ['nullable', 'integer'],
             'date_from' => ['nullable', 'date'],
-            'date_to'   => ['nullable', 'date', 'after_or_equal:date_from'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ];
     }
 }

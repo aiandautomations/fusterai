@@ -15,8 +15,8 @@ class UpdateWhatsAppRequest extends FormRequest
     {
         return [
             'phone_number_id' => ['required', 'string'],
-            'access_token'    => ['required', 'string'],
-            'app_secret'      => ['required', 'string'],
+            'access_token' => ['required', 'string'],
+            'app_secret' => ['required', 'string'],
         ];
     }
 }

@@ -7,30 +7,33 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Enums\ChannelType;
 use App\Enums\ConversationPriority;
 use App\Enums\ConversationStatus;
+use App\Models\ConversationRead;
+use App\Models\User;
 use Database\Factories\ConversationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property bool $is_unread
- * @property-read \App\Domains\Mailbox\Models\Mailbox|null $mailbox
- * @property-read \App\Domains\Customer\Models\Customer|null $customer
- * @property-read \App\Models\User|null $assignedUser
- * @property-read \App\Models\User|null $assignee
+ * @property-read Mailbox|null $mailbox
+ * @property-read Customer|null $customer
+ * @property-read User|null $assignedUser
+ * @property-read User|null $assignee
  */
 class Conversation extends Model
 {
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
-    use Searchable;
+
     use LogsActivity;
+    use Searchable;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -63,10 +66,10 @@ class Conversation extends Model
     ];
 
     protected $casts = [
-        'status'        => ConversationStatus::class,
-        'priority'      => ConversationPriority::class,
-        'channel_type'  => ChannelType::class,
-        'ai_tags'       => 'array',
+        'status' => ConversationStatus::class,
+        'priority' => ConversationPriority::class,
+        'channel_type' => ChannelType::class,
+        'ai_tags' => 'array',
         'last_reply_at' => 'datetime',
         'snoozed_until' => 'datetime',
     ];
@@ -76,12 +79,12 @@ class Conversation extends Model
     public function toSearchableArray(): array
     {
         return [
-            'id'           => $this->id,
+            'id' => $this->id,
             'workspace_id' => $this->workspace_id,
-            'subject'      => $this->subject,
-            'status'       => $this->status,
-            'priority'     => $this->priority,
-            'customer'     => $this->customer?->name,
+            'subject' => $this->subject,
+            'status' => $this->status,
+            'priority' => $this->priority,
+            'customer' => $this->customer?->name,
             'customer_email' => $this->customer?->email,
             'last_reply_at' => $this->last_reply_at?->timestamp,
         ];
@@ -108,13 +111,13 @@ class Conversation extends Model
 
     public function assignedUser(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     /** Alias for assignedUser — used by MCP tools and search. */
     public function assignee(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     /** @return HasMany<Thread, $this> */
@@ -135,7 +138,7 @@ class Conversation extends Model
 
     public function followers(): BelongsToMany
     {
-        return $this->belongsToMany(\App\Models\User::class, 'followers');
+        return $this->belongsToMany(User::class, 'followers');
     }
 
     public function aiSuggestions(): HasMany
@@ -143,9 +146,9 @@ class Conversation extends Model
         return $this->hasMany(AiSuggestion::class);
     }
 
-    public function reads(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function reads(): HasMany
     {
-        return $this->hasMany(\App\Models\ConversationRead::class);
+        return $this->hasMany(ConversationRead::class);
     }
 
     // ── Scopes ───────────────────────────────────────────────────

@@ -38,10 +38,10 @@ class CheckSlaBreachJob implements ShouldQueue
 
                     // Activity thread in the conversation timeline
                     $conversation->threads()->create([
-                        'type'       => 'activity',
-                        'body'       => '<p>⚠️ SLA first response target has been breached.</p>',
+                        'type' => 'activity',
+                        'body' => '<p>⚠️ SLA first response target has been breached.</p>',
                         'body_plain' => 'SLA first response target has been breached.',
-                        'source'     => 'web',
+                        'source' => 'web',
                     ]);
 
                     // Notify assigned agent; fall back to workspace admins
@@ -49,7 +49,7 @@ class CheckSlaBreachJob implements ShouldQueue
 
                     Log::warning('SLA first response breached', [
                         'conversation_id' => $conversation->id,
-                        'workspace_id'    => $conversation->workspace_id,
+                        'workspace_id' => $conversation->workspace_id,
                     ]);
                 }
             });
@@ -70,17 +70,17 @@ class CheckSlaBreachJob implements ShouldQueue
 
                     // Activity thread in the conversation timeline
                     $conversation->threads()->create([
-                        'type'       => 'activity',
-                        'body'       => '<p>⚠️ SLA resolution target has been breached.</p>',
+                        'type' => 'activity',
+                        'body' => '<p>⚠️ SLA resolution target has been breached.</p>',
                         'body_plain' => 'SLA resolution target has been breached.',
-                        'source'     => 'web',
+                        'source' => 'web',
                     ]);
 
                     $this->notifyAboutBreach($status, 'resolution');
 
                     Log::warning('SLA resolution breached', [
                         'conversation_id' => $conversation->id,
-                        'workspace_id'    => $conversation->workspace_id,
+                        'workspace_id' => $conversation->workspace_id,
                     ]);
                 }
             });

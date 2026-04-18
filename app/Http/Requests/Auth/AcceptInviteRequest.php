@@ -14,9 +14,9 @@ class AcceptInviteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token'    => ['required'],
-            'email'    => ['required', 'email'],
-            'name'     => ['required', 'string', 'max:100'],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'name' => ['required', 'string', 'max:100'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }

@@ -29,13 +29,13 @@ class ConversationRoutingServiceProvider extends ServiceProvider
 
             $agent = match ($config->mode) {
                 'least_loaded' => $config->leastLoadedAgent(),
-                default        => $config->nextRoundRobinAgent(),
+                default => $config->nextRoundRobinAgent(),
             };
 
             if (! $agent) {
                 Log::info('ConversationRouting: no eligible agents for conversation', [
                     'conversation_id' => $conversation->id,
-                    'config_id'       => $config->id,
+                    'config_id' => $config->id,
                 ]);
 
                 return;
@@ -47,8 +47,8 @@ class ConversationRoutingServiceProvider extends ServiceProvider
 
             Log::info('ConversationRouting: assigned conversation', [
                 'conversation_id' => $conversation->id,
-                'user_id'         => $agent->id,
-                'mode'            => $config->mode,
+                'user_id' => $agent->id,
+                'mode' => $config->mode,
             ]);
         });
     }

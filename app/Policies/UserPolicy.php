@@ -32,8 +32,12 @@ class UserPolicy
     /** Only admin+ can update another user. A user cannot promote anyone above their own role. */
     public function update(User $user, User $target): bool
     {
-        if (! $user->isAdmin()) return false;
-        if ($user->workspace_id !== $target->workspace_id) return false;
+        if (! $user->isAdmin()) {
+            return false;
+        }
+        if ($user->workspace_id !== $target->workspace_id) {
+            return false;
+        }
 
         // Prevent privilege escalation — cannot assign a role higher than your own
         return ($user::ROLE_HIERARCHY[$user->role] ?? 0) >= ($user::ROLE_HIERARCHY[$target->role] ?? 0);

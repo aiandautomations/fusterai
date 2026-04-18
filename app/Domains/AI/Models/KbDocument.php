@@ -15,7 +15,7 @@ class KbDocument extends Model
     protected $fillable = ['kb_id', 'title', 'content', 'embedding', 'source_url', 'meta', 'indexed_at'];
 
     protected $casts = [
-        'meta'       => 'array',
+        'meta' => 'array',
         'indexed_at' => 'datetime',
     ];
 

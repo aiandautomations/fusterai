@@ -21,10 +21,10 @@ class SlaSettingsController extends Controller
                 ->first();
 
             return [
-                'priority'               => $priority,
+                'priority' => $priority,
                 'first_response_minutes' => $policy?->first_response_minutes ?? $defaults[$priority]['first_response_minutes'],
-                'resolution_minutes'     => $policy?->resolution_minutes    ?? $defaults[$priority]['resolution_minutes'],
-                'active'                 => $policy?->active ?? true,
+                'resolution_minutes' => $policy?->resolution_minutes ?? $defaults[$priority]['resolution_minutes'],
+                'active' => $policy?->active ?? true,
             ];
         })->values()->all();
 
@@ -36,11 +36,11 @@ class SlaSettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'policies'                             => ['required', 'array', 'size:4'],
-            'policies.*.priority'                  => ['required', 'string', 'in:urgent,high,normal,low'],
-            'policies.*.first_response_minutes'    => ['required', 'integer', 'min:1'],
-            'policies.*.resolution_minutes'        => ['required', 'integer', 'min:1'],
-            'policies.*.active'                    => ['boolean'],
+            'policies' => ['required', 'array', 'size:4'],
+            'policies.*.priority' => ['required', 'string', 'in:urgent,high,normal,low'],
+            'policies.*.first_response_minutes' => ['required', 'integer', 'min:1'],
+            'policies.*.resolution_minutes' => ['required', 'integer', 'min:1'],
+            'policies.*.active' => ['boolean'],
         ]);
 
         $workspace = Workspace::find($request->user()->workspace_id);
@@ -49,10 +49,10 @@ class SlaSettingsController extends Controller
             SlaPolicy::updateOrCreate(
                 ['workspace_id' => $workspace->id, 'priority' => $p['priority']],
                 [
-                    'name'                   => ucfirst($p['priority']) . ' Priority SLA',
+                    'name' => ucfirst($p['priority']).' Priority SLA',
                     'first_response_minutes' => $p['first_response_minutes'],
-                    'resolution_minutes'     => $p['resolution_minutes'],
-                    'active'                 => $p['active'] ?? true,
+                    'resolution_minutes' => $p['resolution_minutes'],
+                    'active' => $p['active'] ?? true,
                 ],
             );
         }

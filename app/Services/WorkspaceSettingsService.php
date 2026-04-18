@@ -21,8 +21,8 @@ class WorkspaceSettingsService
      */
     public function update(Workspace $workspace, string $key, mixed $value): void
     {
-        $settings         = $workspace->settings ?? [];
-        $settings[$key]   = $value;
+        $settings = $workspace->settings ?? [];
+        $settings[$key] = $value;
         $workspace->settings = $settings;
         $workspace->save();
     }
@@ -42,7 +42,7 @@ class WorkspaceSettingsService
         $path = $file->store('workspace/logos', 'public');
 
         $branding['logo_path'] = $path;
-        $branding['logo_url']  = Storage::disk('public')->url($path);
+        $branding['logo_url'] = Storage::disk('public')->url($path);
 
         $this->update($workspace, 'branding', $branding);
 

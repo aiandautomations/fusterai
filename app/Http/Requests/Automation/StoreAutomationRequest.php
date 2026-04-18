@@ -14,12 +14,12 @@ class StoreAutomationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
-            'trigger'     => ['required', 'string', 'in:conversation.created,conversation.replied,conversation.closed,conversation.assigned,time.idle'],
-            'conditions'  => ['array'],
-            'actions'     => ['required', 'array', 'min:1'],
-            'active'      => ['boolean'],
+            'trigger' => ['required', 'string', 'in:conversation.created,conversation.replied,conversation.closed,conversation.assigned,time.idle'],
+            'conditions' => ['array'],
+            'actions' => ['required', 'array', 'min:1'],
+            'active' => ['boolean'],
         ];
     }
 }

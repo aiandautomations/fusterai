@@ -10,19 +10,20 @@ use App\Notifications\ConversationAssignedNotification;
 use App\Notifications\NewCustomerReplyNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Notification::fake();
     Queue::fake();
 
-    $this->workspace    = Workspace::factory()->create();
-    $this->agent        = User::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->mailbox      = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer     = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->agent = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $this->conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 });
 
@@ -53,13 +54,13 @@ test('customer reply notifies the assigned agent', function () {
     // Simulate an inbound customer thread directly (no HTTP route — customer messages arrive via email/webhook)
     $thread = $this->conversation->threads()->create([
         'customer_id' => $this->customer->id,
-        'user_id'     => null,
-        'type'        => 'message',
-        'body'        => '<p>Need help</p>',
-        'source'      => 'email',
+        'user_id' => null,
+        'type' => 'message',
+        'body' => '<p>Need help</p>',
+        'source' => 'email',
     ]);
 
-    $assignee = \App\Models\User::find($assigner->id);
+    $assignee = User::find($assigner->id);
     $assignee->notify(new NewCustomerReplyNotification($this->conversation, $thread));
 
     Notification::assertSentTo($assigner, NewCustomerReplyNotification::class);
@@ -97,7 +98,7 @@ test('sender does not receive their own reply notification', function () {
 test('notifications index returns paginated list', function () {
     // Insert a real DB notification (bypass Notification::fake())
     $this->agent->notifications()->create([
-        'id'   => \Illuminate\Support\Str::uuid(),
+        'id' => Str::uuid(),
         'type' => ConversationAssignedNotification::class,
         'data' => json_encode(['type' => 'assigned', 'conversation_id' => $this->conversation->id]),
     ]);
@@ -110,7 +111,7 @@ test('notifications index returns paginated list', function () {
 
 test('read-all marks all notifications as read', function () {
     $this->agent->notifications()->create([
-        'id'   => \Illuminate\Support\Str::uuid(),
+        'id' => Str::uuid(),
         'type' => ConversationAssignedNotification::class,
         'data' => json_encode(['type' => 'assigned', 'conversation_id' => $this->conversation->id]),
     ]);
@@ -126,7 +127,7 @@ test('read-all marks all notifications as read', function () {
 
 test('individual notification can be marked as read', function () {
     $this->agent->notifications()->create([
-        'id'   => \Illuminate\Support\Str::uuid(),
+        'id' => Str::uuid(),
         'type' => ConversationAssignedNotification::class,
         'data' => json_encode(['type' => 'assigned', 'conversation_id' => $this->conversation->id]),
     ]);

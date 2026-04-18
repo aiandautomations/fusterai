@@ -9,17 +9,17 @@ class CustomViewService
 {
     public function create(array $validated, User $user): CustomView
     {
-        $isShared    = (bool) ($validated['is_shared'] ?? false);
+        $isShared = (bool) ($validated['is_shared'] ?? false);
         $workspaceId = $user->workspace_id;
 
         return CustomView::create([
             'workspace_id' => $workspaceId,
-            'user_id'      => $isShared ? null : $user->id,
-            'name'         => $validated['name'],
-            'color'        => $validated['color'],
-            'filters'      => $this->stripEmpty($validated['filters']),
-            'is_shared'    => $isShared,
-            'order'        => CustomView::where('workspace_id', $workspaceId)->max('order') + 1,
+            'user_id' => $isShared ? null : $user->id,
+            'name' => $validated['name'],
+            'color' => $validated['color'],
+            'filters' => $this->stripEmpty($validated['filters']),
+            'is_shared' => $isShared,
+            'order' => CustomView::where('workspace_id', $workspaceId)->max('order') + 1,
         ]);
     }
 

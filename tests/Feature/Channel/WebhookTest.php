@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Channel\Jobs\ProcessWebhookMessageJob;
+use App\Domains\Conversation\Jobs\ProcessInboundEmailJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
@@ -11,18 +12,18 @@ use Illuminate\Support\Facades\Queue;
 beforeEach(function () {
     Queue::fake();
     $this->workspace = Workspace::factory()->create();
-    $this->mailbox   = Mailbox::factory()->create([
+    $this->mailbox = Mailbox::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'active'       => true,
+        'active' => true,
     ]);
 });
 
 test('valid webhook token dispatches ProcessWebhookMessageJob', function () {
     $this->postJson("/api/webhooks/inbound/{$this->mailbox->webhook_token}", [
-        'from_name'  => 'John',
+        'from_name' => 'John',
         'from_email' => 'john@example.com',
-        'subject'    => 'Test webhook',
-        'body'       => 'Hello from webhook',
+        'subject' => 'Test webhook',
+        'body' => 'Hello from webhook',
     ])->assertOk()->assertJson(['status' => 'queued']);
 
     Queue::assertPushedOn('webhooks', ProcessWebhookMessageJob::class);
@@ -37,7 +38,7 @@ test('invalid webhook token returns 404', function () {
 test('inactive mailbox webhook token returns 404', function () {
     $inactive = Mailbox::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'active'       => false,
+        'active' => false,
     ]);
 
     $this->postJson("/api/webhooks/inbound/{$inactive->webhook_token}", [
@@ -62,15 +63,15 @@ test('webhook with conversation_id threads into existing conversation', function
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $customer->id,
         'channel_type' => 'api',
     ]);
 
     (new ProcessWebhookMessageJob($this->mailbox->id, [
-        'from_email'      => $customer->email,
-        'from_name'       => $customer->name,
-        'body'            => 'Follow-up message',
+        'from_email' => $customer->email,
+        'from_name' => $customer->name,
+        'body' => 'Follow-up message',
         'conversation_id' => $conversation->id,
     ]))->handle();
 
@@ -86,16 +87,16 @@ test('webhook without conversation_id always creates a new conversation', functi
 
     (new ProcessWebhookMessageJob($this->mailbox->id, [
         'from_email' => $customer->email,
-        'from_name'  => $customer->name,
-        'subject'    => 'New ticket',
-        'body'       => 'Hello',
+        'from_name' => $customer->name,
+        'subject' => 'New ticket',
+        'body' => 'Hello',
     ]))->handle();
 
     (new ProcessWebhookMessageJob($this->mailbox->id, [
         'from_email' => $customer->email,
-        'from_name'  => $customer->name,
-        'subject'    => 'Another ticket',
-        'body'       => 'Hello again',
+        'from_name' => $customer->name,
+        'subject' => 'Another ticket',
+        'body' => 'Hello again',
     ]))->handle();
 
     expect(Conversation::where('mailbox_id', $this->mailbox->id)->count())->toBe(2);
@@ -103,9 +104,9 @@ test('webhook without conversation_id always creates a new conversation', functi
 
 test('webhook with invalid conversation_id falls back to creating new conversation', function () {
     (new ProcessWebhookMessageJob($this->mailbox->id, [
-        'from_email'      => 'someone@example.com',
-        'from_name'       => 'Someone',
-        'body'            => 'Message',
+        'from_email' => 'someone@example.com',
+        'from_name' => 'Someone',
+        'body' => 'Message',
         'conversation_id' => 99999,
     ]))->handle();
 
@@ -116,18 +117,18 @@ test('threaded webhook reply sets conversation status to open and updates last_r
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $conversation = Conversation::factory()->create([
-        'workspace_id'  => $this->workspace->id,
-        'mailbox_id'    => $this->mailbox->id,
-        'customer_id'   => $customer->id,
-        'channel_type'  => 'api',
-        'status'        => 'pending',
+        'workspace_id' => $this->workspace->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $customer->id,
+        'channel_type' => 'api',
+        'status' => 'pending',
         'last_reply_at' => now()->subDay(),
     ]);
 
     (new ProcessWebhookMessageJob($this->mailbox->id, [
-        'from_email'      => $customer->email,
-        'from_name'       => $customer->name,
-        'body'            => 'Back again',
+        'from_email' => $customer->email,
+        'from_name' => $customer->name,
+        'body' => 'Back again',
         'conversation_id' => $conversation->id,
     ]))->handle();
 
@@ -142,23 +143,23 @@ test('duplicate inbound email with same message_id creates only one conversation
     // Queue::fake() is already active — child jobs (AI, auto-reply) will be captured,
     // so we can safely call ->handle() directly without spawning real workers.
     $emailData = [
-        'message_id'  => '<unique-msg-id-123@mail.example.com>',
-        'from_email'  => 'customer@example.com',
-        'from_name'   => 'Customer',
-        'subject'     => 'Help needed',
-        'body_html'   => '<p>Hello</p>',
-        'body_text'   => 'Hello',
+        'message_id' => '<unique-msg-id-123@mail.example.com>',
+        'from_email' => 'customer@example.com',
+        'from_name' => 'Customer',
+        'subject' => 'Help needed',
+        'body_html' => '<p>Hello</p>',
+        'body_text' => 'Hello',
         'in_reply_to' => null,
-        'references'  => null,
+        'references' => null,
         'attachments' => [],
-        'cc'          => [],
-        'headers'     => ['auto_submitted' => '', 'x_auto_response_suppress' => '', 'precedence' => '', 'x_fusterai_auto_reply' => ''],
+        'cc' => [],
+        'headers' => ['auto_submitted' => '', 'x_auto_response_suppress' => '', 'precedence' => '', 'x_fusterai_auto_reply' => ''],
     ];
 
-    (new \App\Domains\Conversation\Jobs\ProcessInboundEmailJob($this->mailbox->id, $emailData))->handle();
-    (new \App\Domains\Conversation\Jobs\ProcessInboundEmailJob($this->mailbox->id, $emailData))->handle();
+    (new ProcessInboundEmailJob($this->mailbox->id, $emailData))->handle();
+    (new ProcessInboundEmailJob($this->mailbox->id, $emailData))->handle();
 
     expect(
-        \App\Domains\Conversation\Models\Conversation::where('mailbox_id', $this->mailbox->id)->count()
+        Conversation::where('mailbox_id', $this->mailbox->id)->count()
     )->toBe(1);
 });

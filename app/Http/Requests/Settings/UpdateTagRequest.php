@@ -14,10 +14,10 @@ class UpdateTagRequest extends FormRequest
     public function rules(): array
     {
         $workspaceId = $this->user()->workspace_id;
-        $tagId       = $this->route('tag')?->id;
+        $tagId = $this->route('tag')?->id;
 
         return [
-            'name'  => ['sometimes', 'string', 'max:50', "unique:tags,name,{$tagId},id,workspace_id,{$workspaceId}"],
+            'name' => ['sometimes', 'string', 'max:50', "unique:tags,name,{$tagId},id,workspace_id,{$workspaceId}"],
             'color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ];
     }

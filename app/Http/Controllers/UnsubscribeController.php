@@ -28,7 +28,7 @@ class UnsubscribeController extends Controller
         $customer->update(['is_blocked' => true]);
 
         return response()->view('unsubscribe', [
-            'customer'     => $customer,
+            'customer' => $customer,
             'unsubscribed' => true,
         ]);
     }

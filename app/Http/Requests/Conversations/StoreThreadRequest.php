@@ -16,9 +16,9 @@ class StoreThreadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body'          => ['required', 'string', 'max:50000'],
-            'type'          => ['required', Rule::in([ThreadType::Message->value, ThreadType::Note->value])],
-            'attachments'   => ['nullable', 'array'],
+            'body' => ['required', 'string', 'max:50000'],
+            'type' => ['required', Rule::in([ThreadType::Message->value, ThreadType::Note->value])],
+            'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:20480'],
         ];
     }

@@ -16,14 +16,14 @@ class LiveChatDriver implements ChannelDriver
             ->as('thread.created')
             ->with([
                 'thread' => [
-                    'id'              => $thread->id,
+                    'id' => $thread->id,
                     'conversation_id' => $thread->conversation_id,
-                    'type'            => $thread->type,
-                    'body'            => $thread->body,
-                    'source'          => $thread->source,
-                    'created_at'      => $thread->created_at,
-                    'user'            => $thread->user?->only(['id', 'name', 'avatar']),
-                    'customer'        => $thread->customer?->only(['id', 'name', 'avatar']),
+                    'type' => $thread->type,
+                    'body' => $thread->body,
+                    'source' => $thread->source,
+                    'created_at' => $thread->created_at,
+                    'user' => $thread->user?->only(['id', 'name', 'avatar']),
+                    'customer' => $thread->customer?->only(['id', 'name', 'avatar']),
                 ],
             ])
             ->sendNow();

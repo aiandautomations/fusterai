@@ -16,10 +16,10 @@ class DynamicMailerService
         $transport = new EsmtpTransport(
             host: $smtp['host'] ?? 'localhost',
             port: (int) ($smtp['port'] ?? 587),
-            tls:  ($smtp['encryption'] ?? 'tls') === 'tls',
+            tls: ($smtp['encryption'] ?? 'tls') === 'tls',
         );
 
-        if (!empty($smtp['username'])) {
+        if (! empty($smtp['username'])) {
             $transport->setUsername($smtp['username']);
             $transport->setPassword($smtp['password'] ?? '');
         }

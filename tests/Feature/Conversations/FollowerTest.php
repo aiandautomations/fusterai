@@ -12,14 +12,14 @@ beforeEach(function () {
     Event::fake();
 
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conv = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 });
 
@@ -60,11 +60,11 @@ test('unfollowing a conversation not followed is a no-op', function () {
 });
 
 test('cannot follow a conversation from another workspace', function () {
-    $other   = Workspace::factory()->create();
-    $conv    = Conversation::factory()->create([
+    $other = Workspace::factory()->create();
+    $conv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     $this->actingAs($this->user)

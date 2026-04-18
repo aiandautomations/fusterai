@@ -40,11 +40,11 @@ class ConversationFollowerNotification extends Notification implements ShouldQue
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'            => 'follower_update',
+            'type' => 'follower_update',
             'conversation_id' => $this->conversation->id,
-            'subject'         => $this->conversation->subject,
-            'preview'         => mb_substr(strip_tags($this->thread->body), 0, 200),
-            'url'             => "/conversations/{$this->conversation->id}",
+            'subject' => $this->conversation->subject,
+            'preview' => mb_substr(strip_tags($this->thread->body), 0, 200),
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

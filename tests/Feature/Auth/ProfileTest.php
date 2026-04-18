@@ -3,12 +3,13 @@
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Storage::fake('public');
     $this->workspace = Workspace::factory()->create();
-    $this->user      = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = User::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('profile page is accessible', function () {
@@ -53,7 +54,7 @@ test('old avatar is deleted when new one is uploaded', function () {
     expect($secondUrl)->not->toBe($firstUrl);
 
     // Old file should be gone
-    $oldPath = str_replace(url('/storage') . '/', '', $firstUrl);
+    $oldPath = str_replace(url('/storage').'/', '', $firstUrl);
     Storage::disk('public')->assertMissing($oldPath);
 });
 
@@ -77,19 +78,19 @@ test('password can be updated', function () {
     $this->actingAs($this->user)
         ->patch('/profile/password', [
             'current_password' => 'password',
-            'password'         => 'new-password123',
+            'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
         ])
         ->assertRedirect();
 
-    expect(\Illuminate\Support\Facades\Hash::check('new-password123', $this->user->fresh()->password))->toBeTrue();
+    expect(Hash::check('new-password123', $this->user->fresh()->password))->toBeTrue();
 });
 
 test('password update rejects wrong current password', function () {
     $this->actingAs($this->user)
         ->patch('/profile/password', [
-            'current_password'      => 'wrong-password',
-            'password'              => 'new-password123',
+            'current_password' => 'wrong-password',
+            'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
         ])
         ->assertSessionHasErrors('current_password');
@@ -98,8 +99,8 @@ test('password update rejects wrong current password', function () {
 test('password update requires confirmation to match', function () {
     $this->actingAs($this->user)
         ->patch('/profile/password', [
-            'current_password'      => 'password',
-            'password'              => 'new-password123',
+            'current_password' => 'password',
+            'password' => 'new-password123',
             'password_confirmation' => 'different456',
         ])
         ->assertSessionHasErrors('password');

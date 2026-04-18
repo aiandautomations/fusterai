@@ -3,6 +3,7 @@
 namespace App\Domains\Mailbox\Models;
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Models\User;
 use Database\Factories\MailboxFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ class Mailbox extends Model
 {
     /** @use HasFactory<MailboxFactory> */
     use HasFactory;
+
     use LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
@@ -31,6 +33,7 @@ class Mailbox extends Model
     {
         return MailboxFactory::new();
     }
+
     protected $fillable = [
         'workspace_id',
         'name',
@@ -45,16 +48,18 @@ class Mailbox extends Model
     ];
 
     protected $casts = [
-        'active'            => 'boolean',
+        'active' => 'boolean',
         'auto_reply_config' => 'array',
-        'ai_config'         => 'array',
+        'ai_config' => 'array',
     ];
 
     // ── Encrypted JSON accessors ──────────────────────────────────
 
     public function getImapConfigAttribute(?string $value): ?array
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
         try {
             return json_decode(Crypt::decryptString($value), true);
         } catch (\Exception) {
@@ -71,7 +76,9 @@ class Mailbox extends Model
 
     public function getSmtpConfigAttribute(?string $value): ?array
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
         try {
             return json_decode(Crypt::decryptString($value), true);
         } catch (\Exception) {
@@ -95,7 +102,7 @@ class Mailbox extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(\App\Models\User::class, 'mailbox_user')
+        return $this->belongsToMany(User::class, 'mailbox_user')
             ->withPivot('permissions');
     }
 
@@ -108,11 +115,11 @@ class Mailbox extends Model
 
     public function hasImapConfig(): bool
     {
-        return !empty($this->imap_config);
+        return ! empty($this->imap_config);
     }
 
     public function hasSmtpConfig(): bool
     {
-        return !empty($this->smtp_config);
+        return ! empty($this->smtp_config);
     }
 }

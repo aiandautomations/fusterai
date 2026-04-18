@@ -27,9 +27,9 @@ class AutomationRule extends Model
     ];
 
     protected $casts = [
-        'active'      => 'boolean',
-        'conditions'  => 'array',
-        'actions'     => 'array',
+        'active' => 'boolean',
+        'conditions' => 'array',
+        'actions' => 'array',
         'last_run_at' => 'datetime',
     ];
 

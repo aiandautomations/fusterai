@@ -16,7 +16,8 @@ class IndexKbDocumentJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(
@@ -27,7 +28,7 @@ class IndexKbDocumentJob implements ShouldQueue
 
     public function handle(): void
     {
-        $text = $this->document->title . "\n\n" . $this->document->content;
+        $text = $this->document->title."\n\n".$this->document->content;
         $text = mb_substr($text, 0, 8000);
 
         // Apply workspace credentials so the embeddings call uses the
@@ -41,7 +42,7 @@ class IndexKbDocumentJob implements ShouldQueue
 
         $response = Embeddings::for([$text])->generate($embeddingsLab);
 
-        $this->document->embedding  = $response->first();
+        $this->document->embedding = $response->first();
         $this->document->indexed_at = now();
         // Clear any previous index error
         $meta = $this->document->meta ?? [];

@@ -6,8 +6,8 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->agent     = agentUser($this->workspace);
-    $this->manager   = managerUser($this->workspace);
+    $this->agent = agentUser($this->workspace);
+    $this->manager = managerUser($this->workspace);
 });
 
 // ── Create ────────────────────────────────────────────────────────────────────
@@ -15,8 +15,8 @@ beforeEach(function () {
 test('agent can create a personal custom view', function () {
     $this->actingAs($this->agent)
         ->post('/views', [
-            'name'    => 'My Urgent',
-            'color'   => '#ff0000',
+            'name' => 'My Urgent',
+            'color' => '#ff0000',
             'filters' => ['priority' => 'urgent'],
         ])
         ->assertRedirect();
@@ -31,10 +31,10 @@ test('agent can create a personal custom view', function () {
 test('agent cannot create a shared view', function () {
     $this->actingAs($this->agent)
         ->post('/views', [
-            'name'      => 'Shared View',
-            'color'     => '#0000ff',
+            'name' => 'Shared View',
+            'color' => '#0000ff',
             'is_shared' => true,
-            'filters'   => ['status' => 'open'],
+            'filters' => ['status' => 'open'],
         ])
         ->assertForbidden();
 });
@@ -42,10 +42,10 @@ test('agent cannot create a shared view', function () {
 test('manager can create a shared view', function () {
     $this->actingAs($this->manager)
         ->post('/views', [
-            'name'      => 'Team Unassigned',
-            'color'     => '#00ff00',
+            'name' => 'Team Unassigned',
+            'color' => '#00ff00',
             'is_shared' => true,
-            'filters'   => ['assigned' => 'none'],
+            'filters' => ['assigned' => 'none'],
         ])
         ->assertRedirect();
 
@@ -71,8 +71,8 @@ test('view order auto-increments', function () {
 test('create strips null and empty filter values', function () {
     $this->actingAs($this->agent)
         ->post('/views', [
-            'name'    => 'Clean View',
-            'color'   => '#123456',
+            'name' => 'Clean View',
+            'color' => '#123456',
             'filters' => ['status' => 'open', 'priority' => null, 'assigned' => ''],
         ])
         ->assertRedirect();
@@ -86,21 +86,21 @@ test('create strips null and empty filter values', function () {
 test('create validates color format', function () {
     $this->actingAs($this->agent)
         ->post('/views', [
-            'name'    => 'Bad Color',
-            'color'   => 'red',
+            'name' => 'Bad Color',
+            'color' => 'red',
             'filters' => ['status' => 'open'],
         ])
         ->assertSessionHasErrors('color');
 });
 
 test('create rejects mailbox from another workspace', function () {
-    $other   = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $mailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->agent)
         ->post('/views', [
-            'name'    => 'Bad Mailbox',
-            'color'   => '#123456',
+            'name' => 'Bad Mailbox',
+            'color' => '#123456',
             'filters' => ['status' => 'open', 'mailbox_id' => $mailbox->id],
         ])
         ->assertSessionHasErrors('filters.mailbox_id');
@@ -111,8 +111,8 @@ test('create rejects mailbox from another workspace', function () {
 test('agent can update their own personal view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => $this->agent->id,
-        'is_shared'    => false,
+        'user_id' => $this->agent->id,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)
@@ -124,10 +124,10 @@ test('agent can update their own personal view', function () {
 
 test('agent cannot update another agent\'s personal view', function () {
     $other = agentUser($this->workspace);
-    $view  = CustomView::factory()->create([
+    $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => $other->id,
-        'is_shared'    => false,
+        'user_id' => $other->id,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)
@@ -138,8 +138,8 @@ test('agent cannot update another agent\'s personal view', function () {
 test('manager can update a shared view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => null,
-        'is_shared'    => true,
+        'user_id' => null,
+        'is_shared' => true,
     ]);
 
     $this->actingAs($this->manager)
@@ -152,8 +152,8 @@ test('manager can update a shared view', function () {
 test('agent cannot update a shared view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => null,
-        'is_shared'    => true,
+        'user_id' => null,
+        'is_shared' => true,
     ]);
 
     $this->actingAs($this->agent)
@@ -163,10 +163,10 @@ test('agent cannot update a shared view', function () {
 
 test('update from another workspace is forbidden', function () {
     $other = Workspace::factory()->create();
-    $view  = CustomView::factory()->create([
+    $view = CustomView::factory()->create([
         'workspace_id' => $other->id,
-        'user_id'      => null,
-        'is_shared'    => false,
+        'user_id' => null,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)
@@ -177,9 +177,9 @@ test('update from another workspace is forbidden', function () {
 test('update strips null and empty filter values', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => $this->agent->id,
-        'is_shared'    => false,
-        'filters'      => ['status' => 'open'],
+        'user_id' => $this->agent->id,
+        'is_shared' => false,
+        'filters' => ['status' => 'open'],
     ]);
 
     $this->actingAs($this->agent)
@@ -198,8 +198,8 @@ test('update strips null and empty filter values', function () {
 test('agent can delete their own view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => $this->agent->id,
-        'is_shared'    => false,
+        'user_id' => $this->agent->id,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)
@@ -211,10 +211,10 @@ test('agent can delete their own view', function () {
 
 test('agent cannot delete another agent\'s view', function () {
     $other = agentUser($this->workspace);
-    $view  = CustomView::factory()->create([
+    $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => $other->id,
-        'is_shared'    => false,
+        'user_id' => $other->id,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)
@@ -227,8 +227,8 @@ test('agent cannot delete another agent\'s view', function () {
 test('manager can delete a shared view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => null,
-        'is_shared'    => true,
+        'user_id' => null,
+        'is_shared' => true,
     ]);
 
     $this->actingAs($this->manager)
@@ -241,8 +241,8 @@ test('manager can delete a shared view', function () {
 test('agent cannot delete a shared view', function () {
     $view = CustomView::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'user_id'      => null,
-        'is_shared'    => true,
+        'user_id' => null,
+        'is_shared' => true,
     ]);
 
     $this->actingAs($this->agent)
@@ -252,10 +252,10 @@ test('agent cannot delete a shared view', function () {
 
 test('delete from another workspace is forbidden', function () {
     $other = Workspace::factory()->create();
-    $view  = CustomView::factory()->create([
+    $view = CustomView::factory()->create([
         'workspace_id' => $other->id,
-        'user_id'      => null,
-        'is_shared'    => false,
+        'user_id' => null,
+        'is_shared' => false,
     ]);
 
     $this->actingAs($this->agent)

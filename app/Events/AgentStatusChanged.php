@@ -13,8 +13,8 @@ class AgentStatusChanged implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly int    $workspaceId,
-        public readonly int    $userId,
+        public readonly int $workspaceId,
+        public readonly int $userId,
         public readonly string $status,
     ) {}
 
@@ -32,7 +32,7 @@ class AgentStatusChanged implements ShouldBroadcast
     {
         return [
             'user_id' => $this->userId,
-            'status'  => $this->status,
+            'status' => $this->status,
         ];
     }
 }

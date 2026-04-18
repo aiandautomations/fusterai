@@ -69,18 +69,18 @@ class SlaManagerServiceProvider extends ServiceProvider
 
             if ($status) {
                 $data['sla'] = [
-                    'policy'                           => $status->policy ? [
-                        'name'                   => $status->policy->name,
-                        'first_response_label'   => $status->policy->first_response_label,
-                        'resolution_label'       => $status->policy->resolution_label,
+                    'policy' => $status->policy ? [
+                        'name' => $status->policy->name,
+                        'first_response_label' => $status->policy->first_response_label,
+                        'resolution_label' => $status->policy->resolution_label,
                     ] : null,
-                    'first_response_status'            => $status->first_response_status,
-                    'resolution_status'                => $status->resolution_status,
-                    'first_response_due_at'            => $status->first_response_due_at,
-                    'resolution_due_at'                => $status->resolution_due_at,
+                    'first_response_status' => $status->first_response_status,
+                    'resolution_status' => $status->resolution_status,
+                    'first_response_due_at' => $status->first_response_due_at,
+                    'resolution_due_at' => $status->resolution_due_at,
                     'first_response_remaining_minutes' => $status->first_response_remaining_minutes,
-                    'resolution_remaining_minutes'     => $status->resolution_remaining_minutes,
-                    'is_paused'                        => $status->isPaused(),
+                    'resolution_remaining_minutes' => $status->resolution_remaining_minutes,
+                    'is_paused' => $status->isPaused(),
                 ];
             }
 
@@ -127,7 +127,7 @@ class SlaManagerServiceProvider extends ServiceProvider
             }
 
             $updates = [
-                'sla_policy_id'   => $policy->id,
+                'sla_policy_id' => $policy->id,
                 'resolution_due_at' => $createdAt->copy()->addMinutes($policy->resolution_minutes + $existing->pause_offset_minutes),
             ];
 
@@ -145,9 +145,9 @@ class SlaManagerServiceProvider extends ServiceProvider
             SlaStatus::firstOrCreate(
                 ['conversation_id' => $conversation->id],
                 [
-                    'sla_policy_id'         => $policy->id,
+                    'sla_policy_id' => $policy->id,
                     'first_response_due_at' => $createdAt->copy()->addMinutes($policy->first_response_minutes),
-                    'resolution_due_at'     => $createdAt->copy()->addMinutes($policy->resolution_minutes),
+                    'resolution_due_at' => $createdAt->copy()->addMinutes($policy->resolution_minutes),
                 ]
             );
         }

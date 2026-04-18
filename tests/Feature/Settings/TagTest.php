@@ -5,7 +5,7 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->manager   = managerUser($this->workspace);
+    $this->manager = managerUser($this->workspace);
 });
 
 test('tags index requires manager role', function () {
@@ -61,7 +61,7 @@ test('manager can delete a tag', function () {
 
 test('manager cannot modify tag from another workspace', function () {
     $other = Workspace::factory()->create();
-    $tag   = Tag::factory()->create(['workspace_id' => $other->id]);
+    $tag = Tag::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->manager)
         ->delete("/tags/{$tag->id}")

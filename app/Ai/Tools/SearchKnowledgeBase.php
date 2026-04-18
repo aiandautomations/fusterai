@@ -4,22 +4,25 @@ namespace App\Ai\Tools;
 
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
+use App\Models\Workspace;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\QueryException;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 
 class SearchKnowledgeBase implements Tool
 {
     private float $minScore;
-    private int   $topK;
+
+    private int $topK;
 
     public function __construct(
         private readonly int $workspaceId,
     ) {
-        $workspace      = \App\Models\Workspace::find($workspaceId);
-        $rag            = $workspace?->settings['ai_rag'] ?? [];
+        $workspace = Workspace::find($workspaceId);
+        $rag = $workspace?->settings['ai_rag'] ?? [];
         $this->minScore = (float) ($rag['min_score'] ?? config('ai.rag.min_score', 0.6));
-        $this->topK     = (int)   ($rag['top_k']     ?? config('ai.rag.top_k', 5));
+        $this->topK = (int) ($rag['top_k'] ?? config('ai.rag.top_k', 5));
     }
 
     public function description(): string
@@ -63,7 +66,7 @@ class SearchKnowledgeBase implements Tool
                     ->whereVectorSimilarTo('embedding', $query, minSimilarity: $this->minScore)
                     ->limit($this->topK)
                     ->get(['title', 'content']);
-            } catch (\Illuminate\Database\QueryException) {
+            } catch (QueryException) {
                 // pgvector extension unavailable — fall through to full-text search
                 $hasEmbeddings = false;
             }
@@ -75,7 +78,7 @@ class SearchKnowledgeBase implements Tool
             $docs = KbDocument::whereIn('kb_id', $kbIds)
                 ->where(function ($q) use ($query, $operator) {
                     $q->where('title', $operator, "%{$query}%")
-                      ->orWhere('content', $operator, "%{$query}%");
+                        ->orWhere('content', $operator, "%{$query}%");
                 })
                 ->limit($this->topK)
                 ->get(['title', 'content']);
@@ -85,8 +88,7 @@ class SearchKnowledgeBase implements Tool
             return 'No relevant articles found in the knowledge base.';
         }
 
-        return $docs->map(fn ($doc) =>
-            "## {$doc->title}\n\n" . mb_substr($doc->content, 0, 800)
+        return $docs->map(fn ($doc) => "## {$doc->title}\n\n".mb_substr($doc->content, 0, 800)
         )->join("\n\n---\n\n");
     }
 }

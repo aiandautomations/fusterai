@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Password;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = adminUser($this->workspace);
-    $this->agent     = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->admin = adminUser($this->workspace);
+    $this->agent = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 // ── index ──────────────────────────────────────────────────────────────────────
@@ -32,9 +32,9 @@ test('admin can invite a new user', function () {
 
     $this->actingAs($this->admin)
         ->post('/settings/users', [
-            'name'  => 'New Agent',
+            'name' => 'New Agent',
             'email' => 'newagent@example.com',
-            'role'  => 'agent',
+            'role' => 'agent',
         ])
         ->assertRedirect();
 
@@ -44,9 +44,9 @@ test('admin can invite a new user', function () {
 test('agent cannot invite users', function () {
     $this->actingAs($this->agent)
         ->post('/settings/users', [
-            'name'  => 'New Agent',
+            'name' => 'New Agent',
             'email' => 'newagent2@example.com',
-            'role'  => 'agent',
+            'role' => 'agent',
         ])
         ->assertForbidden();
 });
@@ -54,9 +54,9 @@ test('agent cannot invite users', function () {
 test('invite requires valid role', function () {
     $this->actingAs($this->admin)
         ->post('/settings/users', [
-            'name'  => 'Test',
+            'name' => 'Test',
             'email' => 'test@example.com',
-            'role'  => 'superuser',
+            'role' => 'superuser',
         ])
         ->assertSessionHasErrors('role');
 });
@@ -128,9 +128,9 @@ test('admin can assign mailbox access to a user', function () {
 });
 
 test('cannot assign a mailbox from another workspace', function () {
-    $other        = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherMailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
-    $target       = agentUser($this->workspace);
+    $target = agentUser($this->workspace);
 
     $this->actingAs($this->admin)
         ->patch("/settings/users/{$target->id}/mailboxes", [
@@ -142,7 +142,7 @@ test('cannot assign a mailbox from another workspace', function () {
 // ── cross-workspace security ───────────────────────────────────────────────────
 
 test('cannot update a user from another workspace', function () {
-    $other  = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $target = agentUser($other);
 
     $this->actingAs($this->admin)

@@ -20,7 +20,8 @@ class GenerateReplySuggestionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -39,7 +40,7 @@ class GenerateReplySuggestionJob implements ShouldQueue
             ->configureForWorkspace($conversation->workspace_id);
 
         try {
-            $agent  = new ReplySuggestionAgent($conversation);
+            $agent = new ReplySuggestionAgent($conversation);
             $prompt = 'Please suggest a helpful, professional reply to the latest customer message. Write only the reply body.';
 
             $channel = new PrivateChannel("conversation.{$conversation->id}");
@@ -51,11 +52,11 @@ class GenerateReplySuggestionJob implements ShouldQueue
             $content = $stream->text ?? '';
 
             $suggestion = AiSuggestion::create([
-                'conversation_id'   => $conversation->id,
-                'type'              => 'reply',
-                'content'           => $content,
-                'model'             => $model ?? $lab->value,
-                'prompt_tokens'     => $stream->usage->promptTokens ?? 0,
+                'conversation_id' => $conversation->id,
+                'type' => 'reply',
+                'content' => $content,
+                'model' => $model ?? $lab->value,
+                'prompt_tokens' => $stream->usage->promptTokens ?? 0,
                 'completion_tokens' => $stream->usage->completionTokens ?? 0,
             ]);
 
@@ -63,7 +64,7 @@ class GenerateReplySuggestionJob implements ShouldQueue
         } catch (\Throwable $e) {
             Log::error('GenerateReplySuggestionJob failed', [
                 'conversation_id' => $conversation->id,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             $this->fail($e);
         }

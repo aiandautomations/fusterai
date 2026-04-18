@@ -5,6 +5,7 @@ use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
@@ -12,24 +13,24 @@ beforeEach(function () {
     Queue::fake();
     Event::fake();
 
-    $this->workspace = \App\Models\Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conv1 = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
+        'priority' => 'normal',
     ]);
     $this->conv2 = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
-        'priority'     => 'low',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
+        'priority' => 'low',
     ]);
 });
 
@@ -38,8 +39,8 @@ beforeEach(function () {
 test('agent can bulk change priority', function () {
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'      => [$this->conv1->id, $this->conv2->id],
-            'action'   => 'priority',
+            'ids' => [$this->conv1->id, $this->conv2->id],
+            'action' => 'priority',
             'priority' => 'urgent',
         ])
         ->assertOk()
@@ -52,26 +53,26 @@ test('agent can bulk change priority', function () {
 test('bulk priority requires a valid priority value', function () {
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'      => [$this->conv1->id],
-            'action'   => 'priority',
+            'ids' => [$this->conv1->id],
+            'action' => 'priority',
             'priority' => 'critical',  // invalid
         ])
         ->assertUnprocessable();
 });
 
 test('bulk priority cannot affect conversations from other workspaces', function () {
-    $otherWorkspace = \App\Models\Workspace::factory()->create();
-    $otherConv      = Conversation::factory()->create([
+    $otherWorkspace = Workspace::factory()->create();
+    $otherConv = Conversation::factory()->create([
         'workspace_id' => $otherWorkspace->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
-        'priority'     => 'low',
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
+        'priority' => 'low',
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'      => [$otherConv->id],
-            'action'   => 'priority',
+            'ids' => [$otherConv->id],
+            'action' => 'priority',
             'priority' => 'urgent',
         ])
         ->assertOk()
@@ -85,13 +86,13 @@ test('bulk priority cannot affect conversations from other workspaces', function
 test('agent can bulk assign to another agent', function () {
     $other = User::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'role'         => 'agent',
+        'role' => 'agent',
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'         => [$this->conv1->id, $this->conv2->id],
-            'action'      => 'assign',
+            'ids' => [$this->conv1->id, $this->conv2->id],
+            'action' => 'assign',
             'assigned_to' => $other->id,
         ])
         ->assertOk()
@@ -106,8 +107,8 @@ test('bulk assign can unassign conversations', function () {
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'         => [$this->conv1->id],
-            'action'      => 'assign',
+            'ids' => [$this->conv1->id],
+            'action' => 'assign',
             'assigned_to' => null,
         ])
         ->assertOk();
@@ -116,12 +117,12 @@ test('bulk assign can unassign conversations', function () {
 });
 
 test('bulk assign rejects agent from another workspace', function () {
-    $outsider = User::factory()->create(['workspace_id' => \App\Models\Workspace::factory()->create()->id]);
+    $outsider = User::factory()->create(['workspace_id' => Workspace::factory()->create()->id]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'         => [$this->conv1->id],
-            'action'      => 'assign',
+            'ids' => [$this->conv1->id],
+            'action' => 'assign',
             'assigned_to' => $outsider->id,
         ])
         ->assertUnprocessable();
@@ -133,14 +134,14 @@ test('date_from excludes older conversations', function () {
     // conv1 and conv2 from beforeEach were created "now" — only create old ones
     Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'created_at'   => now()->subDays(10),
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'created_at' => now()->subDays(10),
     ]);
 
     // With date_from=yesterday only today's 2 conversations should appear
     $this->actingAs($this->user)
-        ->get('/conversations?date_from=' . now()->subDay()->toDateString())
+        ->get('/conversations?date_from='.now()->subDay()->toDateString())
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('conversations.total', 2));
 });
@@ -148,7 +149,7 @@ test('date_from excludes older conversations', function () {
 test('date_to excludes recent conversations', function () {
     // conv1 and conv2 created "now" should be excluded when date_to is in the past
     $this->actingAs($this->user)
-        ->get('/conversations?date_to=' . now()->subDays(1)->toDateString())
+        ->get('/conversations?date_to='.now()->subDays(1)->toDateString())
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('conversations.total', 0));
 });
@@ -156,15 +157,15 @@ test('date_to excludes recent conversations', function () {
 test('date_from and date_to combined filter to a window', function () {
     Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'created_at'   => now()->subDays(5),
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'created_at' => now()->subDays(5),
     ]);
 
     // Only the subDays(5) conversation falls in [subDays(7), subDays(3)]
     $this->actingAs($this->user)->get(
-        '/conversations?date_from=' . now()->subDays(7)->toDateString() .
-        '&date_to=' . now()->subDays(3)->toDateString()
+        '/conversations?date_from='.now()->subDays(7)->toDateString().
+        '&date_to='.now()->subDays(3)->toDateString()
     )
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('conversations.total', 1));
@@ -181,7 +182,7 @@ test('date_to must be after or equal to date_from', function () {
 test('bulk close creates an activity thread for each conversation', function () {
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv1->id, $this->conv2->id],
+            'ids' => [$this->conv1->id, $this->conv2->id],
             'action' => 'close',
         ])
         ->assertOk();
@@ -202,7 +203,7 @@ test('bulk reopen creates an activity thread for each conversation', function ()
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv1->id, $this->conv2->id],
+            'ids' => [$this->conv1->id, $this->conv2->id],
             'action' => 'reopen',
         ])
         ->assertOk();
@@ -220,14 +221,14 @@ test('bulk reopen creates an activity thread for each conversation', function ()
 test('bulk assign creates an activity thread naming the assignee', function () {
     $other = User::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'role'         => 'agent',
-        'name'         => 'Jane Doe',
+        'role' => 'agent',
+        'name' => 'Jane Doe',
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'         => [$this->conv1->id],
-            'action'      => 'assign',
+            'ids' => [$this->conv1->id],
+            'action' => 'assign',
             'assigned_to' => $other->id,
         ])
         ->assertOk();
@@ -245,8 +246,8 @@ test('bulk unassign creates an activity thread', function () {
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'         => [$this->conv1->id],
-            'action'      => 'assign',
+            'ids' => [$this->conv1->id],
+            'action' => 'assign',
             'assigned_to' => null,
         ])
         ->assertOk();
@@ -262,7 +263,7 @@ test('bulk unassign creates an activity thread', function () {
 test('bulk spam creates an activity thread', function () {
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv1->id],
+            'ids' => [$this->conv1->id],
             'action' => 'spam',
         ])
         ->assertOk();
@@ -278,8 +279,8 @@ test('bulk spam creates an activity thread', function () {
 test('bulk priority does not create activity threads', function () {
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'      => [$this->conv1->id],
-            'action'   => 'priority',
+            'ids' => [$this->conv1->id],
+            'action' => 'priority',
             'priority' => 'urgent',
         ])
         ->assertOk();

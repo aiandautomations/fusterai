@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domains\Customer\Models\Customer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class CustomerService
@@ -17,7 +18,7 @@ class CustomerService
             ->withQueryString();
     }
 
-    public function search(int $workspaceId, string $query): \Illuminate\Database\Eloquent\Collection
+    public function search(int $workspaceId, string $query): Collection
     {
         return Customer::where('workspace_id', $workspaceId)
             ->where(fn ($q) => $q

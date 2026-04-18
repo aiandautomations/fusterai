@@ -23,7 +23,8 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -36,30 +37,32 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $entry   = $this->payload['entry'][0] ?? null;
+            $entry = $this->payload['entry'][0] ?? null;
             $changes = $entry['changes'][0] ?? null;
-            $value   = $changes['value'] ?? null;
+            $value = $changes['value'] ?? null;
             $message = $value['messages'][0] ?? null;
 
-            if (!$message) {
+            if (! $message) {
                 Log::info('ProcessWhatsAppWebhookJob: no message in payload, skipping.', [
                     'mailbox_id' => $this->mailbox->id,
                 ]);
+
                 return;
             }
 
-            $from        = $message['from'] ?? null;
-            $messageId   = $message['id'] ?? null;
-            $body        = $message['text']['body'] ?? ('[' . ($message['type'] ?? 'message') . ']');
+            $from = $message['from'] ?? null;
+            $messageId = $message['id'] ?? null;
+            $body = $message['text']['body'] ?? ('['.($message['type'] ?? 'message').']');
             $displayName = $value['contacts'][0]['profile']['name'] ?? $from;
 
-            if (!$from || !$messageId) {
+            if (! $from || ! $messageId) {
                 return;
             }
 
             // Deduplicate — Meta retries webhooks on failure; skip if already processed
             if (Thread::whereJsonContains('meta->whatsapp_message_id', $messageId)->exists()) {
                 Log::info('ProcessWhatsAppWebhookJob: duplicate message, skipping.', ['message_id' => $messageId]);
+
                 return;
             }
 
@@ -77,14 +80,14 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
                 ->where('status', 'open')
                 ->first();
 
-            if (!$conversation) {
+            if (! $conversation) {
                 $conversation = Conversation::create([
-                    'workspace_id'  => $this->mailbox->workspace_id,
-                    'mailbox_id'    => $this->mailbox->id,
-                    'customer_id'   => $customer->id,
-                    'subject'       => 'WhatsApp: ' . Str::limit($body, 60),
-                    'status'        => 'open',
-                    'channel_type'  => 'whatsapp',
+                    'workspace_id' => $this->mailbox->workspace_id,
+                    'mailbox_id' => $this->mailbox->id,
+                    'customer_id' => $customer->id,
+                    'subject' => 'WhatsApp: '.Str::limit($body, 60),
+                    'status' => 'open',
+                    'channel_type' => 'whatsapp',
                     'last_reply_at' => now(),
                 ]);
 
@@ -94,12 +97,12 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             // Create the thread
             $thread = Thread::create([
                 'conversation_id' => $conversation->id,
-                'customer_id'     => $customer->id,
-                'type'            => 'message',
-                'source'          => 'whatsapp',
-                'body'            => e($body),
-                'body_plain'      => $body,
-                'meta'            => ['whatsapp_message_id' => $messageId],
+                'customer_id' => $customer->id,
+                'type' => 'message',
+                'source' => 'whatsapp',
+                'body' => e($body),
+                'body_plain' => $body,
+                'meta' => ['whatsapp_message_id' => $messageId],
             ]);
 
             $conversation->update(['last_reply_at' => now()]);
@@ -119,7 +122,7 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
         } catch (\Throwable $e) {
             Log::error('ProcessWhatsAppWebhookJob failed', [
                 'mailbox_id' => $this->mailbox->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             $this->fail($e);
         }

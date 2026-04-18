@@ -4,6 +4,7 @@ namespace App\Domains\Channel\Jobs;
 
 use App\Domains\AI\Jobs\GenerateReplySuggestionJob;
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Enums\ChannelType;
 use App\Events\ConversationUpdated;
@@ -18,26 +19,27 @@ class HandleLiveChatMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(
         public readonly Conversation $conversation,
-        public readonly Customer     $customer,
-        public readonly string       $message,
+        public readonly Customer $customer,
+        public readonly string $message,
     ) {
         $this->onQueue('default');
     }
 
     public function handle(): void
     {
-        /** @var \App\Domains\Conversation\Models\Thread $thread */
+        /** @var Thread $thread */
         $thread = $this->conversation->threads()->create([
             'customer_id' => $this->customer->id,
-            'type'        => 'message',
-            'body'        => e($this->message),
-            'body_plain'  => $this->message,
-            'source'      => 'chat',
+            'type' => 'message',
+            'body' => e($this->message),
+            'body_plain' => $this->message,
+            'source' => 'chat',
         ]);
 
         $this->conversation->update(['last_reply_at' => now()]);

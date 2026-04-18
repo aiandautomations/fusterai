@@ -7,6 +7,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RoutingConfig extends Model
@@ -43,7 +44,7 @@ class RoutingConfig extends Model
             ->where('active', true)
             ->where(function ($q) use ($conversation) {
                 $q->where('mailbox_id', $conversation->mailbox_id)
-                  ->orWhereNull('mailbox_id');
+                    ->orWhereNull('mailbox_id');
             })
             ->orderByRaw('mailbox_id IS NULL ASC') // mailbox-specific wins
             ->first();
@@ -54,7 +55,7 @@ class RoutingConfig extends Model
      * For a mailbox-specific config: agents assigned to that mailbox.
      * For a workspace-level config: all agents in the workspace.
      */
-    public function eligibleAgents(): \Illuminate\Support\Collection
+    public function eligibleAgents(): Collection
     {
         $query = User::where('workspace_id', $this->workspace_id)
             ->whereIn('role', ['agent', 'admin']);
@@ -79,11 +80,11 @@ class RoutingConfig extends Model
         }
 
         $lastId = $this->last_assigned_user_id;
-        $ids    = $agents->pluck('id');
+        $ids = $agents->pluck('id');
 
         // Find the position after the last assigned agent
         $currentIndex = $ids->search($lastId);
-        $nextIndex    = ($currentIndex === false) ? 0 : ($currentIndex + 1) % $agents->count();
+        $nextIndex = ($currentIndex === false) ? 0 : ($currentIndex + 1) % $agents->count();
 
         $agent = $agents->get($nextIndex);
 

@@ -5,7 +5,7 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
+    $this->user = agentUser($this->workspace);
 });
 
 test('customers index requires auth', function () {
@@ -41,7 +41,7 @@ test('agent can view a customer profile', function () {
 });
 
 test('agent cannot view customer from another workspace', function () {
-    $other    = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $customer = Customer::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)

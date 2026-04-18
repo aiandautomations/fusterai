@@ -6,7 +6,6 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Hooks;
-use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 use Modules\SlaManager\Jobs\CheckSlaBreachJob;
 use Modules\SlaManager\Models\SlaPolicy;
@@ -16,11 +15,11 @@ use Modules\SlaManager\Providers\SlaManagerServiceProvider;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->agent     = User::factory()->create([
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->agent = User::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'role'         => 'agent',
+        'role' => 'agent',
     ]);
 
     // Boot the service provider so hooks are registered
@@ -28,12 +27,12 @@ beforeEach(function () {
 
     // Create an active SLA policy for normal priority
     $this->policy = SlaPolicy::create([
-        'workspace_id'           => $this->workspace->id,
-        'name'                   => 'Normal Priority SLA',
-        'priority'               => 'normal',
+        'workspace_id' => $this->workspace->id,
+        'name' => 'Normal Priority SLA',
+        'priority' => 'normal',
         'first_response_minutes' => 60,
-        'resolution_minutes'     => 480,
-        'active'                 => true,
+        'resolution_minutes' => 480,
+        'active' => true,
     ]);
 });
 
@@ -46,9 +45,9 @@ afterEach(function () {
 test('SLA status is created when a conversation is created', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
@@ -63,9 +62,9 @@ test('SLA status is created when a conversation is created', function () {
 test('SLA is not attached when no policy matches the priority', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'urgent', // no policy for urgent
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'urgent', // no policy for urgent
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
@@ -78,18 +77,18 @@ test('SLA is not attached when no policy matches the priority', function () {
 test('first_response_achieved_at is set when agent sends a reply thread', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
 
     $thread = $conversation->threads()->create([
         'user_id' => $this->agent->id,
-        'type'    => 'message',
-        'body'    => 'Hello!',
-        'source'  => 'web',
+        'type' => 'message',
+        'body' => 'Hello!',
+        'source' => 'web',
     ]);
 
     Hooks::doAction('thread.created', $thread);
@@ -102,9 +101,9 @@ test('first_response_achieved_at is set when agent sends a reply thread', functi
 test('customer reply thread does not mark first response achieved', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
@@ -112,9 +111,9 @@ test('customer reply thread does not mark first response achieved', function () 
     // Customer reply — no user_id
     $thread = $conversation->threads()->create([
         'customer_id' => $this->customer->id,
-        'type'        => 'message',
-        'body'        => 'Is anyone there?',
-        'source'      => 'email',
+        'type' => 'message',
+        'body' => 'Is anyone there?',
+        'source' => 'email',
     ]);
 
     Hooks::doAction('thread.created', $thread);
@@ -129,9 +128,9 @@ test('customer reply thread does not mark first response achieved', function () 
 test('SLA clock pauses when conversation is set to pending', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
@@ -150,15 +149,15 @@ test('SLA clock pauses when conversation is set to pending', function () {
 test('SLA clock resumes and extends due dates when conversation reopens', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
 
     $status = SlaStatus::where('conversation_id', $conversation->id)->first();
-    $originalFrDue  = $status->first_response_due_at->copy();
+    $originalFrDue = $status->first_response_due_at->copy();
     $originalResDue = $status->resolution_due_at->copy();
 
     // Simulate conversation going pending, which pauses SLA
@@ -183,9 +182,9 @@ test('SLA clock resumes and extends due dates when conversation reopens', functi
 test('resolved_at is set when conversation is closed', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);
@@ -205,19 +204,19 @@ test('CheckSlaBreachJob marks first_response_breached and notifies agent', funct
     Notification::fake();
 
     $conversation = Conversation::factory()->create([
-        'workspace_id'      => $this->workspace->id,
-        'mailbox_id'        => $this->mailbox->id,
-        'customer_id'       => $this->customer->id,
-        'priority'          => 'normal',
-        'assigned_user_id'  => $this->agent->id,
+        'workspace_id' => $this->workspace->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
+        'assigned_user_id' => $this->agent->id,
     ]);
 
     // Create an already-overdue SLA status
     SlaStatus::create([
-        'conversation_id'       => $conversation->id,
-        'sla_policy_id'         => $this->policy->id,
+        'conversation_id' => $conversation->id,
+        'sla_policy_id' => $this->policy->id,
         'first_response_due_at' => now()->subHour(),
-        'resolution_due_at'     => now()->addHours(7),
+        'resolution_due_at' => now()->addHours(7),
     ]);
 
     (new CheckSlaBreachJob)->handle();
@@ -237,18 +236,18 @@ test('CheckSlaBreachJob marks resolution_breached', function () {
     Notification::fake();
 
     $conversation = Conversation::factory()->create([
-        'workspace_id'      => $this->workspace->id,
-        'mailbox_id'        => $this->mailbox->id,
-        'customer_id'       => $this->customer->id,
-        'priority'          => 'normal',
-        'assigned_user_id'  => $this->agent->id,
+        'workspace_id' => $this->workspace->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
+        'assigned_user_id' => $this->agent->id,
     ]);
 
     SlaStatus::create([
-        'conversation_id'           => $conversation->id,
-        'sla_policy_id'             => $this->policy->id,
-        'first_response_due_at'     => now()->subHours(8),
-        'resolution_due_at'         => now()->subHour(),
+        'conversation_id' => $conversation->id,
+        'sla_policy_id' => $this->policy->id,
+        'first_response_due_at' => now()->subHours(8),
+        'resolution_due_at' => now()->subHour(),
         'first_response_achieved_at' => now()->subHours(7),
     ]);
 
@@ -267,17 +266,17 @@ test('CheckSlaBreachJob skips paused conversations', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     SlaStatus::create([
-        'conversation_id'       => $conversation->id,
-        'sla_policy_id'         => $this->policy->id,
+        'conversation_id' => $conversation->id,
+        'sla_policy_id' => $this->policy->id,
         'first_response_due_at' => now()->subHour(),
-        'resolution_due_at'     => now()->subMinutes(10),
-        'paused_at'             => now()->subHour(), // paused
+        'resolution_due_at' => now()->subMinutes(10),
+        'paused_at' => now()->subHour(), // paused
     ]);
 
     (new CheckSlaBreachJob)->handle();
@@ -294,17 +293,17 @@ test('CheckSlaBreachJob skips closed conversations', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
-        'status'       => 'closed',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
+        'status' => 'closed',
     ]);
 
     SlaStatus::create([
-        'conversation_id'       => $conversation->id,
-        'sla_policy_id'         => $this->policy->id,
+        'conversation_id' => $conversation->id,
+        'sla_policy_id' => $this->policy->id,
         'first_response_due_at' => now()->subHour(),
-        'resolution_due_at'     => now()->subMinutes(10),
+        'resolution_due_at' => now()->subMinutes(10),
     ]);
 
     (new CheckSlaBreachJob)->handle();
@@ -318,19 +317,19 @@ test('CheckSlaBreachJob skips closed conversations', function () {
 test('re-attaching SLA on priority change does not overwrite first_response_achieved_at', function () {
     // Create urgent policy
     SlaPolicy::create([
-        'workspace_id'           => $this->workspace->id,
-        'name'                   => 'Urgent SLA',
-        'priority'               => 'urgent',
+        'workspace_id' => $this->workspace->id,
+        'name' => 'Urgent SLA',
+        'priority' => 'urgent',
         'first_response_minutes' => 15,
-        'resolution_minutes'     => 60,
-        'active'                 => true,
+        'resolution_minutes' => 60,
+        'active' => true,
     ]);
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     Hooks::doAction('conversation.created', $conversation);

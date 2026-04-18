@@ -6,23 +6,24 @@ use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\Workspace;
+use Illuminate\Mail\SendQueuedMailable;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
     Mail::fake();
 
     $this->workspace = Workspace::factory()->create();
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 function mailboxWithAutoReply(int $workspaceId, array $autoReplyOverrides = []): Mailbox
 {
     return Mailbox::factory()->create([
-        'workspace_id'      => $workspaceId,
+        'workspace_id' => $workspaceId,
         'auto_reply_config' => array_merge([
             'enabled' => true,
             'subject' => 'We received your message',
-            'body'    => 'Thank you for reaching out.',
+            'body' => 'Thank you for reaching out.',
         ], $autoReplyOverrides),
     ]);
 }
@@ -34,8 +35,8 @@ test('auto-reply job creates an activity thread after sending', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     (new SendAutoReplyJob($conversation))->handle();
@@ -53,27 +54,27 @@ test('auto-reply job sends an email when auto-reply is enabled', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     (new SendAutoReplyJob($conversation))->handle();
 
-    Mail::assertSent(\Illuminate\Mail\SendQueuedMailable::class);
+    Mail::assertSent(SendQueuedMailable::class);
 })->skip('Raw mailer send() not captured by Mail::assertSent() — covered by activity thread assertion');
 
 // ── Guard clauses ─────────────────────────────────────────────────────────────
 
 test('auto-reply job skips when auto_reply_config is disabled', function () {
     $mailbox = Mailbox::factory()->create([
-        'workspace_id'      => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'auto_reply_config' => ['enabled' => false, 'subject' => 'Hi', 'body' => 'Thanks'],
     ]);
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     (new SendAutoReplyJob($conversation))->handle();
@@ -83,14 +84,14 @@ test('auto-reply job skips when auto_reply_config is disabled', function () {
 
 test('auto-reply job skips when mailbox has no auto_reply_config', function () {
     $mailbox = Mailbox::factory()->create([
-        'workspace_id'      => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'auto_reply_config' => null,
     ]);
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     (new SendAutoReplyJob($conversation))->handle();
@@ -99,13 +100,13 @@ test('auto-reply job skips when mailbox has no auto_reply_config', function () {
 });
 
 test('auto-reply job skips when customer has no email', function () {
-    $mailbox  = mailboxWithAutoReply($this->workspace->id);
-    $noEmail  = Customer::factory()->create(['workspace_id' => $this->workspace->id, 'email' => '']);
+    $mailbox = mailboxWithAutoReply($this->workspace->id);
+    $noEmail = Customer::factory()->create(['workspace_id' => $this->workspace->id, 'email' => '']);
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $noEmail->id,
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $noEmail->id,
     ]);
 
     (new SendAutoReplyJob($conversation))->handle();

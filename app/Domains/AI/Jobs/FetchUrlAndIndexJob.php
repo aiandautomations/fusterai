@@ -4,12 +4,12 @@ namespace App\Domains\AI\Jobs;
 
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
+use App\Support\SsrfGuard;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Support\SsrfGuard;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -17,12 +17,13 @@ class FetchUrlAndIndexJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 2;
+    public int $tries = 2;
+
     public int $timeout = 60;
 
     public function __construct(
         public readonly KnowledgeBase $knowledgeBase,
-        public readonly string        $url,
+        public readonly string $url,
     ) {
         $this->onQueue('ai');
     }
@@ -52,10 +53,11 @@ class FetchUrlAndIndexJob implements ShouldQueue
 
             if (! $response->successful()) {
                 Log::warning('FetchUrlAndIndexJob: non-200 response', [
-                    'url'    => $this->url,
+                    'url' => $this->url,
                     'status' => $response->status(),
                 ]);
                 $this->fail(new \RuntimeException("HTTP {$response->status()} fetching URL"));
+
                 return;
             }
 
@@ -79,6 +81,7 @@ class FetchUrlAndIndexJob implements ShouldQueue
 
             if (empty($content)) {
                 $this->fail(new \RuntimeException('No extractable text content at URL'));
+
                 return;
             }
 
@@ -91,8 +94,8 @@ class FetchUrlAndIndexJob implements ShouldQueue
             $document = $this->knowledgeBase->documents()->updateOrCreate(
                 ['source_url' => $this->url],
                 [
-                    'title'      => mb_substr($title, 0, 255),
-                    'content'    => $content,
+                    'title' => mb_substr($title, 0, 255),
+                    'content' => $content,
                     'indexed_at' => null, // cleared so the KB Show page shows "Indexing…"
                 ],
             );
@@ -101,7 +104,7 @@ class FetchUrlAndIndexJob implements ShouldQueue
         } catch (\Throwable $e) {
             Log::error('FetchUrlAndIndexJob failed', [
                 'kb_id' => $this->knowledgeBase->id,
-                'url'   => $this->url,
+                'url' => $this->url,
                 'error' => $e->getMessage(),
             ]);
             $this->fail($e);

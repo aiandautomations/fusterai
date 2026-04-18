@@ -17,13 +17,13 @@ class StoreConversationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'subject'        => ['required', 'string', 'max:500'],
+            'subject' => ['required', 'string', 'max:500'],
             'customer_email' => ['required', 'email', 'max:255'],
-            'customer_name'  => ['nullable', 'string', 'max:255'],
-            'body'           => ['required', 'string'],
-            'mailbox_id'     => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $this->user()->workspace_id)],
-            'priority'       => ['nullable', Rule::enum(ConversationPriority::class)],
-            'status'         => ['nullable', Rule::enum(ConversationStatus::class)],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $this->user()->workspace_id)],
+            'priority' => ['nullable', Rule::enum(ConversationPriority::class)],
+            'status' => ['nullable', Rule::enum(ConversationStatus::class)],
         ];
     }
 }

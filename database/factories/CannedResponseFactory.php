@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\CannedResponse;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\CannedResponse>
+ * @extends Factory<CannedResponse>
  */
 class CannedResponseFactory extends Factory
 {
@@ -14,9 +15,9 @@ class CannedResponseFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'mailbox_id'   => null,
-            'name'         => $this->faker->sentence(3),
-            'content'      => '<p>' . $this->faker->paragraph() . '</p>',
+            'mailbox_id' => null,
+            'name' => $this->faker->sentence(3),
+            'content' => '<p>'.$this->faker->paragraph().'</p>',
         ];
     }
 }

@@ -15,10 +15,10 @@ class ThreadFactory extends Factory
     {
         return [
             'conversation_id' => Conversation::factory(),
-            'type'            => 'message',
-            'body'            => '<p>' . fake()->paragraph() . '</p>',
-            'source'          => 'email',
-            'status'          => 'received',
+            'type' => 'message',
+            'body' => '<p>'.fake()->paragraph().'</p>',
+            'source' => 'email',
+            'status' => 'received',
         ];
     }
 

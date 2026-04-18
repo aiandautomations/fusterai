@@ -14,9 +14,9 @@ class UpdateFolderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'  => ['sometimes', 'string', 'max:100'],
+            'name' => ['sometimes', 'string', 'max:100'],
             'color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'icon'  => ['sometimes', 'string', 'max:50'],
+            'icon' => ['sometimes', 'string', 'max:50'],
         ];
     }
 }

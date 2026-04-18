@@ -13,9 +13,9 @@ class AiSuggestionReady implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly int    $conversationId,
+        public readonly int $conversationId,
         public readonly string $content,
-        public readonly int    $suggestionId,
+        public readonly int $suggestionId,
     ) {}
 
     public function broadcastOn(): PrivateChannel
@@ -32,8 +32,8 @@ class AiSuggestionReady implements ShouldBroadcast
     {
         return [
             'conversation_id' => $this->conversationId,
-            'suggestion_id'   => $this->suggestionId,
-            'content'         => $this->content,
+            'suggestion_id' => $this->suggestionId,
+            'content' => $this->content,
         ];
     }
 }

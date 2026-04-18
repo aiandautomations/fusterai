@@ -21,23 +21,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-
 class ProcessInboundEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(
-        public readonly int   $mailboxId,
+        public readonly int $mailboxId,
         public readonly array $emailData,
     ) {}
 
     public function handle(): void
     {
         $mailbox = Mailbox::find($this->mailboxId);
-        if (!$mailbox) return;
+        if (! $mailbox) {
+            return;
+        }
 
         $data = $this->emailData;
 
@@ -64,34 +66,34 @@ class ProcessInboundEmailJob implements ShouldQueue
             /** @var Thread $thread */
             $thread = $conversation->threads()->create([
                 'customer_id' => $customer->id,
-                'type'        => 'message',
-                'body'        => $body,
-                'body_plain'  => strip_tags($body),
-                'source'      => 'email',
-                'meta'        => [
-                    'message_id'  => $data['message_id'],
+                'type' => 'message',
+                'body' => $body,
+                'body_plain' => strip_tags($body),
+                'source' => 'email',
+                'meta' => [
+                    'message_id' => $data['message_id'],
                     'in_reply_to' => $data['in_reply_to'],
-                    'from_email'  => $data['from_email'],
-                    'cc'          => $data['cc'] ?? [],
+                    'from_email' => $data['from_email'],
+                    'cc' => $data['cc'] ?? [],
                 ],
             ]);
 
             // Save attachments
             foreach ($data['attachments'] ?? [] as $att) {
                 $safeFilename = Str::slug(pathinfo($att['name'], PATHINFO_FILENAME))
-                    . '.' . pathinfo($att['name'], PATHINFO_EXTENSION);
-                $path = 'attachments/' . $conversation->id . '/' . Str::uuid() . '_' . $safeFilename;
+                    .'.'.pathinfo($att['name'], PATHINFO_EXTENSION);
+                $path = 'attachments/'.$conversation->id.'/'.Str::uuid().'_'.$safeFilename;
                 Storage::put($path, base64_decode($att['content']));
                 $thread->attachments()->create([
-                    'filename'  => $att['name'],
-                    'path'      => $path,
+                    'filename' => $att['name'],
+                    'path' => $path,
                     'mime_type' => $att['mime'],
-                    'size'      => $att['size'] ?? 0,
+                    'size' => $att['size'] ?? 0,
                 ]);
             }
 
             $conversation->update([
-                'status'        => 'open',
+                'status' => 'open',
                 'last_reply_at' => now(),
             ]);
 
@@ -131,7 +133,7 @@ class ProcessInboundEmailJob implements ShouldQueue
     private function resolveConversation(Mailbox $mailbox, Customer $customer, array $data): Conversation
     {
         // Try to match by In-Reply-To or References to an existing conversation
-        if (!empty($data['in_reply_to']) || !empty($data['references'])) {
+        if (! empty($data['in_reply_to']) || ! empty($data['references'])) {
             $ref = $data['in_reply_to'] ?: $data['references'];
             // Extract conversation ID from our message-id format: <conversation-123@fusterai>
             if (preg_match('/conversation-(\d+)@fusterai/', $ref, $m)) {
@@ -151,11 +153,11 @@ class ProcessInboundEmailJob implements ShouldQueue
                 'channel_id' => $data['message_id'],
             ],
             [
-                'workspace_id'  => $mailbox->workspace_id,
-                'customer_id'   => $customer->id,
-                'subject'       => $this->normalizeSubject($data['subject'] ?: '(No Subject)'),
-                'status'        => 'open',
-                'channel_type'  => 'email',
+                'workspace_id' => $mailbox->workspace_id,
+                'customer_id' => $customer->id,
+                'subject' => $this->normalizeSubject($data['subject'] ?: '(No Subject)'),
+                'status' => 'open',
+                'channel_type' => 'email',
                 'last_reply_at' => now(),
             ],
         );
@@ -168,7 +170,7 @@ class ProcessInboundEmailJob implements ShouldQueue
     {
         // Iteratively strip leading Fwd:/Fw:/Re: prefixes (any combination)
         do {
-            $prev    = $subject;
+            $prev = $subject;
             $subject = preg_replace('/^(fwd?|re)\s*:\s*/i', '', trim($subject));
         } while ($subject !== $prev);
 
@@ -184,7 +186,7 @@ class ProcessInboundEmailJob implements ShouldQueue
         $headers = $data['headers'] ?? [];
 
         // Our own auto-reply header
-        if (!empty($headers['x_fusterai_auto_reply'])) {
+        if (! empty($headers['x_fusterai_auto_reply'])) {
             return true;
         }
 
@@ -196,7 +198,7 @@ class ProcessInboundEmailJob implements ShouldQueue
 
         // X-Auto-Response-Suppress present means the sender requests no auto-reply
         // but it also signals this email itself is automated
-        if (!empty($headers['x_auto_response_suppress'])) {
+        if (! empty($headers['x_auto_response_suppress'])) {
             return true;
         }
 
@@ -233,7 +235,7 @@ class ProcessInboundEmailJob implements ShouldQueue
         ];
 
         foreach ($separators as $sep) {
-            $html = preg_replace('/(' . $sep . ').*$/is', '', $html);
+            $html = preg_replace('/('.$sep.').*$/is', '', $html);
         }
 
         return trim($html);

@@ -6,9 +6,9 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = adminUser($this->workspace);
-    $this->agent     = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->admin = adminUser($this->workspace);
+    $this->agent = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 // ── show ───────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ test('agent cannot view the WhatsApp setup page', function () {
 });
 
 test('cannot view WhatsApp setup for another workspace mailbox', function () {
-    $other   = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $mailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->admin)
@@ -41,8 +41,8 @@ test('admin can save WhatsApp credentials', function () {
     $this->actingAs($this->admin)
         ->post("/mailboxes/{$this->mailbox->id}/whatsapp", [
             'phone_number_id' => '12345678',
-            'access_token'    => 'EAAtest',
-            'app_secret'      => 'secret123',
+            'access_token' => 'EAAtest',
+            'app_secret' => 'secret123',
         ])
         ->assertRedirect();
 
@@ -55,15 +55,15 @@ test('updating credentials is idempotent — only one channel record is created'
     $this->actingAs($this->admin)
         ->post("/mailboxes/{$this->mailbox->id}/whatsapp", [
             'phone_number_id' => '111',
-            'access_token'    => 'token1',
-            'app_secret'      => 'secret1',
+            'access_token' => 'token1',
+            'app_secret' => 'secret1',
         ]);
 
     $this->actingAs($this->admin)
         ->post("/mailboxes/{$this->mailbox->id}/whatsapp", [
             'phone_number_id' => '222',
-            'access_token'    => 'token2',
-            'app_secret'      => 'secret2',
+            'access_token' => 'token2',
+            'app_secret' => 'secret2',
         ]);
 
     expect(
@@ -75,8 +75,8 @@ test('agent cannot save WhatsApp credentials', function () {
     $this->actingAs($this->agent)
         ->post("/mailboxes/{$this->mailbox->id}/whatsapp", [
             'phone_number_id' => '12345678',
-            'access_token'    => 'EAAtest',
-            'app_secret'      => 'secret123',
+            'access_token' => 'EAAtest',
+            'app_secret' => 'secret123',
         ])
         ->assertForbidden();
 });

@@ -9,7 +9,7 @@ class MailboxService
     public function create(array $validated, int $workspaceId): Mailbox
     {
         return Mailbox::create([
-            'workspace_id'  => $workspaceId,
+            'workspace_id' => $workspaceId,
             'webhook_token' => bin2hex(random_bytes(16)),
             ...$validated,
         ]);

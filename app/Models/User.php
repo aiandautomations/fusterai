@@ -11,15 +11,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthenticatable
+class User extends Authenticatable implements OAuthenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRoles, LogsActivity;
+    use HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -52,9 +53,9 @@ class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthe
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_active_at'    => 'datetime',
-            'password'          => 'hashed',
-            'preferences'       => 'array',
+            'last_active_at' => 'datetime',
+            'password' => 'hashed',
+            'preferences' => 'array',
         ];
     }
 
@@ -86,13 +87,29 @@ class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthe
     public function hasMinRole(string $minRole): bool
     {
         $levels = self::ROLE_HIERARCHY;
+
         return ($levels[$this->role] ?? 0) >= ($levels[$minRole] ?? 0);
     }
 
-    public function isAgent(): bool      { return $this->role === 'agent'; }
-    public function isManager(): bool    { return $this->hasMinRole('manager'); }
-    public function isAdmin(): bool      { return $this->hasMinRole('admin'); }
-    public function isSuperAdmin(): bool { return $this->role === 'super_admin'; }
+    public function isAgent(): bool
+    {
+        return $this->role === 'agent';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->hasMinRole('manager');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasMinRole('admin');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
 
     // ── Notifications ────────────────────────────────────────────
 
@@ -110,12 +127,16 @@ class User extends Authenticatable implements \Laravel\Passport\Contracts\OAuthe
     public function initials(): string
     {
         $words = explode(' ', $this->name);
-        return implode('', array_map(fn($w) => strtoupper($w[0] ?? ''), array_slice($words, 0, 2)));
+
+        return implode('', array_map(fn ($w) => strtoupper($w[0] ?? ''), array_slice($words, 0, 2)));
     }
 
     public function canAccessMailbox(Mailbox $mailbox): bool
     {
-        if ($this->isAdmin()) return true; // admin+ bypass mailbox restriction
+        if ($this->isAdmin()) {
+            return true;
+        } // admin+ bypass mailbox restriction
+
         return $this->mailboxes()->where('mailbox_id', $mailbox->id)->exists();
     }
 }

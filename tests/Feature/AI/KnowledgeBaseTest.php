@@ -4,19 +4,20 @@ use App\Domains\AI\Jobs\FetchUrlAndIndexJob;
 use App\Domains\AI\Jobs\IndexKbDocumentJob;
 use App\Domains\AI\Models\KbDocument;
 use App\Domains\AI\Models\KnowledgeBase;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = managerUser($this->workspace);
+    $this->user = managerUser($this->workspace);
 });
 
 test('agent can view knowledge bases', function () {
     KnowledgeBase::create([
         'workspace_id' => $this->workspace->id,
-        'name'         => 'Product Docs',
-        'active'       => true,
+        'name' => 'Product Docs',
+        'active' => true,
     ]);
 
     $this->actingAs($this->user)
@@ -31,7 +32,7 @@ test('agent can view knowledge bases', function () {
 test('agent can create a knowledge base', function () {
     $this->actingAs($this->user)
         ->post('/ai/knowledge-bases', [
-            'name'        => 'Help Center',
+            'name' => 'Help Center',
             'description' => 'Customer FAQs',
         ])
         ->assertRedirect();
@@ -53,13 +54,13 @@ test('creating a document dispatches IndexKbDocumentJob', function () {
 
     $kb = KnowledgeBase::create([
         'workspace_id' => $this->workspace->id,
-        'name'         => 'Docs',
-        'active'       => true,
+        'name' => 'Docs',
+        'active' => true,
     ]);
 
     $this->actingAs($this->user)
         ->post("/ai/knowledge-bases/{$kb->id}/documents", [
-            'title'   => 'Getting Started',
+            'title' => 'Getting Started',
             'content' => 'This is the content.',
         ])
         ->assertRedirect();
@@ -70,7 +71,7 @@ test('creating a document dispatches IndexKbDocumentJob', function () {
 
 test('agent cannot access another workspace knowledge base', function () {
     $other = Workspace::factory()->create();
-    $kb    = KnowledgeBase::create(['workspace_id' => $other->id, 'name' => 'Other', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $other->id, 'name' => 'Other', 'active' => true]);
 
     $this->actingAs($this->user)
         ->get("/ai/knowledge-bases/{$kb->id}")
@@ -93,9 +94,9 @@ test('manager can update a knowledge base', function () {
 
     $this->actingAs($this->user)
         ->patch("/ai/knowledge-bases/{$kb->id}", [
-            'name'        => 'New Name',
+            'name' => 'New Name',
             'description' => 'Updated description',
-            'active'      => true,
+            'active' => true,
         ])
         ->assertRedirect();
 
@@ -117,7 +118,7 @@ test('manager can delete a knowledge base', function () {
 test('manager can view the edit document page', function () {
     Queue::fake();
 
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
     $doc = $kb->documents()->create(['title' => 'Setup Guide', 'content' => 'Step 1...']);
 
     $this->actingAs($this->user)
@@ -129,24 +130,24 @@ test('manager can view the edit document page', function () {
 test('updating a document dispatches IndexKbDocumentJob', function () {
     Queue::fake();
 
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
     $doc = $kb->documents()->create(['title' => 'Old Title', 'content' => 'Old content']);
 
     $this->actingAs($this->user)
         ->patch("/ai/knowledge-bases/{$kb->id}/documents/{$doc->id}", [
-            'title'   => 'New Title',
+            'title' => 'New Title',
             'content' => 'New content here.',
         ])
         ->assertRedirect();
 
-    Queue::assertPushed(\App\Domains\AI\Jobs\IndexKbDocumentJob::class);
+    Queue::assertPushed(IndexKbDocumentJob::class);
     expect($doc->fresh()->title)->toBe('New Title');
 });
 
 test('manager can delete a document', function () {
     Queue::fake();
 
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
     $doc = $kb->documents()->create(['title' => 'Removable', 'content' => 'Content']);
 
     $this->actingAs($this->user)
@@ -202,8 +203,8 @@ test('import url rejects invalid URL format', function () {
 });
 
 test('import url requires manager permissions', function () {
-    $other = \App\Models\User::factory()->create(['workspace_id' => $this->workspace->id, 'role' => 'agent']);
-    $kb    = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $other = User::factory()->create(['workspace_id' => $this->workspace->id, 'role' => 'agent']);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
 
     $this->actingAs($other)
         ->postJson("/ai/knowledge-bases/{$kb->id}/documents/import-url", [
@@ -221,7 +222,7 @@ test('document from a different KB returns 403', function () {
 
     $this->actingAs($this->user)
         ->patch("/ai/knowledge-bases/{$kb1->id}/documents/{$doc->id}", [
-            'title'   => 'Hijacked',
+            'title' => 'Hijacked',
             'content' => 'Content',
         ])
         ->assertForbidden();

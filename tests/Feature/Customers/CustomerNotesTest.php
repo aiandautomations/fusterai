@@ -1,12 +1,12 @@
 <?php
 
 use App\Domains\Customer\Models\Customer;
-use App\Domains\Mailbox\Models\Mailbox;
+use App\Models\Workspace;
 
 beforeEach(function () {
-    $this->workspace = \App\Models\Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->user = agentUser($this->workspace);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('agent can save notes on a customer', function () {
@@ -35,7 +35,7 @@ test('notes cannot exceed 10000 characters', function () {
 });
 
 test('agent cannot update notes for customer in another workspace', function () {
-    $other    = \App\Models\Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $customer = Customer::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)

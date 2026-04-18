@@ -48,6 +48,7 @@ class InstallCommand extends Command
             $this->line('  <fg=yellow>→</> Seeding demo data...');
             $this->callSilently('db:seed');
             $this->printSuccess('admin@fusterai.com', 'password');
+
             return self::SUCCESS;
         }
 
@@ -81,10 +82,10 @@ class InstallCommand extends Command
 
         User::create([
             'workspace_id' => $workspace->id,
-            'name'         => $adminName,
-            'email'        => $adminEmail,
-            'password'     => Hash::make((string) $password),
-            'role'         => 'admin',
+            'name' => $adminName,
+            'email' => $adminEmail,
+            'password' => Hash::make((string) $password),
+            'role' => 'admin',
         ]);
 
         if ($apiKey) {

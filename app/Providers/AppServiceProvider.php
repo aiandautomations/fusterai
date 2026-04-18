@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Domains\AI\Models\KnowledgeBase;
+use App\Domains\AI\Models\Module;
 use App\Domains\Automation\Models\AutomationRule;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Folder;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Passport\Passport;
+use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,23 +42,23 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // ── Policies ─────────────────────────────────────────────────────────────
-        Gate::policy(Conversation::class,   ConversationPolicy::class);
-        Gate::policy(Folder::class,         FolderPolicy::class);
-        Gate::policy(Mailbox::class,        MailboxPolicy::class);
-        Gate::policy(KnowledgeBase::class,  KnowledgeBasePolicy::class);
+        Gate::policy(Conversation::class, ConversationPolicy::class);
+        Gate::policy(Folder::class, FolderPolicy::class);
+        Gate::policy(Mailbox::class, MailboxPolicy::class);
+        Gate::policy(KnowledgeBase::class, KnowledgeBasePolicy::class);
         Gate::policy(AutomationRule::class, AutomationRulePolicy::class);
-        Gate::policy(Tag::class,            TagPolicy::class);
-        Gate::policy(User::class,           UserPolicy::class);
+        Gate::policy(Tag::class, TagPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
         Gate::policy(CannedResponse::class, CannedResponsePolicy::class);
 
         // ── Gates for non-model authorization ────────────────────────────────────
         // Reports has no model — gate is the right tool here
-        Gate::define('access-reports',  fn (User $u) => $u->isManager());
+        Gate::define('access-reports', fn (User $u) => $u->isManager());
         // admin+ can change workspace settings
         Gate::define('manage-settings', fn (User $u) => $u->isAdmin());
 
         // ── Use MCP's Passport authorization view for the OAuth consent screen ───
-        Passport::authorizationView(function (array $parameters): \Symfony\Component\HttpFoundation\Response {
+        Passport::authorizationView(function (array $parameters): Response {
             return response()->view('mcp.authorize', $parameters);
         });
 
@@ -71,7 +73,7 @@ class AppServiceProvider extends ServiceProvider
         Inertia::share([
             'flash' => fn () => [
                 'success' => session('success'),
-                'error'   => session('error'),
+                'error' => session('error'),
             ],
             'folders' => fn () => request()->user()
                 ? Folder::where('workspace_id', request()->user()->workspace_id)
@@ -83,7 +85,7 @@ class AppServiceProvider extends ServiceProvider
             'activeModules' => fn () => Cache::remember(
                 'active_modules',
                 now()->addMinutes(5),
-                fn () => \App\Domains\AI\Models\Module::where('active', true)->pluck('alias')->values()
+                fn () => Module::where('active', true)->pluck('alias')->values()
             ),
         ]);
     }

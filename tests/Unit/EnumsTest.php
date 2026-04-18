@@ -93,4 +93,3 @@ test('ChannelType labels are human readable', function () {
     expect(ChannelType::Api->label())->toBe('API');
     expect(ChannelType::Sms->label())->toBe('SMS');
 });
-

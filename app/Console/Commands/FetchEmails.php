@@ -5,11 +5,13 @@ namespace App\Console\Commands;
 use App\Domains\Conversation\Jobs\ProcessInboundEmailJob;
 use App\Domains\Mailbox\Models\Mailbox;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Webklex\PHPIMAP\ClientManager;
 
 class FetchEmails extends Command
 {
-    protected $signature   = 'emails:fetch {--mailbox=* : Specific mailbox IDs to fetch}';
+    protected $signature = 'emails:fetch {--mailbox=* : Specific mailbox IDs to fetch}';
+
     protected $description = 'Fetch new emails from all active IMAP mailboxes';
 
     public function handle(): int
@@ -24,6 +26,7 @@ class FetchEmails extends Command
 
         if ($mailboxes->isEmpty()) {
             $this->info('No active IMAP mailboxes found.');
+
             return 0;
         }
 
@@ -37,47 +40,49 @@ class FetchEmails extends Command
     private function fetchForMailbox(Mailbox $mailbox): void
     {
         $config = $mailbox->imap_config;
-        if (!$config) return;
+        if (! $config) {
+            return;
+        }
 
         $this->info("Fetching: {$mailbox->name} <{$mailbox->email}>");
 
         try {
-            $cm = new ClientManager();
+            $cm = new ClientManager;
 
             $client = $cm->make([
-                'host'          => $config['host'],
-                'port'          => $config['port'] ?? 993,
-                'encryption'    => $config['encryption'] ?? 'ssl',
+                'host' => $config['host'],
+                'port' => $config['port'] ?? 993,
+                'encryption' => $config['encryption'] ?? 'ssl',
                 'validate_cert' => $config['validate_cert'] ?? true,
-                'username'      => $config['username'],
-                'password'      => $config['password'],
-                'protocol'      => 'imap',
+                'username' => $config['username'],
+                'password' => $config['password'],
+                'protocol' => 'imap',
             ]);
 
             $client->connect();
 
-            $folder   = $client->getFolder('INBOX');
+            $folder = $client->getFolder('INBOX');
             $messages = $folder->query()->unseen()->get();
 
             $this->info("  Found {$messages->count()} new message(s).");
 
             foreach ($messages as $message) {
                 ProcessInboundEmailJob::dispatch($mailbox->id, [
-                    'message_id'  => $message->getMessageId()->first() ?? '',
-                    'subject'     => (string) $message->getSubject()->first(),
-                    'from_email'  => $message->getFrom()->first()->mail ?? '',
-                    'from_name'   => $message->getFrom()->first()->personal ?? '',
-                    'body_html'   => $message->hasHTMLBody() ? $message->getHTMLBody() : '',
-                    'body_text'   => $message->hasTextBody() ? $message->getTextBody() : '',
+                    'message_id' => $message->getMessageId()->first() ?? '',
+                    'subject' => (string) $message->getSubject()->first(),
+                    'from_email' => $message->getFrom()->first()->mail ?? '',
+                    'from_name' => $message->getFrom()->first()->personal ?? '',
+                    'body_html' => $message->hasHTMLBody() ? $message->getHTMLBody() : '',
+                    'body_text' => $message->hasTextBody() ? $message->getTextBody() : '',
                     'in_reply_to' => $message->getInReplyTo()->first() ?? '',
-                    'references'  => $message->getReferences()->first() ?? '',
+                    'references' => $message->getReferences()->first() ?? '',
                     'attachments' => $this->extractAttachments($message),
-                    'cc'          => $this->extractCc($message),
-                    'headers'     => [
-                        'auto_submitted'           => (string) ($message->getHeader('Auto-Submitted') ?? ''),
+                    'cc' => $this->extractCc($message),
+                    'headers' => [
+                        'auto_submitted' => (string) ($message->getHeader('Auto-Submitted') ?? ''),
                         'x_auto_response_suppress' => (string) ($message->getHeader('X-Auto-Response-Suppress') ?? ''),
-                        'precedence'               => (string) ($message->getHeader('Precedence') ?? ''),
-                        'x_fusterai_auto_reply'    => (string) ($message->getHeader('X-FusterAI-AutoReply') ?? ''),
+                        'precedence' => (string) ($message->getHeader('Precedence') ?? ''),
+                        'x_fusterai_auto_reply' => (string) ($message->getHeader('X-FusterAI-AutoReply') ?? ''),
                     ],
                 ])->onQueue('email-inbound');
 
@@ -87,10 +92,10 @@ class FetchEmails extends Command
 
             $client->disconnect();
         } catch (\Exception $e) {
-            $this->error("  Error fetching {$mailbox->email}: " . $e->getMessage());
-            \Illuminate\Support\Facades\Log::error('FetchEmails failed', [
+            $this->error("  Error fetching {$mailbox->email}: ".$e->getMessage());
+            Log::error('FetchEmails failed', [
                 'mailbox_id' => $mailbox->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -100,12 +105,13 @@ class FetchEmails extends Command
         $attachments = [];
         foreach ($message->getAttachments() as $attachment) {
             $attachments[] = [
-                'name'     => $attachment->getName(),
-                'content'  => base64_encode($attachment->getContent()),
-                'mime'     => $attachment->getMimeType(),
-                'size'     => $attachment->getSize(),
+                'name' => $attachment->getName(),
+                'content' => base64_encode($attachment->getContent()),
+                'mime' => $attachment->getMimeType(),
+                'size' => $attachment->getSize(),
             ];
         }
+
         return $attachments;
     }
 
@@ -114,13 +120,14 @@ class FetchEmails extends Command
         $cc = [];
         try {
             foreach ($message->getCC() as $address) {
-                if (!empty($address->mail)) {
+                if (! empty($address->mail)) {
                     $cc[] = ['email' => $address->mail, 'name' => $address->personal ?? ''];
                 }
             }
         } catch (\Throwable) {
             // Some IMAP servers return malformed CC — skip silently
         }
+
         return $cc;
     }
 }

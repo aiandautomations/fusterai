@@ -11,7 +11,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AgentMentionedNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class AgentMentionedNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 
@@ -46,11 +46,11 @@ class AgentMentionedNotification extends Notification implements ShouldQueue, Sh
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'            => 'mention',
+            'type' => 'mention',
             'conversation_id' => $this->conversation->id,
-            'subject'         => $this->conversation->subject,
-            'mentioned_by'    => $this->mentionedBy,
-            'url'             => "/conversations/{$this->conversation->id}",
+            'subject' => $this->conversation->subject,
+            'mentioned_by' => $this->mentionedBy,
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

@@ -9,7 +9,7 @@ class MailboxConnectionException extends RuntimeException
     public function __construct(string $mailboxName, string $reason = '')
     {
         parent::__construct(
-            "Failed to connect to mailbox \"{$mailboxName}\"" . ($reason ? ": {$reason}" : '.')
+            "Failed to connect to mailbox \"{$mailboxName}\"".($reason ? ": {$reason}" : '.')
         );
     }
 }

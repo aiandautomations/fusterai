@@ -15,9 +15,9 @@ class RegisterRequest extends FormRequest
     {
         return [
             'workspace_name' => ['required', 'string', 'max:100'],
-            'name'           => ['required', 'string', 'max:100'],
-            'email'          => ['required', 'email', 'max:255', 'unique:users'],
-            'password'       => ['required', 'string', 'min:8', 'confirmed'],
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
 }

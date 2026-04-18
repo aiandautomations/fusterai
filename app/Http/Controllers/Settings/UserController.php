@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Domains\Mailbox\Models\Mailbox;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreUserRequest;
 use App\Http\Requests\Settings\UpdateMailboxesRequest;
 use App\Http\Requests\Settings\UpdateUserRequest;
 use App\Models\User;
-use App\Domains\Mailbox\Models\Mailbox;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +15,7 @@ use Inertia\Inertia;
 class UserController extends Controller
 {
     public function __construct(private UserService $service) {}
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
@@ -26,11 +27,11 @@ class UserController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn (User $u) => [
-                'id'        => $u->id,
-                'name'      => $u->name,
-                'email'     => $u->email,
-                'role'      => $u->role,
-                'avatar'    => $u->avatar,
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'role' => $u->role,
+                'avatar' => $u->avatar,
                 'mailboxes' => $u->mailboxes->map(fn ($mb) => ['id' => $mb->id, 'name' => $mb->name]),
             ]);
 
@@ -39,7 +40,7 @@ class UserController extends Controller
             ->get(['id', 'name', 'email']);
 
         return Inertia::render('Settings/Users', [
-            'users'     => $users,
+            'users' => $users,
             'mailboxes' => $mailboxes,
         ]);
     }
@@ -50,7 +51,7 @@ class UserController extends Controller
 
         $user = $this->service->invite($request->validated(), $request->user()->workspace_id);
 
-        return redirect()->back()->with('success', 'Invitation sent to ' . $user->email . '.');
+        return redirect()->back()->with('success', 'Invitation sent to '.$user->email.'.');
     }
 
     public function update(UpdateUserRequest $request, User $user)

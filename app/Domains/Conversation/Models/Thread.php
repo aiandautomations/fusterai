@@ -4,6 +4,7 @@ namespace App\Domains\Conversation\Models;
 
 use App\Domains\Customer\Models\Customer;
 use App\Enums\ThreadType;
+use App\Models\User;
 use Database\Factories\ThreadFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ class Thread extends Model
 {
     /** @use HasFactory<ThreadFactory> */
     use HasFactory;
+
     use LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
@@ -31,6 +33,7 @@ class Thread extends Model
     {
         return ThreadFactory::new();
     }
+
     protected $fillable = [
         'conversation_id',
         'user_id',
@@ -55,10 +58,10 @@ class Thread extends Model
         return $this->belongsTo(Conversation::class);
     }
 
-    /** @return BelongsTo<\App\Models\User, $this> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 
     /** @return BelongsTo<Customer, $this> */
@@ -90,15 +93,16 @@ class Thread extends Model
         return $this->type === ThreadType::Message;
     }
 
-    public function author(): \App\Models\User|Customer|null
+    public function author(): User|Customer|null
     {
-        /** @var \App\Models\User|Customer|null */
+        /** @var User|Customer|null */
         return $this->user ?? $this->customer;
     }
 
     public function authorName(): string
     {
         $author = $this->author();
+
         return $author !== null ? ($author->name ?? 'Unknown') : 'Unknown';
     }
 }

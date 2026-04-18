@@ -15,11 +15,11 @@ class AutomationRuleFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'name'         => fake()->words(3, true),
-            'active'       => true,
-            'trigger'      => fake()->randomElement(['conversation.created', 'conversation.replied', 'conversation.closed']),
-            'conditions'   => [],
-            'actions'      => [['type' => 'set_priority', 'value' => 'normal']],
+            'name' => fake()->words(3, true),
+            'active' => true,
+            'trigger' => fake()->randomElement(['conversation.created', 'conversation.replied', 'conversation.closed']),
+            'conditions' => [],
+            'actions' => [['type' => 'set_priority', 'value' => 'normal']],
         ];
     }
 }

@@ -15,7 +15,7 @@ class CustomViewController extends Controller
 
     public function store(StoreCustomViewRequest $request): RedirectResponse
     {
-        $user      = $request->user();
+        $user = $request->user();
         $validated = $request->validated();
 
         $isShared = (bool) ($validated['is_shared'] ?? false);
@@ -31,7 +31,7 @@ class CustomViewController extends Controller
 
     public function update(UpdateCustomViewRequest $request, CustomView $customView): RedirectResponse
     {
-        $user        = $request->user();
+        $user = $request->user();
         $workspaceId = $user->workspace_id;
 
         abort_if($customView->workspace_id !== $workspaceId, 403);

@@ -15,6 +15,7 @@ use Inertia\Response;
 class AutomationController extends Controller
 {
     public function __construct(private AutomationService $service) {}
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', AutomationRule::class);
@@ -24,7 +25,7 @@ class AutomationController extends Controller
             ->get();
 
         return Inertia::render('Automation/Index', [
-            'rules'    => $rules,
+            'rules' => $rules,
             'triggers' => self::triggers(),
         ]);
     }
@@ -34,9 +35,9 @@ class AutomationController extends Controller
         $this->authorize('create', AutomationRule::class);
 
         return Inertia::render('Automation/Create', [
-            'triggers'           => self::triggers(),
-            'conditionFields'    => self::conditionFields(),
-            'actionTypes'        => self::actionTypes(),
+            'triggers' => self::triggers(),
+            'conditionFields' => self::conditionFields(),
+            'actionTypes' => self::actionTypes(),
         ]);
     }
 
@@ -54,10 +55,10 @@ class AutomationController extends Controller
         $this->authorize('update', $automation);
 
         return Inertia::render('Automation/Edit', [
-            'rule'            => $automation,
-            'triggers'        => self::triggers(),
+            'rule' => $automation,
+            'triggers' => self::triggers(),
             'conditionFields' => self::conditionFields(),
-            'actionTypes'     => self::actionTypes(),
+            'actionTypes' => self::actionTypes(),
         ]);
     }
 

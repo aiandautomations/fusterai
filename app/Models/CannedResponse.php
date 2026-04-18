@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domains\Mailbox\Models\Mailbox;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,6 @@ class CannedResponse extends Model
 
     public function mailbox(): BelongsTo
     {
-        return $this->belongsTo(\App\Domains\Mailbox\Models\Mailbox::class);
+        return $this->belongsTo(Mailbox::class);
     }
 }

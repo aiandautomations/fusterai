@@ -20,7 +20,7 @@ class SurveyMail extends Mailable
     public function build(): static
     {
         return $this
-            ->subject('How did we do? — ' . $this->conversation->subject)
+            ->subject('How did we do? — '.$this->conversation->subject)
             ->view('satisfaction-survey::emails.survey');
     }
 }

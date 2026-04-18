@@ -13,14 +13,14 @@ beforeEach(function () {
     Queue::fake();
 
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conv = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 });
 
@@ -37,10 +37,10 @@ test('agent can request an AI reply suggestion', function () {
 
 test('cannot request AI reply for another workspace conversation', function () {
     $other = Workspace::factory()->create();
-    $conv  = Conversation::factory()->create([
+    $conv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     $this->actingAs($this->user)
@@ -63,10 +63,10 @@ test('agent can request a conversation summary', function () {
 
 test('cannot summarize a conversation from another workspace', function () {
     $other = Workspace::factory()->create();
-    $conv  = Conversation::factory()->create([
+    $conv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     $this->actingAs($this->user)
@@ -79,10 +79,10 @@ test('cannot summarize a conversation from another workspace', function () {
 test('agent can accept an AI suggestion', function () {
     $suggestion = AiSuggestion::create([
         'conversation_id' => $this->conv->id,
-        'type'            => 'reply',
-        'content'         => 'Here is a suggested reply.',
-        'model'           => 'claude-haiku-4-5-20251001',
-        'accepted'        => false,
+        'type' => 'reply',
+        'content' => 'Here is a suggested reply.',
+        'model' => 'claude-haiku-4-5-20251001',
+        'accepted' => false,
     ]);
 
     $this->actingAs($this->user)
@@ -95,18 +95,18 @@ test('agent can accept an AI suggestion', function () {
 
 test('cannot accept a suggestion for another workspace conversation', function () {
     $other = Workspace::factory()->create();
-    $conv  = Conversation::factory()->create([
+    $conv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     $suggestion = AiSuggestion::create([
         'conversation_id' => $conv->id,
-        'type'            => 'reply',
-        'content'         => 'Suggestion content.',
-        'model'           => 'claude-haiku-4-5-20251001',
-        'accepted'        => false,
+        'type' => 'reply',
+        'content' => 'Suggestion content.',
+        'model' => 'claude-haiku-4-5-20251001',
+        'accepted' => false,
     ]);
 
     $this->actingAs($this->user)

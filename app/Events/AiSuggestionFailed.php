@@ -13,7 +13,7 @@ class AiSuggestionFailed implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly int    $conversationId,
+        public readonly int $conversationId,
         public readonly string $reason = 'An error occurred while generating the suggestion.',
     ) {}
 
@@ -31,7 +31,7 @@ class AiSuggestionFailed implements ShouldBroadcast
     {
         return [
             'conversation_id' => $this->conversationId,
-            'reason'          => $this->reason,
+            'reason' => $this->reason,
         ];
     }
 }

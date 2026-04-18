@@ -14,11 +14,11 @@ class MailboxFactory extends Factory
     public function definition(): array
     {
         return [
-            'workspace_id'  => Workspace::factory(),
-            'name'          => fake()->company() . ' Support',
-            'email'         => fake()->unique()->safeEmail(),
-            'active'        => true,
-            'channel_type'  => 'email',
+            'workspace_id' => Workspace::factory(),
+            'name' => fake()->company().' Support',
+            'email' => fake()->unique()->safeEmail(),
+            'active' => true,
+            'channel_type' => 'email',
             'webhook_token' => bin2hex(random_bytes(16)),
         ];
     }

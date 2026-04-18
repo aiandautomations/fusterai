@@ -4,18 +4,18 @@ namespace App\Enums;
 
 enum ConversationStatus: string
 {
-    case Open    = 'open';
+    case Open = 'open';
     case Pending = 'pending';
-    case Closed  = 'closed';
-    case Spam    = 'spam';
+    case Closed = 'closed';
+    case Spam = 'spam';
 
     public function label(): string
     {
-        return match($this) {
-            self::Open    => 'Open',
+        return match ($this) {
+            self::Open => 'Open',
             self::Pending => 'Pending',
-            self::Closed  => 'Closed',
-            self::Spam    => 'Spam',
+            self::Closed => 'Closed',
+            self::Spam => 'Spam',
         };
     }
 }

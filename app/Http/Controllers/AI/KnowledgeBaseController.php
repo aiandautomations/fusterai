@@ -11,6 +11,7 @@ use App\Http\Requests\AI\StoreKnowledgeBaseRequest;
 use App\Http\Requests\AI\UpdateKnowledgeBaseRequest;
 use App\Services\KnowledgeBaseService;
 use App\Support\SsrfGuard;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ use Inertia\Response;
 class KnowledgeBaseController extends Controller
 {
     public function __construct(private KnowledgeBaseService $service) {}
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', KnowledgeBase::class);
@@ -47,9 +49,9 @@ class KnowledgeBaseController extends Controller
 
         $kb = KnowledgeBase::create([
             'workspace_id' => $request->user()->workspace_id,
-            'name'         => $validated['name'],
-            'description'  => $validated['description'] ?? null,
-            'active'       => true,
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'active' => true,
         ]);
 
         return redirect()->route('ai.knowledge-bases.show', $kb)
@@ -65,7 +67,7 @@ class KnowledgeBaseController extends Controller
             ->get(['id', 'title', 'indexed_at', 'meta', 'created_at', 'updated_at']);
 
         return Inertia::render('AI/KnowledgeBase/Show', [
-            'kb'        => $knowledgeBase,
+            'kb' => $knowledgeBase,
             'documents' => $documents,
         ]);
     }
@@ -104,7 +106,7 @@ class KnowledgeBaseController extends Controller
         $this->authorize('update', $knowledgeBase);
 
         return Inertia::render('AI/KnowledgeBase/EditDocument', [
-            'kb'       => $knowledgeBase,
+            'kb' => $knowledgeBase,
             'document' => null,
         ]);
     }
@@ -125,7 +127,7 @@ class KnowledgeBaseController extends Controller
         abort_unless($document->kb_id === $knowledgeBase->id, 403);
 
         return Inertia::render('AI/KnowledgeBase/EditDocument', [
-            'kb'       => $knowledgeBase,
+            'kb' => $knowledgeBase,
             'document' => $document,
         ]);
     }
@@ -141,7 +143,7 @@ class KnowledgeBaseController extends Controller
             ->with('success', 'Document updated.');
     }
 
-    public function importUrl(ImportUrlRequest $request, KnowledgeBase $knowledgeBase): \Illuminate\Http\JsonResponse
+    public function importUrl(ImportUrlRequest $request, KnowledgeBase $knowledgeBase): JsonResponse
     {
         $this->authorize('update', $knowledgeBase);
 

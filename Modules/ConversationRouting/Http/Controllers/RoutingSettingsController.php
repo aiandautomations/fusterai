@@ -3,7 +3,6 @@
 namespace Modules\ConversationRouting\Http\Controllers;
 
 use App\Domains\Mailbox\Models\Mailbox;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
@@ -42,12 +41,12 @@ class RoutingSettingsController extends Controller
             $config = $routingConfigs->get($mailbox->id);
 
             return [
-                'mailbox_id'    => $mailbox->id,
-                'mailbox_name'  => $mailbox->name,
+                'mailbox_id' => $mailbox->id,
+                'mailbox_name' => $mailbox->name,
                 'mailbox_email' => $mailbox->email,
-                'mode'          => $config?->mode ?? 'round_robin',
-                'active'        => $config?->active ?? false,
-                'agent_count'   => (int) ($agentCounts->get($mailbox->id) ?? 0),
+                'mode' => $config?->mode ?? 'round_robin',
+                'active' => $config?->active ?? false,
+                'agent_count' => (int) ($agentCounts->get($mailbox->id) ?? 0),
             ];
         })->values()->all();
 
@@ -61,10 +60,10 @@ class RoutingSettingsController extends Controller
         $workspaceId = $request->user()->workspace_id;
 
         $validated = $request->validate([
-            'configs'              => ['required', 'array'],
+            'configs' => ['required', 'array'],
             'configs.*.mailbox_id' => ['required', 'integer', 'exists:mailboxes,id'],
-            'configs.*.mode'       => ['required', 'in:round_robin,least_loaded'],
-            'configs.*.active'     => ['required', 'boolean'],
+            'configs.*.mode' => ['required', 'in:round_robin,least_loaded'],
+            'configs.*.active' => ['required', 'boolean'],
         ]);
 
         foreach ($validated['configs'] as $row) {
@@ -76,7 +75,7 @@ class RoutingSettingsController extends Controller
             RoutingConfig::updateOrCreate(
                 ['workspace_id' => $workspaceId, 'mailbox_id' => $mailbox->id],
                 [
-                    'mode'   => $row['mode'],
+                    'mode' => $row['mode'],
                     'active' => $row['active'],
                 ]
             );

@@ -17,10 +17,10 @@ class UserService
     {
         $user = User::create([
             'workspace_id' => $workspaceId,
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
-            'role'         => $validated['role'],
-            'password'     => Hash::make(Str::random(32)),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'password' => Hash::make(Str::random(32)),
         ]);
 
         Password::sendResetLink(['email' => $user->email]);

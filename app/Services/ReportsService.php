@@ -14,7 +14,7 @@ class ReportsService
     public function stats(int $workspaceId, int $days): array
     {
         $since = now()->subDays($days);
-        $base  = Conversation::where('workspace_id', $workspaceId);
+        $base = Conversation::where('workspace_id', $workspaceId);
 
         $counts = DB::table('conversations')
             ->where('workspace_id', $workspaceId)
@@ -27,10 +27,10 @@ class ReportsService
             ->first();
 
         return [
-            'total'   => $counts->total,
-            'open'    => $counts->open,
+            'total' => $counts->total,
+            'open' => $counts->open,
             'pending' => $counts->pending,
-            'closed'  => $counts->closed,
+            'closed' => $counts->closed,
 
             'trend' => (clone $base)
                 ->where('created_at', '>=', $since)
@@ -59,8 +59,7 @@ class ReportsService
                 ->get(),
 
             'top_agents' => User::where('workspace_id', $workspaceId)
-                ->withCount(['assignedConversations as resolved_count' => fn ($q) =>
-                    $q->where('status', 'closed')->where('updated_at', '>=', $since)
+                ->withCount(['assignedConversations as resolved_count' => fn ($q) => $q->where('status', 'closed')->where('updated_at', '>=', $since),
                 ])
                 ->orderByDesc('resolved_count')
                 ->limit(5)

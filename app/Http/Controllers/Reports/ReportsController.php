@@ -21,7 +21,7 @@ class ReportsController extends Controller
 
         return Inertia::render('Reports/Index', [
             'stats' => $this->service->stats($request->user()->workspace_id, $days),
-            'days'  => $days,
+            'days' => $days,
         ]);
     }
 }

@@ -6,14 +6,14 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('agent can create a workspace-wide canned response', function () {
     $this->actingAs($this->user)
         ->post('/settings/canned-responses', [
-            'name'    => 'Thanks for reaching out',
+            'name' => 'Thanks for reaching out',
             'content' => '<p>Thank you for contacting us!</p>',
         ])
         ->assertRedirect();
@@ -24,8 +24,8 @@ test('agent can create a workspace-wide canned response', function () {
 test('agent can create a mailbox-specific canned response', function () {
     $this->actingAs($this->user)
         ->post('/settings/canned-responses', [
-            'name'       => 'Mailbox reply',
-            'content'    => '<p>Hello</p>',
+            'name' => 'Mailbox reply',
+            'content' => '<p>Hello</p>',
             'mailbox_id' => $this->mailbox->id,
         ])
         ->assertRedirect();
@@ -36,25 +36,25 @@ test('agent can create a mailbox-specific canned response', function () {
 });
 
 test('canned response cannot reference a mailbox from another workspace', function () {
-    $other        = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherMailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)
         ->post('/settings/canned-responses', [
-            'name'       => 'Cross-workspace attempt',
-            'content'    => '<p>Hello</p>',
+            'name' => 'Cross-workspace attempt',
+            'content' => '<p>Hello</p>',
             'mailbox_id' => $otherMailbox->id,
         ])
         ->assertSessionHasErrors('mailbox_id');
 });
 
 test('agent cannot update a canned response from another workspace', function () {
-    $other    = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $response = CannedResponse::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)
         ->patch("/settings/canned-responses/{$response->id}", [
-            'name'    => 'Hijacked',
+            'name' => 'Hijacked',
             'content' => '<p>Hijacked content</p>',
         ])
         ->assertForbidden();
@@ -63,7 +63,7 @@ test('agent cannot update a canned response from another workspace', function ()
 });
 
 test('agent cannot delete a canned response from another workspace', function () {
-    $other    = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $response = CannedResponse::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)
@@ -87,8 +87,8 @@ test('agent can view the canned responses settings page', function () {
 test('search returns matching canned responses', function () {
     CannedResponse::create([
         'workspace_id' => $this->workspace->id,
-        'name'         => 'Shipping delay',
-        'content'      => 'We apologise for the delay.',
+        'name' => 'Shipping delay',
+        'content' => 'We apologise for the delay.',
     ]);
 
     $this->actingAs($this->user)

@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SlaBreachedNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class SlaBreachedNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 
@@ -51,12 +51,12 @@ class SlaBreachedNotification extends Notification implements ShouldQueue, Shoul
         $label = $this->breachType === 'first_response' ? 'First Response' : 'Resolution';
 
         return [
-            'type'            => 'sla_breached',
-            'breach_type'     => $this->breachType,
+            'type' => 'sla_breached',
+            'breach_type' => $this->breachType,
             'conversation_id' => $this->conversation->id,
-            'subject'         => $this->conversation->subject,
-            'message'         => "SLA {$label} breached for: {$this->conversation->subject}",
-            'url'             => "/conversations/{$this->conversation->id}",
+            'subject' => $this->conversation->subject,
+            'message' => "SLA {$label} breached for: {$this->conversation->subject}",
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

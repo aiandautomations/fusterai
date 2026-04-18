@@ -15,8 +15,8 @@ class TagFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'name'         => fake()->unique()->word(),
-            'color'        => fake()->hexColor(),
+            'name' => fake()->unique()->word(),
+            'color' => fake()->hexColor(),
         ];
     }
 }

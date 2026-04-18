@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,34 +12,37 @@ pest()
 
 // ── Custom helpers ────────────────────────────────────────────────────────────
 
-function workspace(): \App\Models\Workspace
+function workspace(): Workspace
 {
-    return \App\Models\Workspace::factory()->create();
+    return Workspace::factory()->create();
 }
 
-function agentUser(?\App\Models\Workspace $workspace = null): \App\Models\User
+function agentUser(?Workspace $workspace = null): User
 {
     $workspace ??= workspace();
-    return \App\Models\User::factory()->create([
+
+    return User::factory()->create([
         'workspace_id' => $workspace->id,
-        'role'         => 'agent',
+        'role' => 'agent',
     ]);
 }
 
-function managerUser(?\App\Models\Workspace $workspace = null): \App\Models\User
+function managerUser(?Workspace $workspace = null): User
 {
     $workspace ??= workspace();
-    return \App\Models\User::factory()->create([
+
+    return User::factory()->create([
         'workspace_id' => $workspace->id,
-        'role'         => 'manager',
+        'role' => 'manager',
     ]);
 }
 
-function adminUser(?\App\Models\Workspace $workspace = null): \App\Models\User
+function adminUser(?Workspace $workspace = null): User
 {
     $workspace ??= workspace();
-    return \App\Models\User::factory()->create([
+
+    return User::factory()->create([
         'workspace_id' => $workspace->id,
-        'role'         => 'admin',
+        'role' => 'admin',
     ]);
 }

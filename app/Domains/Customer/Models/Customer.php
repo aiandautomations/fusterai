@@ -4,10 +4,10 @@ namespace App\Domains\Customer\Models;
 
 use App\Domains\Conversation\Models\Conversation;
 use Database\Factories\CustomerFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class Customer extends Model
 {
@@ -18,6 +18,7 @@ class Customer extends Model
     {
         return CustomerFactory::new();
     }
+
     protected $fillable = [
         'workspace_id',
         'name',
@@ -31,7 +32,7 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'meta'       => 'array',
+        'meta' => 'array',
         'is_blocked' => 'boolean',
     ];
 
@@ -49,8 +50,8 @@ class Customer extends Model
     {
         return $query->where(function (Builder $q) use ($term) {
             $q->where('name', 'ilike', "%{$term}%")
-              ->orWhere('email', 'ilike', "%{$term}%")
-              ->orWhere('company', 'ilike', "%{$term}%");
+                ->orWhere('email', 'ilike', "%{$term}%")
+                ->orWhere('company', 'ilike', "%{$term}%");
         });
     }
 
@@ -90,6 +91,7 @@ class Customer extends Model
     public function initials(): string
     {
         $words = explode(' ', $this->name);
-        return implode('', array_map(fn($w) => strtoupper($w[0] ?? ''), array_slice($words, 0, 2)));
+
+        return implode('', array_map(fn ($w) => strtoupper($w[0] ?? ''), array_slice($words, 0, 2)));
     }
 }

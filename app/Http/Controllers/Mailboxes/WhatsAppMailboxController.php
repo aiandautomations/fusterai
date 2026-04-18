@@ -16,17 +16,17 @@ class WhatsAppMailboxController extends Controller
         $this->authorize('update', $mailbox);
 
         /** @var Channel|null $channel */
-        $channel       = $mailbox->channels()->where('type', 'whatsapp')->first();
+        $channel = $mailbox->channels()->where('type', 'whatsapp')->first();
         $decryptedConfig = $channel?->config; // auto-decrypted via model accessor
 
         return Inertia::render('Mailboxes/WhatsAppSetup', [
             'mailbox' => [
-                'id'            => $mailbox->id,
-                'name'          => $mailbox->name,
+                'id' => $mailbox->id,
+                'name' => $mailbox->name,
                 'webhook_token' => $mailbox->webhook_token,
-                'channel'       => $decryptedConfig ? ['config' => $decryptedConfig] : null,
+                'channel' => $decryptedConfig ? ['config' => $decryptedConfig] : null,
             ],
-            'webhookUrl' => url('/api/webhooks/whatsapp/' . $mailbox->webhook_token),
+            'webhookUrl' => url('/api/webhooks/whatsapp/'.$mailbox->webhook_token),
         ]);
     }
 

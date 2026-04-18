@@ -4,6 +4,7 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Tag;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
@@ -11,17 +12,17 @@ beforeEach(function () {
     Queue::fake();
     Event::fake();
 
-    $this->workspace = \App\Models\Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conv = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
+        'priority' => 'normal',
     ]);
 });
 
@@ -76,8 +77,8 @@ test('agent can change a conversation mailbox', function () {
 test('agent can merge a conversation into another', function () {
     $target = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $this->actingAs($this->user)
@@ -94,17 +95,17 @@ test('merge into_id must exist', function () {
 });
 
 test('bulk action cannot close conversations from another workspace', function () {
-    $other     = \App\Models\Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherConv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => \App\Domains\Mailbox\Models\Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
-        'status'       => 'open',
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$otherConv->id],
+            'ids' => [$otherConv->id],
             'action' => 'close',
         ])
         ->assertOk();
@@ -114,17 +115,17 @@ test('bulk action cannot close conversations from another workspace', function (
 });
 
 test('bulk action only affects conversations within the same workspace', function () {
-    $other     = \App\Models\Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherConv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => \App\Domains\Mailbox\Models\Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
-        'status'       => 'open',
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv->id, $otherConv->id],
+            'ids' => [$this->conv->id, $otherConv->id],
             'action' => 'close',
         ])
         ->assertOk();

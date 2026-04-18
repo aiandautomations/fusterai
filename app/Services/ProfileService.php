@@ -17,11 +17,11 @@ class ProfileService
     public function updateAvatar(User $user, UploadedFile $file): void
     {
         if ($user->avatar && str_contains($user->avatar, '/storage/users/avatars/')) {
-            $oldPath = str_replace(url('/storage') . '/', '', $user->avatar);
+            $oldPath = str_replace(url('/storage').'/', '', $user->avatar);
             Storage::disk('public')->delete($oldPath);
         }
 
-        $path         = $file->store('users/avatars', 'public');
+        $path = $file->store('users/avatars', 'public');
         $user->avatar = Storage::disk('public')->url($path);
         $user->save();
     }

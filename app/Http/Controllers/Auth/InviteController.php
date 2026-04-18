@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\AcceptInviteRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -23,12 +24,12 @@ class InviteController extends Controller
     /**
      * Show the accept-invite / set-password page.
      */
-    public function create(Request $request): Response|\Illuminate\Http\RedirectResponse
+    public function create(Request $request): Response|RedirectResponse
     {
         $token = $request->route('token');
         $email = $request->query('email');
 
-        if (!$token || !$email) {
+        if (! $token || ! $email) {
             return redirect()->route('login');
         }
 
@@ -41,21 +42,21 @@ class InviteController extends Controller
     /**
      * Complete account setup: validate token, set name + password, log in.
      */
-    public function store(AcceptInviteRequest $request): \Illuminate\Http\RedirectResponse
+    public function store(AcceptInviteRequest $request): RedirectResponse
     {
         $validated = $request->validated();
 
         $status = Password::reset(
             [
-                'email'                 => $validated['email'],
-                'password'              => $validated['password'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
                 'password_confirmation' => $validated['password'],
-                'token'                 => $validated['token'],
+                'token' => $validated['token'],
             ],
             function (User $user, string $password) use ($validated): void {
                 $user->forceFill([
-                    'name'           => $validated['name'],
-                    'password'       => Hash::make($password),
+                    'name' => $validated['name'],
+                    'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
                 ])->save();
 

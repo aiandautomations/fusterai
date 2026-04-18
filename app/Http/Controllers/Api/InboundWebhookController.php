@@ -19,6 +19,7 @@ class InboundWebhookController extends Controller
 
         $mailbox = Mailbox::where('webhook_token', $token)->where('active', true)->firstOrFail();
         ProcessWebhookMessageJob::dispatch($mailbox->id, $request->all())->onQueue('webhooks');
+
         return response()->json(['status' => 'queued']);
     }
 }

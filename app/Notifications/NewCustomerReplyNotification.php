@@ -11,7 +11,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewCustomerReplyNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class NewCustomerReplyNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 
@@ -47,11 +47,11 @@ class NewCustomerReplyNotification extends Notification implements ShouldQueue, 
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'            => 'new_reply',
+            'type' => 'new_reply',
             'conversation_id' => $this->conversation->id,
-            'subject'         => $this->conversation->subject,
-            'preview'         => mb_substr(strip_tags($this->thread->body), 0, 200),
-            'url'             => "/conversations/{$this->conversation->id}",
+            'subject' => $this->conversation->subject,
+            'preview' => mb_substr(strip_tags($this->thread->body), 0, 200),
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

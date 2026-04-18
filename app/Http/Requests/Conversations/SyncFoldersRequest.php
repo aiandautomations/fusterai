@@ -15,7 +15,7 @@ class SyncFoldersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_ids'   => ['array'],
+            'folder_ids' => ['array'],
             'folder_ids.*' => [Rule::exists('folders', 'id')->where('workspace_id', $this->user()->workspace_id)],
         ];
     }

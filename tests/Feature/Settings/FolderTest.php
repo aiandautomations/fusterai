@@ -5,8 +5,8 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->manager   = managerUser($this->workspace);
-    $this->agent     = agentUser($this->workspace);
+    $this->manager = managerUser($this->workspace);
+    $this->agent = agentUser($this->workspace);
 });
 
 // ── index ──────────────────────────────────────────────────────────────────────
@@ -27,9 +27,9 @@ test('folders page requires auth', function () {
 test('manager can create a folder', function () {
     $this->actingAs($this->manager)
         ->post('/settings/folders', [
-            'name'  => 'VIP Customers',
+            'name' => 'VIP Customers',
             'color' => '#ff0000',
-            'icon'  => 'star',
+            'icon' => 'star',
         ])
         ->assertRedirect();
 
@@ -39,7 +39,7 @@ test('manager can create a folder', function () {
 test('agent cannot create a folder', function () {
     $this->actingAs($this->agent)
         ->post('/settings/folders', [
-            'name'  => 'VIP',
+            'name' => 'VIP',
             'color' => '#ff0000',
         ])
         ->assertForbidden();
@@ -48,7 +48,7 @@ test('agent cannot create a folder', function () {
 test('folder color must be a valid hex', function () {
     $this->actingAs($this->manager)
         ->post('/settings/folders', [
-            'name'  => 'Test',
+            'name' => 'Test',
             'color' => 'red',
         ])
         ->assertSessionHasErrors('color');
@@ -56,17 +56,17 @@ test('folder color must be a valid hex', function () {
 
 test('folder creation assigns sequential order', function () {
     Folder::create([
-        'workspace_id'       => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'created_by_user_id' => $this->manager->id,
-        'name'               => 'First',
-        'color'              => '#aaaaaa',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'First',
+        'color' => '#aaaaaa',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->manager)
         ->post('/settings/folders', [
-            'name'  => 'Second',
+            'name' => 'Second',
             'color' => '#bbbbbb',
         ])
         ->assertRedirect();
@@ -79,17 +79,17 @@ test('folder creation assigns sequential order', function () {
 
 test('manager can update a folder', function () {
     $folder = Folder::create([
-        'workspace_id'       => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'created_by_user_id' => $this->manager->id,
-        'name'               => 'Old Name',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'Old Name',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->manager)
         ->patch("/settings/folders/{$folder->id}", [
-            'name'  => 'New Name',
+            'name' => 'New Name',
             'color' => '#ffffff',
         ])
         ->assertRedirect();
@@ -99,12 +99,12 @@ test('manager can update a folder', function () {
 
 test('agent cannot update a folder', function () {
     $folder = Folder::create([
-        'workspace_id'       => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'created_by_user_id' => $this->manager->id,
-        'name'               => 'Protected',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'Protected',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->agent)
@@ -116,12 +116,12 @@ test('agent cannot update a folder', function () {
 
 test('manager can delete a folder', function () {
     $folder = Folder::create([
-        'workspace_id'       => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'created_by_user_id' => $this->manager->id,
-        'name'               => 'To Delete',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'To Delete',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->manager)
@@ -133,12 +133,12 @@ test('manager can delete a folder', function () {
 
 test('agent cannot delete a folder', function () {
     $folder = Folder::create([
-        'workspace_id'       => $this->workspace->id,
+        'workspace_id' => $this->workspace->id,
         'created_by_user_id' => $this->manager->id,
-        'name'               => 'Protected',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'Protected',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->agent)
@@ -149,15 +149,15 @@ test('agent cannot delete a folder', function () {
 // ── cross-workspace security ───────────────────────────────────────────────────
 
 test('cannot update folder from another workspace', function () {
-    $other  = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherManager = managerUser($other);
     $folder = Folder::create([
-        'workspace_id'       => $other->id,
+        'workspace_id' => $other->id,
         'created_by_user_id' => $otherManager->id,
-        'name'               => 'Other Folder',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'Other Folder',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->manager)
@@ -166,15 +166,15 @@ test('cannot update folder from another workspace', function () {
 });
 
 test('cannot delete folder from another workspace', function () {
-    $other  = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherManager = managerUser($other);
     $folder = Folder::create([
-        'workspace_id'       => $other->id,
+        'workspace_id' => $other->id,
         'created_by_user_id' => $otherManager->id,
-        'name'               => 'Other Folder',
-        'color'              => '#000000',
-        'icon'               => 'folder',
-        'order'              => 1,
+        'name' => 'Other Folder',
+        'color' => '#000000',
+        'icon' => 'folder',
+        'order' => 1,
     ]);
 
     $this->actingAs($this->manager)

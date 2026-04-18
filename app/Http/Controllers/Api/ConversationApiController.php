@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 class ConversationApiController extends Controller
 {
     public function __construct(private ConversationService $service) {}
+
     /**
      * List conversations
      *
@@ -35,7 +36,7 @@ class ConversationApiController extends Controller
      */
     public function index(ConversationIndexRequest $request): JsonResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $filters = $request->validated();
 
         $query = Conversation::query()
@@ -43,10 +44,18 @@ class ConversationApiController extends Controller
             ->with(['customer', 'mailbox', 'assignedUser', 'tags'])
             ->orderByDesc('last_reply_at');
 
-        if ($filters['status'] ?? null)           $query->where('status', $filters['status']);
-        if ($filters['mailbox_id'] ?? null)       $query->where('mailbox_id', $filters['mailbox_id']);
-        if ($filters['priority'] ?? null)         $query->where('priority', $filters['priority']);
-        if ($filters['assigned_user_id'] ?? null) $query->where('assigned_user_id', $filters['assigned_user_id']);
+        if ($filters['status'] ?? null) {
+            $query->where('status', $filters['status']);
+        }
+        if ($filters['mailbox_id'] ?? null) {
+            $query->where('mailbox_id', $filters['mailbox_id']);
+        }
+        if ($filters['priority'] ?? null) {
+            $query->where('priority', $filters['priority']);
+        }
+        if ($filters['assigned_user_id'] ?? null) {
+            $query->where('assigned_user_id', $filters['assigned_user_id']);
+        }
 
         $conversations = $query->paginate($filters['per_page'] ?? 30);
 

@@ -18,7 +18,7 @@ class LiveChatService
      */
     public function store(array $validated): array
     {
-        $email = !empty($validated['visitor_email'])
+        $email = ! empty($validated['visitor_email'])
             ? $validated['visitor_email']
             : "visitor_{$validated['visitor_id']}@livechat.local";
 
@@ -34,14 +34,14 @@ class LiveChatService
             ->latest()
             ->first();
 
-        if (!$conversation) {
+        if (! $conversation) {
             $conversation = Conversation::create([
-                'workspace_id'  => $validated['workspace_id'],
-                'customer_id'   => $customer->id,
-                'subject'       => 'Live chat with ' . ($validated['visitor_name'] ?? 'Visitor'),
-                'status'        => 'open',
-                'channel_type'  => 'chat',
-                'channel_id'    => $validated['visitor_id'],
+                'workspace_id' => $validated['workspace_id'],
+                'customer_id' => $customer->id,
+                'subject' => 'Live chat with '.($validated['visitor_name'] ?? 'Visitor'),
+                'status' => 'open',
+                'channel_type' => 'chat',
+                'channel_id' => $validated['visitor_id'],
                 'last_reply_at' => now(),
             ]);
         }
@@ -53,7 +53,7 @@ class LiveChatService
         )->onQueue('default');
 
         return [
-            'status'          => 'sent',
+            'status' => 'sent',
             'conversation_id' => $conversation->id,
         ];
     }
@@ -63,10 +63,10 @@ class LiveChatService
      */
     public function messages(string $visitorId, int $conversationId): Collection
     {
-        $email    = "visitor_{$visitorId}@livechat.local";
+        $email = "visitor_{$visitorId}@livechat.local";
         $customer = Customer::where('email', $email)->first();
 
-        if (!$customer) {
+        if (! $customer) {
             return collect();
         }
 
@@ -75,7 +75,7 @@ class LiveChatService
             ->where('channel_type', 'chat')
             ->first();
 
-        if (!$conversation) {
+        if (! $conversation) {
             return collect();
         }
 

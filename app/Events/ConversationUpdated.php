@@ -33,13 +33,13 @@ class ConversationUpdated implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'id'               => $this->conversation->id,
-            'status'           => $this->conversation->status,
-            'priority'         => $this->conversation->priority,
+            'id' => $this->conversation->id,
+            'status' => $this->conversation->status,
+            'priority' => $this->conversation->priority,
             'assigned_user_id' => $this->conversation->assigned_user_id,
-            'last_reply_at'    => $this->conversation->last_reply_at,
-            'ai_summary'       => $this->conversation->ai_summary,
-            'ai_tags'          => $this->conversation->ai_tags,
+            'last_reply_at' => $this->conversation->last_reply_at,
+            'ai_summary' => $this->conversation->ai_summary,
+            'ai_tags' => $this->conversation->ai_tags,
         ];
     }
 }

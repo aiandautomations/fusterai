@@ -11,11 +11,11 @@ test('user can login with valid credentials', function () {
     $workspace = Workspace::factory()->create();
     $user = User::factory()->create([
         'workspace_id' => $workspace->id,
-        'password'     => bcrypt('password'),
+        'password' => bcrypt('password'),
     ]);
 
     $this->post('/login', [
-        'email'    => $user->email,
+        'email' => $user->email,
         'password' => 'password',
     ])->assertRedirect('/dashboard');
 
@@ -27,7 +27,7 @@ test('login fails with wrong password', function () {
     $user = User::factory()->create(['workspace_id' => $workspace->id]);
 
     $this->post('/login', [
-        'email'    => $user->email,
+        'email' => $user->email,
         'password' => 'wrong-password',
     ])->assertSessionHasErrors('email');
 

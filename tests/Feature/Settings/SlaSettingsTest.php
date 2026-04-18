@@ -3,28 +3,29 @@
 use App\Domains\AI\Models\Module;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\Cache;
 use Modules\SlaManager\Models\SlaPolicy;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = User::factory()->create([
+    $this->admin = User::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'role'         => 'admin',
+        'role' => 'admin',
     ]);
 
     // Create active Module record so the module.active:SlaManager middleware passes.
     // Routes are already registered at boot by ModuleServiceProvider scanning all
     // Modules/*/Routes/web.php files — no need to re-register the ServiceProvider.
-    \App\Domains\AI\Models\Module::create([
-        'alias'   => 'SlaManager',
-        'name'    => 'SLA Manager',
-        'active'  => true,
+    Module::create([
+        'alias' => 'SlaManager',
+        'name' => 'SLA Manager',
+        'active' => true,
         'version' => '1.0.0',
-        'config'  => [],
+        'config' => [],
     ]);
 
     // Flush the module-active cache so the middleware reads from the test DB.
-    \Illuminate\Support\Facades\Cache::forget('module.active.SlaManager');
+    Cache::forget('module.active.SlaManager');
 });
 
 test('sla settings page is accessible to authenticated users', function () {
@@ -67,12 +68,12 @@ test('sla policies can be saved', function () {
 
 test('saving sla policies updates existing records', function () {
     SlaPolicy::create([
-        'workspace_id'           => $this->workspace->id,
-        'name'                   => 'Urgent Priority SLA',
-        'priority'               => 'urgent',
+        'workspace_id' => $this->workspace->id,
+        'name' => 'Urgent Priority SLA',
+        'priority' => 'urgent',
         'first_response_minutes' => 60,
-        'resolution_minutes'     => 240,
-        'active'                 => true,
+        'resolution_minutes' => 240,
+        'active' => true,
     ]);
 
     $policies = [

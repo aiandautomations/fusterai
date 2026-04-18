@@ -2,10 +2,12 @@
 
 namespace App\Domains\Conversation\Jobs;
 
+use App\Domains\Channel\Drivers\WhatsAppDriver;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Enums\ChannelType;
 use App\Events\NewThreadReceived;
+use App\Services\DynamicMailerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -13,7 +15,6 @@ use Illuminate\Mail\Message;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
-use App\Services\DynamicMailerService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -21,7 +22,8 @@ class SendReplyJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 168;
+    public int $tries = 168;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -33,26 +35,28 @@ class SendReplyJob implements ShouldQueue
     {
         $conversation = $this->conversation->load(['mailbox', 'customer', 'threads']);
         $this->thread->loadMissing(['user', 'attachments']);
-        $mailbox      = $conversation->mailbox;
-        $customer     = $conversation->customer;
+        $mailbox = $conversation->mailbox;
+        $customer = $conversation->customer;
 
         // Route to correct channel driver
         if ($conversation->channel_type === ChannelType::WhatsApp) {
-            app(\App\Domains\Channel\Drivers\WhatsAppDriver::class)->send($this->thread);
+            app(WhatsAppDriver::class)->send($this->thread);
             broadcast(new NewThreadReceived($this->thread));
+
             return;
         }
 
-        if (!$customer?->email) {
+        if (! $customer?->email) {
             return;
         }
 
         // Build per-mailbox mailer config dynamically
-        $smtp   = $mailbox->smtp_config;
+        $smtp = $mailbox->smtp_config;
 
         // In local env with no SMTP config, fall back to the default mailer (log driver)
-        if (!$smtp && app()->environment('local')) {
+        if (! $smtp && app()->environment('local')) {
             broadcast(new NewThreadReceived($this->thread));
+
             return;
         }
 
@@ -67,7 +71,7 @@ class SendReplyJob implements ShouldQueue
 
         // Generate a stable per-thread message ID for bounce tracking.
         // Stored without angle brackets; Symfony IdentificationHeader adds them when serialising.
-        $outboundMsgId = 'thread-' . $thread->id . '-' . Str::uuid() . '@fusterai';
+        $outboundMsgId = 'thread-'.$thread->id.'-'.Str::uuid().'@fusterai';
 
         // Store with angle brackets so bounce lookups use the same format mail servers return.
         // Merge into the existing meta array rather than using JSON path syntax, which
@@ -101,9 +105,9 @@ class SendReplyJob implements ShouldQueue
 
             // Attach files
             foreach ($thread->attachments as $attachment) {
-                if (file_exists(storage_path('app/' . $attachment->path))) {
+                if (file_exists(storage_path('app/'.$attachment->path))) {
                     $msg->attach(
-                        storage_path('app/' . $attachment->path),
+                        storage_path('app/'.$attachment->path),
                         ['as' => $attachment->filename, 'mime' => $attachment->mime_type],
                     );
                 }
@@ -123,7 +127,7 @@ class SendReplyJob implements ShouldQueue
     {
         return Str::startsWith($conversation->subject, 'Re:')
             ? $conversation->subject
-            : 'Re: ' . $conversation->subject;
+            : 'Re: '.$conversation->subject;
     }
 
     private function buildHtmlBody(Thread $thread, $mailbox, ?string $agentSignature = null): string
@@ -132,16 +136,16 @@ class SendReplyJob implements ShouldQueue
 
         // Agent signature takes priority; fall back to mailbox signature
         $rawSignature = $agentSignature ?? $mailbox->signature ?? null;
-        $signature    = $rawSignature
-            ? '<br><br>--<br>' . nl2br(e($rawSignature))
+        $signature = $rawSignature
+            ? '<br><br>--<br>'.nl2br(e($rawSignature))
             : '';
 
-        return $body . $signature;
+        return $body.$signature;
     }
 
     private function conversationMessageId(Conversation $conversation): string
     {
-        return '<conversation-' . $conversation->id . '@fusterai>';
+        return '<conversation-'.$conversation->id.'@fusterai>';
     }
 
     /**

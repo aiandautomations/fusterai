@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Event;
 beforeEach(function () {
     Event::fake();
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
+    $this->user = agentUser($this->workspace);
 });
 
 test('agent can update their status', function () {

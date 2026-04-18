@@ -16,14 +16,14 @@ class LiveChatMessageController extends Controller
     public function config(Request $request): JsonResponse
     {
         $validated = $request->validate(['workspace_id' => 'required|integer|exists:workspaces,id']);
-        $workspace  = Workspace::findOrFail($validated['workspace_id']);
+        $workspace = Workspace::findOrFail($validated['workspace_id']);
         /** @var array<string, mixed> $chat */
-        $chat       = ($workspace->settings['live_chat'] ?? []) ?: [];
+        $chat = ($workspace->settings['live_chat'] ?? []) ?: [];
 
         return response()->json([
-            'greeting'      => $chat['greeting']      ?? 'Hi there! How can we help?',
-            'color'         => $chat['color']         ?? '#7c3aed',
-            'position'      => $chat['position']      ?? 'bottom-right',
+            'greeting' => $chat['greeting'] ?? 'Hi there! How can we help?',
+            'color' => $chat['color'] ?? '#7c3aed',
+            'position' => $chat['position'] ?? 'bottom-right',
             'launcher_text' => $chat['launcher_text'] ?? 'Chat with us',
         ]);
     }
@@ -32,7 +32,7 @@ class LiveChatMessageController extends Controller
     {
         $request->validate([
             'conversation_id' => 'required|integer',
-            'visitor_id'      => 'required|string|max:100',
+            'visitor_id' => 'required|string|max:100',
         ]);
 
         $threads = $this->service->messages($request->visitor_id, (int) $request->conversation_id);

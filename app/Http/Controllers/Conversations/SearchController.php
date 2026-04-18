@@ -24,13 +24,13 @@ class SearchController extends Controller
             ->load(['customer', 'mailbox']);
 
         return response()->json([
-            'results' => $results->map(fn($c) => [
-                'id'       => $c->id,
-                'subject'  => $c->subject,
-                'status'   => $c->status,
+            'results' => $results->map(fn ($c) => [
+                'id' => $c->id,
+                'subject' => $c->subject,
+                'status' => $c->status,
                 'customer' => $c->customer?->name,
-                'mailbox'  => $c->mailbox?->name,
-                'url'      => "/conversations/{$c->id}",
+                'mailbox' => $c->mailbox?->name,
+                'url' => "/conversations/{$c->id}",
             ]),
         ]);
     }

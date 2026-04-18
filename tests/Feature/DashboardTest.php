@@ -7,7 +7,7 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
+    $this->user = agentUser($this->workspace);
 });
 
 test('dashboard requires authentication', function () {
@@ -37,25 +37,25 @@ test('dashboard response contains expected keys', function () {
 });
 
 test('dashboard stats are scoped to the user workspace', function () {
-    $mailbox  = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     Conversation::factory()->count(3)->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $mailbox->id,
-        'customer_id'  => $customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $mailbox->id,
+        'customer_id' => $customer->id,
+        'status' => 'open',
     ]);
 
     // Create a conversation in another workspace — should not appear in stats
-    $other        = Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherMailbox = Mailbox::factory()->create(['workspace_id' => $other->id]);
     $otherCustomer = Customer::factory()->create(['workspace_id' => $other->id]);
     Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => $otherMailbox->id,
-        'customer_id'  => $otherCustomer->id,
-        'status'       => 'open',
+        'mailbox_id' => $otherMailbox->id,
+        'customer_id' => $otherCustomer->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)

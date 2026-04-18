@@ -4,6 +4,7 @@ namespace App\Domains\AI\Jobs;
 
 use App\Ai\Agents\SummarizationAgent;
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\Thread;
 use App\Services\AiSettingsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,7 +17,8 @@ class SummarizeConversationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(
@@ -32,25 +34,27 @@ class SummarizeConversationJob implements ShouldQueue
         $transcript = $conversation->threads
             ->where('type', 'message')
             ->map(function ($t) {
-                /** @var \App\Domains\Conversation\Models\Thread $t */
-                return ($t->isFromCustomer() ? 'Customer' : 'Agent') . ': ' . strip_tags((string) $t->body);
+                /** @var Thread $t */
+                return ($t->isFromCustomer() ? 'Customer' : 'Agent').': '.strip_tags((string) $t->body);
             })
             ->join("\n\n");
 
-        if (empty($transcript)) return;
+        if (empty($transcript)) {
+            return;
+        }
 
         ['lab' => $lab, 'model' => $model] = app(AiSettingsService::class)
             ->configureForWorkspace($conversation->workspace_id);
 
         try {
-            $agent    = new SummarizationAgent();
+            $agent = new SummarizationAgent;
             $response = $agent->prompt($transcript, provider: $lab, model: $model);
 
             $conversation->update(['ai_summary' => $response->text]);
         } catch (\Throwable $e) {
             Log::error('SummarizeConversationJob failed', [
                 'conversation_id' => $conversation->id,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             $this->fail($e);
         }

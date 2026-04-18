@@ -9,7 +9,7 @@ use Laravel\Ai\Responses\Data\Usage;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = adminUser($this->workspace);
+    $this->admin = adminUser($this->workspace);
 });
 
 test('settings index redirects to general', function () {
@@ -55,14 +55,14 @@ test('admin can view AI settings page', function () {
 test('admin can update AI settings', function () {
     $this->actingAs($this->admin)
         ->patch('/settings/ai', [
-            'provider'                    => 'anthropic',
-            'api_key'                     => 'sk-test-key',
-            'model'                       => 'claude-opus-4-6',
-            'feature_reply_suggestions'   => true,
+            'provider' => 'anthropic',
+            'api_key' => 'sk-test-key',
+            'model' => 'claude-opus-4-6',
+            'feature_reply_suggestions' => true,
             'feature_auto_categorization' => true,
-            'feature_summarization'       => true,
-            'rag_top_k'                   => 5,
-            'rag_min_score'               => 0.7,
+            'feature_summarization' => true,
+            'rag_top_k' => 5,
+            'rag_min_score' => 0.7,
         ])
         ->assertRedirect();
 });
@@ -111,9 +111,9 @@ test('admin can view live chat settings', function () {
 test('admin can update live chat settings', function () {
     $this->actingAs($this->admin)
         ->patch('/settings/live-chat', [
-            'greeting'      => 'Hello!',
-            'color'         => '#7c3aed',
-            'position'      => 'bottom-right',
+            'greeting' => 'Hello!',
+            'color' => '#7c3aed',
+            'position' => 'bottom-right',
             'launcher_text' => 'Chat with us',
         ])
         ->assertRedirect();
@@ -124,9 +124,9 @@ test('admin can update live chat settings', function () {
 test('live chat update rejects invalid position', function () {
     $this->actingAs($this->admin)
         ->patch('/settings/live-chat', [
-            'greeting'      => 'Hello',
-            'color'         => '#000000',
-            'position'      => 'top-center',
+            'greeting' => 'Hello',
+            'color' => '#000000',
+            'position' => 'top-center',
             'launcher_text' => 'Chat',
         ])
         ->assertSessionHasErrors('position');
@@ -146,10 +146,10 @@ test('admin can view appearance settings', function () {
 test('admin can update appearance settings', function () {
     $this->actingAs($this->admin)
         ->patch('/settings/appearance', [
-            'mode'     => 'dark',
-            'color'    => 'blue',
-            'font'     => 'inter',
-            'radius'   => 'md',
+            'mode' => 'dark',
+            'color' => 'blue',
+            'font' => 'inter',
+            'radius' => 'md',
             'contrast' => 'balanced',
         ])
         ->assertRedirect();
@@ -161,10 +161,10 @@ test('admin can update appearance settings', function () {
 test('appearance update rejects invalid mode', function () {
     $this->actingAs($this->admin)
         ->patch('/settings/appearance', [
-            'mode'     => 'rainbow',
-            'color'    => 'blue',
-            'font'     => 'inter',
-            'radius'   => 'md',
+            'mode' => 'rainbow',
+            'color' => 'blue',
+            'font' => 'inter',
+            'radius' => 'md',
             'contrast' => 'balanced',
         ])
         ->assertSessionHasErrors('mode');

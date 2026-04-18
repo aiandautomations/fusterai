@@ -15,9 +15,9 @@ class CustomerFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'name'         => fake()->name(),
-            'email'        => fake()->unique()->safeEmail(),
-            'phone'        => fake()->optional()->phoneNumber(),
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->optional()->phoneNumber(),
         ];
     }
 }

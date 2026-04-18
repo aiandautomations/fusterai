@@ -16,8 +16,8 @@ class AgentViewing implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly int    $conversationId,
-        public readonly int    $userId,
+        public readonly int $conversationId,
+        public readonly int $userId,
         public readonly string $userName,
         public readonly string $action, // 'joined' | 'left'
     ) {}
@@ -29,13 +29,13 @@ class AgentViewing implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'agent.' . $this->action;
+        return 'agent.'.$this->action;
     }
 
     public function broadcastWith(): array
     {
         return [
-            'user_id'   => $this->userId,
+            'user_id' => $this->userId,
             'user_name' => $this->userName,
         ];
     }

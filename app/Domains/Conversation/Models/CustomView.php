@@ -28,7 +28,7 @@ class CustomView extends Model
     ];
 
     protected $casts = [
-        'filters'   => 'array',
+        'filters' => 'array',
         'is_shared' => 'boolean',
     ];
 

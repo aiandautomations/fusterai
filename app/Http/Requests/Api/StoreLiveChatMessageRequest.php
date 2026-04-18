@@ -14,11 +14,11 @@ class StoreLiveChatMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'workspace_id'  => ['required', 'integer', 'exists:workspaces,id'],
-            'visitor_id'    => ['required', 'string', 'max:100'],
-            'visitor_name'  => ['nullable', 'string', 'max:100'],
+            'workspace_id' => ['required', 'integer', 'exists:workspaces,id'],
+            'visitor_id' => ['required', 'string', 'max:100'],
+            'visitor_name' => ['nullable', 'string', 'max:100'],
             'visitor_email' => ['nullable', 'email', 'max:255'],
-            'message'       => ['required', 'string', 'max:5000'],
+            'message' => ['required', 'string', 'max:5000'],
         ];
     }
 }

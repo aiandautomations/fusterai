@@ -39,6 +39,7 @@ class TagController extends Controller
         $this->authorize('update', $tag);
 
         $tag->update($request->validated());
+
         return back();
     }
 
@@ -46,6 +47,7 @@ class TagController extends Controller
     {
         $this->authorize('delete', $tag);
         $tag->delete();
+
         return back();
     }
 }

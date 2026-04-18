@@ -4,6 +4,7 @@ namespace App\Ai\Agents;
 
 use App\Ai\Tools\SearchKnowledgeBase;
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\Thread;
 use App\Support\Hooks;
 use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Model;
@@ -31,7 +32,7 @@ class ReplySuggestionAgent implements Agent, Conversational, HasTools
     public function instructions(): string
     {
         $customer = $this->conversation->customer;
-        $mailbox  = $this->conversation->mailbox;
+        $mailbox = $this->conversation->mailbox;
 
         $base = <<<INSTRUCTIONS
         You are a customer support assistant helping agents at {$mailbox?->name}.
@@ -61,9 +62,9 @@ class ReplySuggestionAgent implements Agent, Conversational, HasTools
         $messages = [];
 
         foreach ($this->conversation->threads->where('type', 'message')->take(10) as $thread) {
-            /** @var \App\Domains\Conversation\Models\Thread $thread */
-            $role       = $thread->isFromCustomer() ? 'user' : 'assistant';
-            $content    = strip_tags((string) $thread->body);
+            /** @var Thread $thread */
+            $role = $thread->isFromCustomer() ? 'user' : 'assistant';
+            $content = strip_tags((string) $thread->body);
             $messages[] = new Message($role, $content);
         }
 

@@ -19,11 +19,11 @@ class ConversationIndexRequest extends FormRequest
         $workspaceId = $this->user()->workspace_id;
 
         return [
-            'status'           => ['nullable', Rule::enum(ConversationStatus::class)],
-            'mailbox_id'       => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
-            'priority'         => ['nullable', Rule::enum(ConversationPriority::class)],
+            'status' => ['nullable', Rule::enum(ConversationStatus::class)],
+            'mailbox_id' => ['nullable', 'integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
+            'priority' => ['nullable', Rule::enum(ConversationPriority::class)],
             'assigned_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $workspaceId)],
-            'per_page'         => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

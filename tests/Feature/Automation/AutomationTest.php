@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Queue;
 beforeEach(function () {
     Queue::fake();
     $this->workspace = Workspace::factory()->create();
-    $this->user      = managerUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = managerUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('admin can view automation rules list', function () {
@@ -27,11 +27,11 @@ test('admin can view automation rules list', function () {
 test('can create an automation rule', function () {
     $this->actingAs($this->user)
         ->post('/automation', [
-            'name'       => 'High priority on urgent subject',
-            'trigger'    => 'conversation.created',
+            'name' => 'High priority on urgent subject',
+            'trigger' => 'conversation.created',
             'conditions' => [['field' => 'subject', 'operator' => 'contains', 'value' => 'urgent']],
-            'actions'    => [['type' => 'set_priority', 'value' => 'urgent']],
-            'active'     => true,
+            'actions' => [['type' => 'set_priority', 'value' => 'urgent']],
+            'active' => true,
         ])
         ->assertRedirect('/automation');
 
@@ -41,7 +41,7 @@ test('can create an automation rule', function () {
 test('can toggle automation rule active state', function () {
     $rule = AutomationRule::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'active'       => true,
+        'active' => true,
     ]);
 
     $this->actingAs($this->user)
@@ -63,7 +63,7 @@ test('can delete an automation rule', function () {
 
 test('cannot access another workspace automation rule', function () {
     $other = Workspace::factory()->create();
-    $rule  = AutomationRule::factory()->create(['workspace_id' => $other->id]);
+    $rule = AutomationRule::factory()->create(['workspace_id' => $other->id]);
 
     $this->actingAs($this->user)
         ->delete("/automation/{$rule->id}")
@@ -76,17 +76,17 @@ test('RunAutomationRulesJob applies matching actions', function () {
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $customer->id,
+        'priority' => 'normal',
     ]);
 
     AutomationRule::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'trigger'      => 'conversation.created',
-        'conditions'   => [],
-        'actions'      => [['type' => 'set_priority', 'value' => 'urgent']],
-        'active'       => true,
+        'trigger' => 'conversation.created',
+        'conditions' => [],
+        'actions' => [['type' => 'set_priority', 'value' => 'urgent']],
+        'active' => true,
     ]);
 
     (new RunAutomationRulesJob('conversation.created', $conversation))->handle();
@@ -100,18 +100,18 @@ test('RunAutomationRulesJob skips rules that do not match conditions', function 
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $customer->id,
-        'priority'     => 'normal',
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $customer->id,
+        'priority' => 'normal',
+        'status' => 'open',
     ]);
 
     AutomationRule::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'trigger'      => 'conversation.created',
-        'conditions'   => [['field' => 'status', 'operator' => 'equals', 'value' => 'closed']],
-        'actions'      => [['type' => 'set_priority', 'value' => 'urgent']],
-        'active'       => true,
+        'trigger' => 'conversation.created',
+        'conditions' => [['field' => 'status', 'operator' => 'equals', 'value' => 'closed']],
+        'actions' => [['type' => 'set_priority', 'value' => 'urgent']],
+        'active' => true,
     ]);
 
     (new RunAutomationRulesJob('conversation.created', $conversation))->handle();

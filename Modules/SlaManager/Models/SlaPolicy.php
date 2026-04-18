@@ -53,9 +53,9 @@ class SlaPolicy extends Model
     {
         return [
             'urgent' => ['first_response_minutes' => 60,   'resolution_minutes' => 240],
-            'high'   => ['first_response_minutes' => 240,  'resolution_minutes' => 1440],
+            'high' => ['first_response_minutes' => 240,  'resolution_minutes' => 1440],
             'normal' => ['first_response_minutes' => 480,  'resolution_minutes' => 2880],
-            'low'    => ['first_response_minutes' => 1440, 'resolution_minutes' => 4320],
+            'low' => ['first_response_minutes' => 1440, 'resolution_minutes' => 4320],
         ];
     }
 }

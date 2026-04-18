@@ -5,7 +5,6 @@ namespace Modules\SlaManager\Models;
 use App\Domains\Conversation\Models\Conversation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 class SlaStatus extends Model
 {
@@ -23,14 +22,14 @@ class SlaStatus extends Model
     ];
 
     protected $casts = [
-        'first_response_due_at'       => 'datetime',
-        'resolution_due_at'           => 'datetime',
-        'first_response_achieved_at'  => 'datetime',
-        'resolved_at'                 => 'datetime',
-        'paused_at'                   => 'datetime',
-        'first_response_breached'     => 'boolean',
-        'resolution_breached'         => 'boolean',
-        'pause_offset_minutes'        => 'integer',
+        'first_response_due_at' => 'datetime',
+        'resolution_due_at' => 'datetime',
+        'first_response_achieved_at' => 'datetime',
+        'resolved_at' => 'datetime',
+        'paused_at' => 'datetime',
+        'first_response_breached' => 'boolean',
+        'resolution_breached' => 'boolean',
+        'pause_offset_minutes' => 'integer',
     ];
 
     public function conversation(): BelongsTo
@@ -74,7 +73,7 @@ class SlaStatus extends Model
         $pausedMinutes = max(0, (int) $this->paused_at->diffInMinutes(now(), false));
 
         $updates = [
-            'paused_at'            => null,
+            'paused_at' => null,
             'pause_offset_minutes' => $this->pause_offset_minutes + $pausedMinutes,
         ];
 

@@ -10,12 +10,12 @@ class FolderService
     public function create(array $validated, int $workspaceId, User $user): Folder
     {
         return Folder::create([
-            'workspace_id'       => $workspaceId,
+            'workspace_id' => $workspaceId,
             'created_by_user_id' => $user->id,
-            'name'               => $validated['name'],
-            'color'              => $validated['color'],
-            'icon'               => $validated['icon'] ?? 'folder',
-            'order'              => Folder::where('workspace_id', $workspaceId)->max('order') + 1,
+            'name' => $validated['name'],
+            'color' => $validated['color'],
+            'icon' => $validated['icon'] ?? 'folder',
+            'order' => Folder::where('workspace_id', $workspaceId)->max('order') + 1,
         ]);
     }
 

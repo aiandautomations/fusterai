@@ -99,6 +99,9 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
+      - name: Check PHP code style
+        run: ./vendor/bin/pint --test
+
       - name: Run Pest tests
         run: ./vendor/bin/pest --parallel --ci
 

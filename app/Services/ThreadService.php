@@ -34,18 +34,18 @@ class ThreadService
         /** @var Thread $thread */
         $thread = $conversation->threads()->create([
             'user_id' => $actor->id,
-            'type'    => $type,
-            'body'    => $body,
-            'source'  => $isChat ? 'chat' : 'web',
+            'type' => $type,
+            'body' => $body,
+            'source' => $isChat ? 'chat' : 'web',
         ]);
 
         foreach ($files as $file) {
-            $path = $file->store('attachments/' . $conversation->id, 'local');
+            $path = $file->store('attachments/'.$conversation->id, 'local');
             $thread->attachments()->create([
-                'filename'  => $file->getClientOriginalName(),
-                'path'      => $path,
+                'filename' => $file->getClientOriginalName(),
+                'path' => $path,
                 'mime_type' => $file->getMimeType(),
-                'size'      => $file->getSize(),
+                'size' => $file->getSize(),
             ]);
         }
 
@@ -81,7 +81,7 @@ class ThreadService
 
         // Notify followers, excluding the sender and the assigned agent (already notified above)
         $notifiedIds = array_filter([$actor->id, $assignedUserId]);
-        $followers   = $conversation->followers()->whereNotIn('users.id', $notifiedIds)->get();
+        $followers = $conversation->followers()->whereNotIn('users.id', $notifiedIds)->get();
         Notification::send($followers, new ConversationFollowerNotification($conversation, $thread));
     }
 

@@ -48,6 +48,7 @@ class SsrfGuard
         // If the host is already a raw IP address, check it directly.
         if (filter_var($host, FILTER_VALIDATE_IP)) {
             self::assertPublicIp($host);
+
             return;
         }
 

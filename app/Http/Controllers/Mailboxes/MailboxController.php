@@ -15,12 +15,13 @@ use Inertia\Response;
 class MailboxController extends Controller
 {
     public function __construct(private MailboxService $service) {}
+
     public function index(Request $request): Response
     {
         $mailboxes = Mailbox::where('workspace_id', $request->user()->workspace_id)
             ->withCount([
                 'conversations',
-                'conversations as open_count'    => fn ($q) => $q->where('status', 'open'),
+                'conversations as open_count' => fn ($q) => $q->where('status', 'open'),
                 'conversations as pending_count' => fn ($q) => $q->where('status', 'pending'),
             ])
             ->get();

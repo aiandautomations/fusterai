@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Conversations;
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\CustomView;
 use App\Domains\Conversation\Models\Folder;
 use App\Domains\Conversation\Models\Tag;
 use App\Domains\Mailbox\Models\Mailbox;
@@ -21,8 +22,11 @@ use App\Http\Requests\Conversations\SyncTagsRequest;
 use App\Http\Requests\Conversations\UpdatePriorityRequest;
 use App\Http\Requests\Conversations\UpdateStatusRequest;
 use App\Models\ConversationRead;
+use App\Models\User;
 use App\Services\ConversationService;
 use App\Support\Hooks;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +36,7 @@ use Inertia\Response;
 class ConversationController extends Controller
 {
     public function __construct(private ConversationService $service) {}
+
     public function index(ConversationIndexRequest $request): Response
     {
         $user = $request->user();
@@ -44,7 +49,7 @@ class ConversationController extends Controller
         // Resolve custom view and merge its filters (URL params take precedence)
         $activeView = null;
         if ($viewId = $request->get('view')) {
-            $activeView = \App\Domains\Conversation\Models\CustomView::where('workspace_id', $user->workspace_id)
+            $activeView = CustomView::where('workspace_id', $user->workspace_id)
                 ->where(function ($q) use ($user) {
                     $q->where('user_id', $user->id)->orWhere('is_shared', true);
                 })
@@ -53,14 +58,14 @@ class ConversationController extends Controller
             if ($activeView) {
                 $vf = $activeView->filters ?? [];
                 $request->mergeIfMissing(array_filter([
-                    'status'   => $vf['status']     ?? null,
-                    'assigned' => $vf['assigned']   ?? null,
-                    'mailbox'  => isset($vf['mailbox_id']) ? (string) $vf['mailbox_id'] : null,
-                    'tag'      => isset($vf['tag_id'])     ? (string) $vf['tag_id']     : null,
-                    'priority' => $vf['priority']   ?? null,
+                    'status' => $vf['status'] ?? null,
+                    'assigned' => $vf['assigned'] ?? null,
+                    'mailbox' => isset($vf['mailbox_id']) ? (string) $vf['mailbox_id'] : null,
+                    'tag' => isset($vf['tag_id']) ? (string) $vf['tag_id'] : null,
+                    'priority' => $vf['priority'] ?? null,
                 ], fn ($v) => $v !== null));
 
-                if (!empty($vf['channel_type']) && !$request->has('channel_type')) {
+                if (! empty($vf['channel_type']) && ! $request->has('channel_type')) {
                     $query->where('channel_type', $vf['channel_type']);
                 }
             }
@@ -87,7 +92,7 @@ class ConversationController extends Controller
         }
 
         if ($tagId = $request->get('tag')) {
-            $query->whereHas('tags', fn($q) => $q->where('tags.id', $tagId));
+            $query->whereHas('tags', fn ($q) => $q->where('tags.id', $tagId));
         }
 
         if ($priority = $request->get('priority')) {
@@ -95,7 +100,7 @@ class ConversationController extends Controller
         }
 
         if ($folderId = $request->get('folder')) {
-            $query->whereHas('folders', fn($q) => $q->where('folders.id', $folderId));
+            $query->whereHas('folders', fn ($q) => $q->where('folders.id', $folderId));
         }
 
         if ($dateFrom = $request->get('date_from')) {
@@ -120,14 +125,15 @@ class ConversationController extends Controller
             $conv->is_unread = $lastRead === null
                 ? $conv->last_reply_at !== null
                 : ($conv->last_reply_at !== null && $conv->last_reply_at->gt($lastRead));
+
             return $conv;
         });
 
-        $mailboxes     = Mailbox::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'email']);
-        $tags          = Tag::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'color']);
-        $folders       = Folder::where('workspace_id', $user->workspace_id)->orderBy('order')->get(['id', 'name', 'color', 'icon']);
-        $counts        = $this->folderCounts($user);
-        $agents        = \App\Models\User::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'avatar', 'status']);
+        $mailboxes = Mailbox::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'email']);
+        $tags = Tag::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'color']);
+        $folders = Folder::where('workspace_id', $user->workspace_id)->orderBy('order')->get(['id', 'name', 'color', 'icon']);
+        $counts = $this->folderCounts($user);
+        $agents = User::where('workspace_id', $user->workspace_id)->get(['id', 'name', 'avatar', 'status']);
 
         $selected = null;
         $isFollowing = false;
@@ -142,7 +148,7 @@ class ConversationController extends Controller
                     'tags',
                     'folders',
                     'followers:id,name,avatar',
-                    'threads' => fn($q) => $q->with(['user', 'customer', 'attachments'])->orderBy('created_at'),
+                    'threads' => fn ($q) => $q->with(['user', 'customer', 'attachments'])->orderBy('created_at'),
                 ])
                 ->first();
 
@@ -154,18 +160,18 @@ class ConversationController extends Controller
 
         return Inertia::render('Conversations/Index', [
             'conversations' => $conversations,
-            'mailboxes'     => $mailboxes,
-            'tags'          => $tags,
-            'folders'       => $folders,
-            'counts'        => $counts,
-            'agents'        => $agents,
-            'selected'      => $selected,
-            'isFollowing'   => $isFollowing,
-            'filters'    => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to', 'view']),
+            'mailboxes' => $mailboxes,
+            'tags' => $tags,
+            'folders' => $folders,
+            'counts' => $counts,
+            'agents' => $agents,
+            'selected' => $selected,
+            'isFollowing' => $isFollowing,
+            'filters' => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to', 'view']),
             'activeView' => $activeView ? [
-                'id'      => $activeView->id,
-                'name'    => $activeView->name,
-                'color'   => $activeView->color,
+                'id' => $activeView->id,
+                'name' => $activeView->name,
+                'color' => $activeView->color,
                 'filters' => $activeView->filters,
             ] : null,
             ...$extra,
@@ -189,30 +195,30 @@ class ConversationController extends Controller
             'threads.user',
             'threads.customer',
             'threads.attachments',
-            'aiSuggestions' => fn($q) => $q->where('type', 'reply')->latest()->limit(1),
+            'aiSuggestions' => fn ($q) => $q->where('type', 'reply')->latest()->limit(1),
         ]);
 
-        $agents = \App\Models\User::where('workspace_id', $request->user()->workspace_id)
+        $agents = User::where('workspace_id', $request->user()->workspace_id)
             ->get(['id', 'name', 'avatar']);
 
         $tags = Tag::where('workspace_id', $request->user()->workspace_id)->get();
 
-        $folders = \App\Domains\Conversation\Models\Folder::where('workspace_id', $request->user()->workspace_id)
+        $folders = Folder::where('workspace_id', $request->user()->workspace_id)
             ->orderBy('order')->get(['id', 'name', 'color', 'icon']);
 
-        $mailboxes = \App\Domains\Mailbox\Models\Mailbox::where('workspace_id', $request->user()->workspace_id)
+        $mailboxes = Mailbox::where('workspace_id', $request->user()->workspace_id)
             ->where('active', true)->get(['id', 'name']);
 
         $extra = Hooks::applyFilters('conversation.show.extra', [], $conversation);
 
         return Inertia::render('Conversations/Show', [
             'conversation' => $conversation,
-            'agents'       => $agents,
-            'tags'         => $tags,
-            'folders'      => $folders,
-            'convFolders'  => $conversation->folders->pluck('id'),
-            'mailboxes'    => $mailboxes,
-            'isFollowing'  => $conversation->followers->contains('id', $request->user()->id),
+            'agents' => $agents,
+            'tags' => $tags,
+            'folders' => $folders,
+            'convFolders' => $conversation->folders->pluck('id'),
+            'mailboxes' => $mailboxes,
+            'isFollowing' => $conversation->followers->contains('id', $request->user()->id),
             ...$extra,
         ]);
     }
@@ -250,7 +256,7 @@ class ConversationController extends Controller
     {
         $this->authorize('update', $conversation);
 
-        $this->service->snooze($conversation, \Carbon\Carbon::parse($request->until), $request->user());
+        $this->service->snooze($conversation, Carbon::parse($request->until), $request->user());
 
         return back();
     }
@@ -311,7 +317,7 @@ class ConversationController extends Controller
         return back();
     }
 
-    private function folderCounts(\App\Models\User $user): array
+    private function folderCounts(User $user): array
     {
         // Single query with conditional aggregates — avoids 5 separate COUNT queries.
         $row = DB::table('conversations')
@@ -326,17 +332,17 @@ class ConversationController extends Controller
             ->first();
 
         return [
-            'open'    => (int) ($row->open    ?? 0),
+            'open' => (int) ($row->open ?? 0),
             'pending' => (int) ($row->pending ?? 0),
-            'closed'  => (int) ($row->closed  ?? 0),
-            'mine'    => (int) ($row->mine    ?? 0),
+            'closed' => (int) ($row->closed ?? 0),
+            'mine' => (int) ($row->mine ?? 0),
             'snoozed' => (int) ($row->snoozed ?? 0),
         ];
     }
 
     // ── Read / Unread ─────────────────────────────────────────────────────────
 
-    public function markRead(Request $request, Conversation $conversation): \Illuminate\Http\JsonResponse
+    public function markRead(Request $request, Conversation $conversation): JsonResponse
     {
         $this->authorize('view', $conversation);
 
@@ -345,7 +351,7 @@ class ConversationController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function markUnread(Request $request, Conversation $conversation): \Illuminate\Http\JsonResponse
+    public function markUnread(Request $request, Conversation $conversation): JsonResponse
     {
         $this->authorize('view', $conversation);
 
@@ -358,11 +364,11 @@ class ConversationController extends Controller
 
     // ── Bulk actions ──────────────────────────────────────────────────────────
 
-    public function bulk(BulkConversationRequest $request): \Illuminate\Http\JsonResponse
+    public function bulk(BulkConversationRequest $request): JsonResponse
     {
         $workspaceId = $request->user()->workspace_id;
-        $actor       = $request->user();
-        $validated   = $request->validated();
+        $actor = $request->user();
+        $validated = $request->validated();
 
         // Scope all IDs to the workspace — prevents cross-workspace access
         $conversations = Conversation::where('workspace_id', $workspaceId)
@@ -371,15 +377,15 @@ class ConversationController extends Controller
 
         foreach ($conversations as $conversation) {
             match ($validated['action']) {
-                'close'      => $this->service->changeStatus($conversation, ConversationStatus::Closed, $actor),
-                'reopen'     => $this->service->changeStatus($conversation, ConversationStatus::Open, $actor),
-                'spam'       => $this->service->changeStatus($conversation, ConversationStatus::Spam, $actor),
-                'assign'     => $this->service->assign($conversation, $validated['assigned_to'] ?: null, $actor),
-                'snooze'     => $this->service->snooze($conversation, \Carbon\Carbon::parse($validated['snooze_until']), $actor, silent: true),
-                'priority'   => $this->service->changePriority($conversation, ConversationPriority::from($validated['priority']), $actor, silent: true),
-                'mark_read'  => ConversationRead::markRead($actor->id, $conversation->id),
-                'mark_unread'=> ConversationRead::where('user_id', $actor->id)->where('conversation_id', $conversation->id)->delete(),
-                default      => null,
+                'close' => $this->service->changeStatus($conversation, ConversationStatus::Closed, $actor),
+                'reopen' => $this->service->changeStatus($conversation, ConversationStatus::Open, $actor),
+                'spam' => $this->service->changeStatus($conversation, ConversationStatus::Spam, $actor),
+                'assign' => $this->service->assign($conversation, $validated['assigned_to'] ?: null, $actor),
+                'snooze' => $this->service->snooze($conversation, Carbon::parse($validated['snooze_until']), $actor, silent: true),
+                'priority' => $this->service->changePriority($conversation, ConversationPriority::from($validated['priority']), $actor, silent: true),
+                'mark_read' => ConversationRead::markRead($actor->id, $conversation->id),
+                'mark_unread' => ConversationRead::where('user_id', $actor->id)->where('conversation_id', $conversation->id)->delete(),
+                default => null,
             };
         }
 

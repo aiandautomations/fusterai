@@ -16,7 +16,7 @@ class StoreTagRequest extends FormRequest
         $workspaceId = $this->user()->workspace_id;
 
         return [
-            'name'  => ['required', 'string', 'max:50', "unique:tags,name,NULL,id,workspace_id,{$workspaceId}"],
+            'name' => ['required', 'string', 'max:50', "unique:tags,name,NULL,id,workspace_id,{$workspaceId}"],
             'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ];
     }

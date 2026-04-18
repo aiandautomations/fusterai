@@ -17,28 +17,30 @@ use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\AiSuggestionFailed;
 use App\Models\Workspace;
+use App\Services\AiSettingsService;
 use App\Support\SsrfGuard;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Laravel\Ai\Embeddings;
 use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\Usage;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 
 beforeEach(function () {
-    $this->workspace    = Workspace::factory()->create();
-    $this->mailbox      = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer     = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $this->conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'body'            => '<p>My order has not arrived.</p>',
+        'body' => '<p>My order has not arrived.</p>',
     ]);
 });
 
@@ -87,14 +89,14 @@ test('GenerateReplySuggestionJob creates AiSuggestion record', function () {
 
 test('GenerateReplySuggestionJob marks job as failed when AI throws', function () {
     ReplySuggestionAgent::fake(function () {
-        throw new \RuntimeException('AI provider unavailable');
+        throw new RuntimeException('AI provider unavailable');
     });
 
-    $job = \Mockery::mock(GenerateReplySuggestionJob::class . '[fail]', [$this->conversation])
+    $job = Mockery::mock(GenerateReplySuggestionJob::class.'[fail]', [$this->conversation])
         ->shouldAllowMockingProtectedMethods()
         ->makePartial();
 
-    $job->shouldReceive('fail')->once()->with(\Mockery::type(\RuntimeException::class));
+    $job->shouldReceive('fail')->once()->with(Mockery::type(RuntimeException::class));
 
     $job->handle();
 });
@@ -104,15 +106,15 @@ test('AI feature flag disabled for workspace skips reply suggestion job', functi
         'settings' => ['ai_features' => ['reply_suggestions' => false, 'auto_categorization' => true]],
     ]);
 
-    \Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
 
     // Simulate what ProcessInboundEmailJob does
-    $ai = app(\App\Services\AiSettingsService::class);
+    $ai = app(AiSettingsService::class);
     if ($ai->isFeatureEnabled($this->workspace->id, 'reply_suggestions')) {
         GenerateReplySuggestionJob::dispatch($this->conversation)->onQueue('ai');
     }
 
-    \Illuminate\Support\Facades\Queue::assertNotPushed(GenerateReplySuggestionJob::class);
+    Queue::assertNotPushed(GenerateReplySuggestionJob::class);
 });
 
 test('AI feature flag enabled for workspace dispatches reply suggestion job', function () {
@@ -120,14 +122,14 @@ test('AI feature flag enabled for workspace dispatches reply suggestion job', fu
         'settings' => ['ai_features' => ['reply_suggestions' => true, 'auto_categorization' => true]],
     ]);
 
-    \Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
 
-    $ai = app(\App\Services\AiSettingsService::class);
+    $ai = app(AiSettingsService::class);
     if ($ai->isFeatureEnabled($this->workspace->id, 'reply_suggestions')) {
         GenerateReplySuggestionJob::dispatch($this->conversation)->onQueue('ai');
     }
 
-    \Illuminate\Support\Facades\Queue::assertPushedOn('ai', GenerateReplySuggestionJob::class);
+    Queue::assertPushedOn('ai', GenerateReplySuggestionJob::class);
 });
 
 // ── failed() callbacks ─────────────────────────────────────────────────────────
@@ -136,7 +138,7 @@ test('GenerateReplySuggestionJob failed() broadcasts AiSuggestionFailed event', 
     Event::fake([AiSuggestionFailed::class]);
 
     $job = new GenerateReplySuggestionJob($this->conversation);
-    $job->failed(new \RuntimeException('Provider error'));
+    $job->failed(new RuntimeException('Provider error'));
 
     Event::assertDispatched(AiSuggestionFailed::class, function ($event) {
         return $event->conversationId === $this->conversation->id;
@@ -144,24 +146,24 @@ test('GenerateReplySuggestionJob failed() broadcasts AiSuggestionFailed event', 
 });
 
 test('IndexKbDocumentJob failed() stores error message in document meta', function () {
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
     $doc = $kb->documents()->create(['title' => 'Guide', 'content' => 'Content here.']);
 
     $job = new IndexKbDocumentJob($doc);
-    $job->failed(new \RuntimeException('No embeddings API key'));
+    $job->failed(new RuntimeException('No embeddings API key'));
 
     expect($doc->fresh()->meta['index_error'])->toBe('No embeddings API key');
 });
 
 test('IndexKbDocumentJob handle() clears index_error on successful re-index', function () {
     // Fake with no preset responses — SDK auto-generates vectors of the right dimensions
-    \Laravel\Ai\Embeddings::fake();
+    Embeddings::fake();
 
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
     $doc = $kb->documents()->create([
-        'title'   => 'Guide',
+        'title' => 'Guide',
         'content' => 'Content here.',
-        'meta'    => ['index_error' => 'Previous failure'],
+        'meta' => ['index_error' => 'Previous failure'],
     ]);
 
     (new IndexKbDocumentJob($doc))->handle();
@@ -194,8 +196,8 @@ test('FetchUrlAndIndexJob fetches URL and dispatches IndexKbDocumentJob', functi
 test('FetchUrlAndIndexJob fails when HTTP response is non-200', function () {
     Http::fake(['example.com/*' => Http::response('Not Found', 404)]);
 
-    $kb  = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
-    $job = \Mockery::mock(FetchUrlAndIndexJob::class . '[fail]', [$kb, 'https://example.com/missing'])
+    $kb = KnowledgeBase::create(['workspace_id' => $this->workspace->id, 'name' => 'Docs', 'active' => true]);
+    $job = Mockery::mock(FetchUrlAndIndexJob::class.'[fail]', [$kb, 'https://example.com/missing'])
         ->shouldAllowMockingProtectedMethods()
         ->makePartial();
 
@@ -207,26 +209,26 @@ test('FetchUrlAndIndexJob fails when HTTP response is non-200', function () {
 
 test('SsrfGuard blocks private IPv4 addresses', function () {
     expect(fn () => SsrfGuard::validate('http://192.168.1.1/admin'))
-        ->toThrow(\InvalidArgumentException::class, 'private or reserved');
+        ->toThrow(InvalidArgumentException::class, 'private or reserved');
 
     expect(fn () => SsrfGuard::validate('http://10.0.0.1/secret'))
-        ->toThrow(\InvalidArgumentException::class, 'private or reserved');
+        ->toThrow(InvalidArgumentException::class, 'private or reserved');
 
     expect(fn () => SsrfGuard::validate('http://127.0.0.1/'))
-        ->toThrow(\InvalidArgumentException::class, 'private or reserved');
+        ->toThrow(InvalidArgumentException::class, 'private or reserved');
 });
 
 test('SsrfGuard blocks AWS instance metadata endpoint', function () {
     expect(fn () => SsrfGuard::validate('http://169.254.169.254/latest/meta-data/'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 test('SsrfGuard blocks non-http schemes', function () {
     expect(fn () => SsrfGuard::validate('file:///etc/passwd'))
-        ->toThrow(\InvalidArgumentException::class, 'http and https');
+        ->toThrow(InvalidArgumentException::class, 'http and https');
 
     expect(fn () => SsrfGuard::validate('ftp://internal.server/'))
-        ->toThrow(\InvalidArgumentException::class, 'http and https');
+        ->toThrow(InvalidArgumentException::class, 'http and https');
 });
 
 test('SsrfGuard allows public URLs', function () {
@@ -234,7 +236,7 @@ test('SsrfGuard allows public URLs', function () {
     $threw = false;
     try {
         SsrfGuard::validate('https://example.com/page');
-    } catch (\InvalidArgumentException) {
+    } catch (InvalidArgumentException) {
         $threw = true;
     }
     expect($threw)->toBeFalse();

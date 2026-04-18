@@ -6,6 +6,7 @@ use App\Domains\Customer\Models\Customer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customers\UpdateCustomerRequest;
 use App\Services\CustomerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,11 +24,11 @@ class CustomerController extends Controller
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
-            'filters'   => $request->only(['search']),
+            'filters' => $request->only(['search']),
         ]);
     }
 
-    public function search(Request $request): \Illuminate\Http\JsonResponse
+    public function search(Request $request): JsonResponse
     {
         $customers = $this->service->search(
             $request->user()->workspace_id,
@@ -48,7 +49,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function update(UpdateCustomerRequest $request, Customer $customer): \Illuminate\Http\JsonResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
         abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
 

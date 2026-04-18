@@ -19,14 +19,14 @@ class HelpDeskServer extends Server
 {
     protected function boot(): void
     {
-        $user        = auth()->user();
+        $user = auth()->user();
         $workspaceId = $user !== null ? ($user->workspace_id ?? 0) : 0;
-        $userId      = $user !== null ? ($user->id ?? 0) : 0;
+        $userId = $user !== null ? ($user->id ?? 0) : 0;
 
         $this->tools = [
-            new GetConversation(),
+            new GetConversation,
             new SearchConversations($workspaceId),
-            new GetCustomerHistory(),
+            new GetCustomerHistory,
             new CreateNote($userId),
             new UpdateConversation($workspaceId),
         ];

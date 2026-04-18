@@ -22,10 +22,10 @@ class RegistrationService
 
         return User::create([
             'workspace_id' => $workspace->id,
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
-            'password'     => Hash::make($validated['password']),
-            'role'         => 'super_admin',
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'super_admin',
         ]);
     }
 }

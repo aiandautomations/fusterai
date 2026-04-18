@@ -63,8 +63,8 @@ class CannedResponseController extends Controller
     // Returns workspace-wide responses + mailbox-specific ones (when mailbox_id provided)
     public function search(Request $request)
     {
-        $query      = $request->get('q', '');
-        $mailboxId  = $request->get('mailbox_id');
+        $query = $request->get('q', '');
+        $mailboxId = $request->get('mailbox_id');
         $workspaceId = $request->user()->workspace_id;
 
         $responses = CannedResponse::where('workspace_id', $workspaceId)
@@ -77,7 +77,7 @@ class CannedResponseController extends Controller
             })
             ->where(function ($q) use ($query) {
                 $q->where('name', 'ilike', "%{$query}%")
-                  ->orWhere('content', 'ilike', "%{$query}%");
+                    ->orWhere('content', 'ilike', "%{$query}%");
             })
             ->orderByRaw('mailbox_id IS NULL ASC') // mailbox-specific first
             ->orderBy('name')

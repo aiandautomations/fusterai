@@ -23,9 +23,9 @@ test('live chat message endpoint requires workspace_id, visitor_id and message',
 test('valid live chat message dispatches HandleLiveChatMessageJob', function () {
     $this->postJson('/api/livechat/message', [
         'workspace_id' => $this->workspace->id,
-        'visitor_id'   => 'visitor-abc-123',
+        'visitor_id' => 'visitor-abc-123',
         'visitor_name' => 'Jane',
-        'message'      => 'Hello, I need help',
+        'message' => 'Hello, I need help',
     ])->assertOk()->assertJson(['status' => 'sent']);
 
     Queue::assertPushed(HandleLiveChatMessageJob::class);
@@ -35,11 +35,11 @@ test('visitor email is stored on the customer record', function () {
     Queue::fake([]);
 
     $this->postJson('/api/livechat/message', [
-        'workspace_id'  => $this->workspace->id,
-        'visitor_id'    => 'visitor-email-test',
-        'visitor_name'  => 'Jane',
+        'workspace_id' => $this->workspace->id,
+        'visitor_id' => 'visitor-email-test',
+        'visitor_name' => 'Jane',
         'visitor_email' => 'jane@example.com',
-        'message'       => 'Hi there',
+        'message' => 'Hi there',
     ])->assertOk();
 
     expect(Customer::where('email', 'jane@example.com')->exists())->toBeTrue();
@@ -50,8 +50,8 @@ test('visitor without email falls back to virtual email', function () {
 
     $this->postJson('/api/livechat/message', [
         'workspace_id' => $this->workspace->id,
-        'visitor_id'   => 'anon-visitor-99',
-        'message'      => 'Hi there',
+        'visitor_id' => 'anon-visitor-99',
+        'message' => 'Hi there',
     ])->assertOk();
 
     expect(Customer::where('email', 'visitor_anon-visitor-99@livechat.local')->exists())->toBeTrue();
@@ -76,7 +76,7 @@ test('HandleLiveChatMessageJob creates a thread on the conversation', function (
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'customer_id'  => $customer->id,
+        'customer_id' => $customer->id,
         'channel_type' => 'chat',
     ]);
 
@@ -91,22 +91,22 @@ test('messages endpoint returns threads for a visitor conversation', function ()
 
     $customer = Customer::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'email'        => 'visitor_msg-test-visitor@livechat.local',
+        'email' => 'visitor_msg-test-visitor@livechat.local',
     ]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'customer_id'  => $customer->id,
+        'customer_id' => $customer->id,
         'channel_type' => 'chat',
     ]);
     $conversation->threads()->create([
         'customer_id' => $customer->id,
-        'type'        => 'message',
-        'body'        => 'Hello agent',
-        'source'      => 'chat',
+        'type' => 'message',
+        'body' => 'Hello agent',
+        'source' => 'chat',
     ]);
 
-    $this->getJson('/api/livechat/messages?' . http_build_query([
-        'visitor_id'      => 'msg-test-visitor',
+    $this->getJson('/api/livechat/messages?'.http_build_query([
+        'visitor_id' => 'msg-test-visitor',
         'conversation_id' => $conversation->id,
     ]))
         ->assertOk()
@@ -114,8 +114,8 @@ test('messages endpoint returns threads for a visitor conversation', function ()
 });
 
 test('messages endpoint returns empty threads for unknown visitor', function () {
-    $this->getJson('/api/livechat/messages?' . http_build_query([
-        'visitor_id'      => 'unknown-xyz',
+    $this->getJson('/api/livechat/messages?'.http_build_query([
+        'visitor_id' => 'unknown-xyz',
         'conversation_id' => 999,
     ]))
         ->assertOk()
@@ -128,7 +128,7 @@ test('subsequent messages from same visitor append threads to the same conversat
     $customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'customer_id'  => $customer->id,
+        'customer_id' => $customer->id,
         'channel_type' => 'chat',
     ]);
 

@@ -14,13 +14,13 @@ class SatisfactionSurveyServiceProvider extends ServiceProvider
     {
         // ── Views ─────────────────────────────────────────────────────────────
         $this->loadViewsFrom(
-            __DIR__ . '/../Resources/views',
+            __DIR__.'/../Resources/views',
             'satisfaction-survey'
         );
 
         // ── Migrations ────────────────────────────────────────────────────────
         $this->loadMigrationsFrom(
-            __DIR__ . '/../Database/Migrations'
+            __DIR__.'/../Database/Migrations'
         );
 
         // ── Action: send survey when conversation is closed ───────────────────
@@ -37,7 +37,7 @@ class SatisfactionSurveyServiceProvider extends ServiceProvider
             $response = SurveyResponse::where('conversation_id', $conversation->id)->first();
 
             $extra['survey'] = $response ? [
-                'rating'       => $response->rating,
+                'rating' => $response->rating,
                 'responded_at' => $response->responded_at->toIso8601String(),
             ] : null;
 
@@ -46,7 +46,7 @@ class SatisfactionSurveyServiceProvider extends ServiceProvider
 
         // ── Filter: note AI about survey ──────────────────────────────────────
         Hooks::addFilter('ai.system_prompt', function (string $prompt) {
-            return $prompt . "\n\nNote: A satisfaction survey (👍/👎) will be emailed to the customer automatically when this conversation is closed.";
+            return $prompt."\n\nNote: A satisfaction survey (👍/👎) will be emailed to the customer automatically when this conversation is closed.";
         });
     }
 }

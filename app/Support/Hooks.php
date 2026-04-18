@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Support;
 
 use Illuminate\Support\Facades\Log;
@@ -6,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 class Hooks
 {
     protected static array $actions = [];
+
     protected static array $filters = [];
 
     /** Register a callback for an action hook */
@@ -31,8 +33,8 @@ class Hooks
                 try {
                     $callback(...$args);
                 } catch (\Throwable $e) {
-                    Log::error("Hook action [{$hook}] threw an exception: " . $e->getMessage(), [
-                        'hook'      => $hook,
+                    Log::error("Hook action [{$hook}] threw an exception: ".$e->getMessage(), [
+                        'hook' => $hook,
                         'exception' => $e,
                     ]);
                 }
@@ -64,8 +66,8 @@ class Hooks
                 try {
                     $value = $callback($value, ...$args);
                 } catch (\Throwable $e) {
-                    Log::error("Hook filter [{$hook}] threw an exception: " . $e->getMessage(), [
-                        'hook'      => $hook,
+                    Log::error("Hook filter [{$hook}] threw an exception: ".$e->getMessage(), [
+                        'hook' => $hook,
                         'exception' => $e,
                     ]);
                     // Keep the last good value and continue

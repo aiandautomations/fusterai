@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ConversationAssignedNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class ConversationAssignedNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 
@@ -43,10 +43,10 @@ class ConversationAssignedNotification extends Notification implements ShouldQue
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'            => 'assigned',
+            'type' => 'assigned',
             'conversation_id' => $this->conversation->id,
-            'subject'         => $this->conversation->subject,
-            'url'             => "/conversations/{$this->conversation->id}",
+            'subject' => $this->conversation->subject,
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

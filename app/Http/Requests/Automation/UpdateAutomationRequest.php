@@ -14,12 +14,12 @@ class UpdateAutomationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
-            'trigger'     => ['required', 'string'],
-            'conditions'  => ['array'],
-            'actions'     => ['required', 'array', 'min:1'],
-            'active'      => ['boolean'],
+            'trigger' => ['required', 'string'],
+            'conditions' => ['array'],
+            'actions' => ['required', 'array', 'min:1'],
+            'active' => ['boolean'],
         ];
     }
 }

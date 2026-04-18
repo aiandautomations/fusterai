@@ -14,9 +14,10 @@ class WorkspaceFactory extends Factory
     public function definition(): array
     {
         $name = fake()->company();
+
         return [
-            'name'     => $name,
-            'slug'     => Str::slug($name) . '-' . fake()->randomNumber(4),
+            'name' => $name,
+            'slug' => Str::slug($name).'-'.fake()->randomNumber(4),
             'settings' => [],
         ];
     }

@@ -22,14 +22,14 @@ class InviteUserNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $url = url('/invite/accept/' . $this->token . '?email=' . urlencode($notifiable->email));
+        $url = url('/invite/accept/'.$this->token.'?email='.urlencode($notifiable->email));
 
         return (new MailMessage)
-            ->subject('You\'ve been invited to ' . config('app.name'))
+            ->subject('You\'ve been invited to '.config('app.name'))
             ->greeting('Hello!')
-            ->line('You\'ve been invited to join ' . config('app.name') . ' as a team member.')
+            ->line('You\'ve been invited to join '.config('app.name').' as a team member.')
             ->action('Accept Invitation', $url)
-            ->line('This invite link will expire in ' . config('auth.passwords.users.expire') . ' minutes.')
+            ->line('This invite link will expire in '.config('auth.passwords.users.expire').' minutes.')
             ->line('If you did not expect this invitation, you can ignore this email.');
     }
 }

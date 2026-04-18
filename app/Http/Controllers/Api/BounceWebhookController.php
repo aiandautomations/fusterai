@@ -46,6 +46,7 @@ class BounceWebhookController extends Controller
             Log::warning('BounceWebhookController: could not extract recipient email from payload', [
                 'payload_keys' => array_keys($p),
             ]);
+
             return 'unknown@bounce.local';
         }
 
@@ -59,6 +60,7 @@ class BounceWebhookController extends Controller
             ?? $p['event']                                // Mailgun: failed/bounced
             ?? ($p['bounce']['bounceType'] ?? '')         // SES
         );
+
         return (str_contains($type, 'hard') || $type === 'failed') ? 'hard' : 'soft';
     }
 

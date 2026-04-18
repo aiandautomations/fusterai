@@ -17,12 +17,12 @@ class CustomViewFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'user_id'      => null,
-            'name'         => $this->faker->words(3, true),
-            'color'        => $this->faker->hexColor(),
-            'filters'      => ['status' => 'open'],
-            'is_shared'    => false,
-            'order'        => $this->faker->numberBetween(1, 100),
+            'user_id' => null,
+            'name' => $this->faker->words(3, true),
+            'color' => $this->faker->hexColor(),
+            'filters' => ['status' => 'open'],
+            'is_shared' => false,
+            'order' => $this->faker->numberBetween(1, 100),
         ];
     }
 }

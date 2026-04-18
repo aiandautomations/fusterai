@@ -1,23 +1,41 @@
 <?php
 
+use App\Http\Controllers\AgentStatusController;
+use App\Http\Controllers\AI\AiController;
+use App\Http\Controllers\AI\KnowledgeBaseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\InviteController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Automation\AutomationController;
 use App\Http\Controllers\Conversations\ConversationController;
-use App\Http\Controllers\Conversations\ThreadController;
+use App\Http\Controllers\Conversations\FollowerController;
 use App\Http\Controllers\Conversations\SearchController;
-use App\Http\Controllers\Mailboxes\MailboxController;
+use App\Http\Controllers\Conversations\ThreadController;
 use App\Http\Controllers\Customers\CustomerController;
+use App\Http\Controllers\CustomViewController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LiveChat\LiveChatController;
+use App\Http\Controllers\Mailboxes\MailboxController;
+use App\Http\Controllers\Mailboxes\WhatsAppMailboxController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Reports\ReportsController;
+use App\Http\Controllers\Settings\ApiKeyController;
+use App\Http\Controllers\Settings\CannedResponseController;
+use App\Http\Controllers\Settings\FolderController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\TagController;
+use App\Http\Controllers\Settings\UserController;
+use App\Http\Controllers\UnsubscribeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect('/dashboard'));
 
 // ── Unsubscribe (public, signed URL) ─────────────────────────────────────────
-Route::get('/unsubscribe/{customer}', [\App\Http\Controllers\UnsubscribeController::class, 'show'])->name('unsubscribe');
-Route::delete('/unsubscribe/{customer}', [\App\Http\Controllers\UnsubscribeController::class, 'destroy'])->name('unsubscribe.destroy');
+Route::get('/unsubscribe/{customer}', [UnsubscribeController::class, 'show'])->name('unsubscribe');
+Route::delete('/unsubscribe/{customer}', [UnsubscribeController::class, 'destroy'])->name('unsubscribe.destroy');
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -37,24 +55,24 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:5,1');
 
-    Route::get('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
-    Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create'])->name('password.reset');
-    Route::post('/reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.update');
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // ── Dashboard ─────────────────────────────────────────────────────────────
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ── Profile ───────────────────────────────────────────────────────────────
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile');
-    Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    Route::patch('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
-    Route::post('/profile/avatar', [\App\Http\Controllers\ProfileController::class, 'updateAvatar'])->name('profile.avatar');
-    Route::patch('/profile/status', [\App\Http\Controllers\AgentStatusController::class, 'update'])->name('profile.status');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::patch('/profile/status', [AgentStatusController::class, 'update'])->name('profile.status');
 
     // ── Conversations ─────────────────────────────────────────────────────────
 
@@ -73,8 +91,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/conversations/{conversation}/threads', [ThreadController::class, 'store'])->name('threads.store');
 
     // Followers
-    Route::post('/conversations/{conversation}/follow', [\App\Http\Controllers\Conversations\FollowerController::class, 'store'])->name('conversations.follow');
-    Route::delete('/conversations/{conversation}/follow', [\App\Http\Controllers\Conversations\FollowerController::class, 'destroy'])->name('conversations.unfollow');
+    Route::post('/conversations/{conversation}/follow', [FollowerController::class, 'store'])->name('conversations.follow');
+    Route::delete('/conversations/{conversation}/follow', [FollowerController::class, 'destroy'])->name('conversations.unfollow');
 
     // Search
     Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -82,8 +100,8 @@ Route::middleware('auth')->group(function () {
     // ── Mailboxes ─────────────────────────────────────────────────────────────
 
     Route::resource('mailboxes', MailboxController::class);
-    Route::get('/mailboxes/{mailbox}/whatsapp', [\App\Http\Controllers\Mailboxes\WhatsAppMailboxController::class, 'show'])->name('mailboxes.whatsapp');
-    Route::post('/mailboxes/{mailbox}/whatsapp', [\App\Http\Controllers\Mailboxes\WhatsAppMailboxController::class, 'update'])->name('mailboxes.whatsapp.update');
+    Route::get('/mailboxes/{mailbox}/whatsapp', [WhatsAppMailboxController::class, 'show'])->name('mailboxes.whatsapp');
+    Route::post('/mailboxes/{mailbox}/whatsapp', [WhatsAppMailboxController::class, 'update'])->name('mailboxes.whatsapp.update');
 
     // ── Customers ─────────────────────────────────────────────────────────────
 
@@ -96,15 +114,15 @@ Route::middleware('auth')->group(function () {
 
     // ── Folders (settings) ────────────────────────────────────────────────────
 
-    Route::resource('settings/folders', \App\Http\Controllers\Settings\FolderController::class)
+    Route::resource('settings/folders', FolderController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->names('settings.folders');
 
     // ── Custom Views ──────────────────────────────────────────────────────────────
 
-    Route::post('/views', [\App\Http\Controllers\CustomViewController::class, 'store'])->name('views.store');
-    Route::patch('/views/{customView}', [\App\Http\Controllers\CustomViewController::class, 'update'])->name('views.update');
-    Route::delete('/views/{customView}', [\App\Http\Controllers\CustomViewController::class, 'destroy'])->name('views.destroy');
+    Route::post('/views', [CustomViewController::class, 'store'])->name('views.store');
+    Route::patch('/views/{customView}', [CustomViewController::class, 'update'])->name('views.update');
+    Route::delete('/views/{customView}', [CustomViewController::class, 'destroy'])->name('views.destroy');
 
     // ── Conversation folder sync + mailbox move ────────────────────────────────
 
@@ -113,27 +131,27 @@ Route::middleware('auth')->group(function () {
 
     // ── Canned Responses ──────────────────────────────────────────────────────
 
-    Route::get('/canned-responses/search', [\App\Http\Controllers\Settings\CannedResponseController::class, 'search'])->name('canned-responses.search');
-    Route::resource('settings/canned-responses', \App\Http\Controllers\Settings\CannedResponseController::class)
+    Route::get('/canned-responses/search', [CannedResponseController::class, 'search'])->name('canned-responses.search');
+    Route::resource('settings/canned-responses', CannedResponseController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->names('settings.canned-responses');
 
     // ── Users ──────────────────────────────────────────────────────────────────
-    Route::resource('settings/users', \App\Http\Controllers\Settings\UserController::class)
+    Route::resource('settings/users', UserController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->names('settings.users');
-    Route::patch('/settings/users/{user}/mailboxes', [\App\Http\Controllers\Settings\UserController::class, 'updateMailboxes'])
+    Route::patch('/settings/users/{user}/mailboxes', [UserController::class, 'updateMailboxes'])
         ->name('settings.users.mailboxes');
 
     // ── Live Chat (agent console) ─────────────────────────────────────────────
 
-    Route::get('/live-chat', [\App\Http\Controllers\LiveChat\LiveChatController::class, 'index'])->name('livechat.index');
+    Route::get('/live-chat', [LiveChatController::class, 'index'])->name('livechat.index');
 
     // ── Automation ────────────────────────────────────────────────────────────
 
-    Route::resource('automation', \App\Http\Controllers\Automation\AutomationController::class)
+    Route::resource('automation', AutomationController::class)
         ->except(['show']);
-    Route::patch('/automation/{automation}/toggle', [\App\Http\Controllers\Automation\AutomationController::class, 'toggle'])
+    Route::patch('/automation/{automation}/toggle', [AutomationController::class, 'toggle'])
         ->name('automation.toggle');
 
     // ── Notifications ─────────────────────────────────────────────────────────
@@ -159,32 +177,32 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/ai/test-connection', [SettingsController::class, 'testAiConnection'])->name('settings.ai.test');
     Route::get('/settings/email', [SettingsController::class, 'email'])->name('settings.email');
     Route::get('/settings/audit-log', [SettingsController::class, 'auditLog'])->name('settings.audit-log');
-    Route::get('/settings/api-keys', [\App\Http\Controllers\Settings\ApiKeyController::class, 'index'])->name('settings.api-keys');
-    Route::post('/settings/api-keys', [\App\Http\Controllers\Settings\ApiKeyController::class, 'store'])->name('settings.api-keys.store');
-    Route::delete('/settings/api-keys/{id}', [\App\Http\Controllers\Settings\ApiKeyController::class, 'destroy'])->name('settings.api-keys.destroy');
+    Route::get('/settings/api-keys', [ApiKeyController::class, 'index'])->name('settings.api-keys');
+    Route::post('/settings/api-keys', [ApiKeyController::class, 'store'])->name('settings.api-keys.store');
+    Route::delete('/settings/api-keys/{id}', [ApiKeyController::class, 'destroy'])->name('settings.api-keys.destroy');
     Route::get('/settings/live-chat', [SettingsController::class, 'liveChat'])->name('settings.livechat');
     Route::patch('/settings/live-chat', [SettingsController::class, 'updateLiveChat'])->name('settings.livechat.update');
 
     // ── Reports ───────────────────────────────────────────────────────────────
 
-    Route::get('/reports', [\App\Http\Controllers\Reports\ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
 
     // ── AI / Knowledge Base ───────────────────────────────────────────────────
 
     Route::prefix('ai')->name('ai.')->group(function () {
-        Route::get('/knowledge-base', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'index'])->name('kb.index');
-        Route::resource('knowledge-bases', \App\Http\Controllers\AI\KnowledgeBaseController::class)->except(['index']);
+        Route::get('/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('kb.index');
+        Route::resource('knowledge-bases', KnowledgeBaseController::class)->except(['index']);
 
         // KB Document sub-routes
-        Route::get('/knowledge-bases/{knowledgeBase}/documents/create', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'createDocument'])->name('kb.documents.create');
-        Route::post('/knowledge-bases/{knowledgeBase}/documents', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'storeDocument'])->name('kb.documents.store');
-        Route::get('/knowledge-bases/{knowledgeBase}/documents/{document}/edit', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'editDocument'])->name('kb.documents.edit');
-        Route::patch('/knowledge-bases/{knowledgeBase}/documents/{document}', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'updateDocument'])->name('kb.documents.update');
-        Route::delete('/knowledge-bases/{knowledgeBase}/documents/{document}', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'destroyDocument'])->name('kb.documents.destroy');
-        Route::post('/knowledge-bases/{knowledgeBase}/documents/import-url', [\App\Http\Controllers\AI\KnowledgeBaseController::class, 'importUrl'])->name('kb.documents.import-url');
+        Route::get('/knowledge-bases/{knowledgeBase}/documents/create', [KnowledgeBaseController::class, 'createDocument'])->name('kb.documents.create');
+        Route::post('/knowledge-bases/{knowledgeBase}/documents', [KnowledgeBaseController::class, 'storeDocument'])->name('kb.documents.store');
+        Route::get('/knowledge-bases/{knowledgeBase}/documents/{document}/edit', [KnowledgeBaseController::class, 'editDocument'])->name('kb.documents.edit');
+        Route::patch('/knowledge-bases/{knowledgeBase}/documents/{document}', [KnowledgeBaseController::class, 'updateDocument'])->name('kb.documents.update');
+        Route::delete('/knowledge-bases/{knowledgeBase}/documents/{document}', [KnowledgeBaseController::class, 'destroyDocument'])->name('kb.documents.destroy');
+        Route::post('/knowledge-bases/{knowledgeBase}/documents/import-url', [KnowledgeBaseController::class, 'importUrl'])->name('kb.documents.import-url');
 
-        Route::post('/conversations/{conversation}/suggest-reply', [\App\Http\Controllers\AI\AiController::class, 'suggestReply'])->name('suggest-reply');
-        Route::post('/conversations/{conversation}/summarize', [\App\Http\Controllers\AI\AiController::class, 'summarize'])->name('summarize');
-        Route::patch('/suggestions/{suggestion}/accept', [\App\Http\Controllers\AI\AiController::class, 'acceptSuggestion'])->name('suggestions.accept');
+        Route::post('/conversations/{conversation}/suggest-reply', [AiController::class, 'suggestReply'])->name('suggest-reply');
+        Route::post('/conversations/{conversation}/summarize', [AiController::class, 'summarize'])->name('summarize');
+        Route::patch('/suggestions/{suggestion}/accept', [AiController::class, 'acceptSuggestion'])->name('suggestions.accept');
     });
 });

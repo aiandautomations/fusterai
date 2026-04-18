@@ -11,7 +11,7 @@ class AutomationService
         return AutomationRule::create([
             ...$validated,
             'workspace_id' => $workspaceId,
-            'order'        => AutomationRule::where('workspace_id', $workspaceId)->max('order') + 1,
+            'order' => AutomationRule::where('workspace_id', $workspaceId)->max('order') + 1,
         ]);
     }
 

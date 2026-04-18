@@ -9,36 +9,36 @@ use App\Events\NewThreadReceived;
 use App\Models\Workspace;
 
 beforeEach(function () {
-    $this->workspace    = Workspace::factory()->create();
-    $this->mailbox      = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer     = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
     $this->conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 });
 
 test('NewThreadReceived broadcast payload includes attachments', function () {
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'type'            => 'message',
-        'source'          => 'email',
+        'customer_id' => $this->customer->id,
+        'type' => 'message',
+        'source' => 'email',
     ]);
 
     // Create an attachment for this thread
     $attachment = Attachment::create([
         'thread_id' => $thread->id,
-        'filename'  => 'invoice.pdf',
-        'path'      => 'attachments/1/invoice.pdf',
+        'filename' => 'invoice.pdf',
+        'path' => 'attachments/1/invoice.pdf',
         'mime_type' => 'application/pdf',
-        'size'      => 12345,
+        'size' => 12345,
     ]);
 
     $thread->load(['user', 'customer', 'attachments']);
 
-    $event   = new NewThreadReceived($thread);
+    $event = new NewThreadReceived($thread);
     $payload = $event->broadcastWith();
 
     expect($payload['thread']['attachments'])->toHaveCount(1);
@@ -51,14 +51,14 @@ test('NewThreadReceived broadcast payload includes attachments', function () {
 test('NewThreadReceived broadcast payload includes empty attachments array when none exist', function () {
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'type'            => 'message',
-        'source'          => 'email',
+        'customer_id' => $this->customer->id,
+        'type' => 'message',
+        'source' => 'email',
     ]);
 
     $thread->load(['user', 'customer', 'attachments']);
 
-    $event   = new NewThreadReceived($thread);
+    $event = new NewThreadReceived($thread);
     $payload = $event->broadcastWith();
 
     expect($payload['thread']['attachments'])->toBe([]);
@@ -67,14 +67,14 @@ test('NewThreadReceived broadcast payload includes empty attachments array when 
 test('NewThreadReceived broadcast payload includes core thread fields', function () {
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'type'            => 'message',
-        'source'          => 'email',
+        'customer_id' => $this->customer->id,
+        'type' => 'message',
+        'source' => 'email',
     ]);
 
     $thread->load(['user', 'customer', 'attachments']);
 
-    $event   = new NewThreadReceived($thread);
+    $event = new NewThreadReceived($thread);
     $payload = $event->broadcastWith();
 
     expect($payload['thread'])->toHaveKeys([
@@ -85,8 +85,8 @@ test('NewThreadReceived broadcast payload includes core thread fields', function
 });
 
 test('NewThreadReceived broadcasts on the correct private channel', function () {
-    $thread   = Thread::factory()->create(['conversation_id' => $this->conversation->id]);
-    $event    = new NewThreadReceived($thread);
+    $thread = Thread::factory()->create(['conversation_id' => $this->conversation->id]);
+    $event = new NewThreadReceived($thread);
     $channels = $event->broadcastOn();
 
     // PrivateChannel prefixes the stored name with 'private-'
@@ -98,10 +98,10 @@ test('NewThreadReceived broadcasts on the correct private channel', function () 
 test('NewThreadReceived also broadcasts on public livechat channel for chat source', function () {
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'source'          => 'chat',
+        'source' => 'chat',
     ]);
 
-    $event    = new NewThreadReceived($thread);
+    $event = new NewThreadReceived($thread);
     $channels = $event->broadcastOn();
 
     $channelNames = array_map(fn ($ch) => $ch->name, $channels);

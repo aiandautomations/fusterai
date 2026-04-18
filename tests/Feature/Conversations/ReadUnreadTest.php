@@ -4,6 +4,7 @@ use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\ConversationRead;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -12,16 +13,16 @@ beforeEach(function () {
     Queue::fake();
     Event::fake();
 
-    $this->workspace = \App\Models\Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conv = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
         'last_reply_at' => now()->subMinute(),
     ]);
 });
@@ -42,9 +43,9 @@ test('agent can mark a conversation as read', function () {
 
 test('mark read is idempotent', function () {
     DB::table('conversation_reads')->insert([
-        'user_id'        => $this->user->id,
+        'user_id' => $this->user->id,
         'conversation_id' => $this->conv->id,
-        'last_read_at'   => now()->subHour(),
+        'last_read_at' => now()->subHour(),
     ]);
 
     $this->actingAs($this->user)
@@ -61,9 +62,9 @@ test('mark read is idempotent', function () {
 
 test('agent can mark a conversation as unread', function () {
     DB::table('conversation_reads')->insert([
-        'user_id'        => $this->user->id,
+        'user_id' => $this->user->id,
         'conversation_id' => $this->conv->id,
-        'last_read_at'   => now(),
+        'last_read_at' => now(),
     ]);
 
     $this->actingAs($this->user)
@@ -90,9 +91,9 @@ test('conversation appears as unread when never opened', function () {
 
 test('conversation appears as read after opening it', function () {
     DB::table('conversation_reads')->insert([
-        'user_id'        => $this->user->id,
+        'user_id' => $this->user->id,
         'conversation_id' => $this->conv->id,
-        'last_read_at'   => now()->addSecond(), // after last_reply_at
+        'last_read_at' => now()->addSecond(), // after last_reply_at
     ]);
 
     $this->actingAs($this->user)
@@ -105,9 +106,9 @@ test('conversation appears as read after opening it', function () {
 
 test('conversation becomes unread again after new reply', function () {
     DB::table('conversation_reads')->insert([
-        'user_id'        => $this->user->id,
+        'user_id' => $this->user->id,
         'conversation_id' => $this->conv->id,
-        'last_read_at'   => now()->subMinutes(2), // older than last_reply_at
+        'last_read_at' => now()->subMinutes(2), // older than last_reply_at
     ]);
 
     $this->actingAs($this->user)
@@ -121,11 +122,11 @@ test('conversation becomes unread again after new reply', function () {
 // ── Cross-workspace security ──────────────────────────────────────────────────
 
 test('cannot mark a conversation from another workspace as read', function () {
-    $other    = \App\Models\Workspace::factory()->create();
+    $other = Workspace::factory()->create();
     $otherConv = Conversation::factory()->create([
         'workspace_id' => $other->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $other->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $other->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $other->id])->id,
     ]);
 
     $this->actingAs($this->user)
@@ -138,14 +139,14 @@ test('cannot mark a conversation from another workspace as read', function () {
 test('bulk mark_read creates read records for all selected conversations', function () {
     $conv2 = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
         'last_reply_at' => now()->subMinute(),
     ]);
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv->id, $conv2->id],
+            'ids' => [$this->conv->id, $conv2->id],
             'action' => 'mark_read',
         ])
         ->assertOk()
@@ -159,7 +160,7 @@ test('bulk mark_unread removes read records', function () {
 
     $this->actingAs($this->user)
         ->postJson('/conversations/bulk', [
-            'ids'    => [$this->conv->id],
+            'ids' => [$this->conv->id],
             'action' => 'mark_unread',
         ])
         ->assertOk();

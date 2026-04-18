@@ -8,7 +8,7 @@ beforeEach(function () {
     Artisan::call('passport:client', ['--personal' => true, '--name' => 'Test PAC', '--no-interaction' => true]);
 
     $this->workspace = Workspace::factory()->create();
-    $this->admin     = adminUser($this->workspace);
+    $this->admin = adminUser($this->workspace);
 });
 
 test('api keys page is accessible to admin', function () {
@@ -36,7 +36,7 @@ test('api key name is required', function () {
 
 test('admin can revoke an api key', function () {
     $token = $this->admin->createToken('Test Token');
-    $id    = $token->token->id;
+    $id = $token->token->id;
 
     $this->actingAs($this->admin)
         ->delete("/settings/api-keys/{$id}")
@@ -46,9 +46,9 @@ test('admin can revoke an api key', function () {
 });
 
 test('admin cannot revoke a token belonging to another user', function () {
-    $other      = adminUser($this->workspace);
+    $other = adminUser($this->workspace);
     $otherToken = $other->createToken('Other Token');
-    $id         = $otherToken->token->id;
+    $id = $otherToken->token->id;
 
     $this->actingAs($this->admin)
         ->delete("/settings/api-keys/{$id}")

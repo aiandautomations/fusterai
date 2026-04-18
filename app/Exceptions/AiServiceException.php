@@ -9,7 +9,7 @@ class AiServiceException extends RuntimeException
     public function __construct(string $operation = 'AI request', string $reason = '')
     {
         parent::__construct(
-            "The {$operation} failed" . ($reason ? ": {$reason}" : '. Please try again.')
+            "The {$operation} failed".($reason ? ": {$reason}" : '. Please try again.')
         );
     }
 }

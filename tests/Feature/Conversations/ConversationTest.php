@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->user      = agentUser($this->workspace);
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->user = agentUser($this->workspace);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
 });
 
 test('conversations index requires auth', function () {
@@ -25,8 +25,8 @@ test('conversations index requires auth', function () {
 test('agent can view conversations list', function () {
     Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $this->actingAs($this->user)
@@ -38,8 +38,8 @@ test('agent can view conversations list', function () {
 test('agent can view a conversation', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $this->actingAs($this->user)
@@ -50,10 +50,10 @@ test('agent can view a conversation', function () {
 
 test('agent cannot view conversation from another workspace', function () {
     $otherWorkspace = Workspace::factory()->create();
-    $conversation   = Conversation::factory()->create([
+    $conversation = Conversation::factory()->create([
         'workspace_id' => $otherWorkspace->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $otherWorkspace->id])->id,
     ]);
 
     $this->actingAs($this->user)
@@ -64,9 +64,9 @@ test('agent cannot view conversation from another workspace', function () {
 test('agent can update conversation status', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
@@ -79,8 +79,8 @@ test('agent can update conversation status', function () {
 test('agent can update conversation priority', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $this->actingAs($this->user)
@@ -93,8 +93,8 @@ test('agent can update conversation priority', function () {
 test('agent can assign conversation to themselves', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $this->actingAs($this->user)
@@ -109,9 +109,9 @@ test('agent can assign conversation to themselves', function () {
 test('updateStatus rejects invalid status', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
@@ -128,8 +128,8 @@ test('updateStatus accepts all valid statuses', function () {
     foreach (array_column(ConversationStatus::cases(), 'value') as $status) {
         $conversation = Conversation::factory()->create([
             'workspace_id' => $this->workspace->id,
-            'mailbox_id'   => $this->mailbox->id,
-            'customer_id'  => $this->customer->id,
+            'mailbox_id' => $this->mailbox->id,
+            'customer_id' => $this->customer->id,
         ]);
 
         $this->actingAs($this->user)
@@ -146,9 +146,9 @@ test('changing status creates an activity thread', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
@@ -171,9 +171,9 @@ test('marking conversation as spam blocks the customer', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'open',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'open',
     ]);
 
     $this->actingAs($this->user)
@@ -190,9 +190,9 @@ test('reopening a spam conversation unblocks the customer', function () {
     $this->customer->update(['is_blocked' => true]);
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'status'       => 'spam',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'status' => 'spam',
     ]);
 
     $this->actingAs($this->user)
@@ -207,9 +207,9 @@ test('reopening a spam conversation unblocks the customer', function () {
 test('updatePriority rejects invalid priority', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'normal',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'normal',
     ]);
 
     $this->actingAs($this->user)
@@ -226,8 +226,8 @@ test('updatePriority accepts all valid priorities', function () {
     foreach (array_column(ConversationPriority::cases(), 'value') as $priority) {
         $conversation = Conversation::factory()->create([
             'workspace_id' => $this->workspace->id,
-            'mailbox_id'   => $this->mailbox->id,
-            'customer_id'  => $this->customer->id,
+            'mailbox_id' => $this->mailbox->id,
+            'customer_id' => $this->customer->id,
         ]);
 
         $this->actingAs($this->user)
@@ -244,9 +244,9 @@ test('changing priority creates an activity thread', function () {
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
-        'priority'     => 'low',
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
+        'priority' => 'low',
     ]);
 
     $this->actingAs($this->user)
@@ -271,10 +271,10 @@ test('creating an outbound conversation dispatches SendReplyJob to email-outboun
 
     $this->actingAs($this->user)
         ->post('/conversations', [
-            'mailbox_id'  => $this->mailbox->id,
+            'mailbox_id' => $this->mailbox->id,
             'customer_id' => $this->customer->id,
-            'subject'     => 'Following up on your account',
-            'body'        => '<p>Hi there, just checking in.</p>',
+            'subject' => 'Following up on your account',
+            'body' => '<p>Hi there, just checking in.</p>',
         ])
         ->assertRedirect();
 
@@ -287,10 +287,10 @@ test('creating an outbound conversation also creates a thread', function () {
 
     $this->actingAs($this->user)
         ->post('/conversations', [
-            'mailbox_id'  => $this->mailbox->id,
+            'mailbox_id' => $this->mailbox->id,
             'customer_id' => $this->customer->id,
-            'subject'     => 'Hello',
-            'body'        => '<p>Welcome!</p>',
+            'subject' => 'Hello',
+            'body' => '<p>Welcome!</p>',
         ])
         ->assertRedirect();
 

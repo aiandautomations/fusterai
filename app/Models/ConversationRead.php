@@ -7,13 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 class ConversationRead extends Model
 {
-    public $timestamps    = false;
-    public $incrementing  = false;
+    public $timestamps = false;
 
-    protected $table    = 'conversation_reads';
-    protected $keyType  = 'string';
+    public $incrementing = false;
+
+    protected $table = 'conversation_reads';
+
+    protected $keyType = 'string';
+
     protected $fillable = ['user_id', 'conversation_id', 'last_read_at'];
-    protected $casts    = ['last_read_at' => 'datetime'];
+
+    protected $casts = ['last_read_at' => 'datetime'];
 
     /**
      * Upsert a read record — avoids Eloquent's auto-increment assumption on

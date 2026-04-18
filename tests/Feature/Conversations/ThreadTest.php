@@ -9,12 +9,12 @@ use App\Models\Workspace;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
-    $this->workspace    = Workspace::factory()->create();
-    $this->user         = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->workspace = Workspace::factory()->create();
+    $this->user = User::factory()->create(['workspace_id' => $this->workspace->id]);
     $this->conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => Mailbox::factory()->create(['workspace_id' => $this->workspace->id])->id,
-        'customer_id'  => Customer::factory()->create(['workspace_id' => $this->workspace->id])->id,
+        'mailbox_id' => Mailbox::factory()->create(['workspace_id' => $this->workspace->id])->id,
+        'customer_id' => Customer::factory()->create(['workspace_id' => $this->workspace->id])->id,
     ]);
 });
 
@@ -83,7 +83,7 @@ test('reply creates a thread with correct type', function () {
         ])
         ->assertRedirect();
 
-    $thread = \App\Domains\Conversation\Models\Thread::where('conversation_id', $this->conversation->id)
+    $thread = Thread::where('conversation_id', $this->conversation->id)
         ->latest()
         ->first();
 
@@ -99,7 +99,7 @@ test('note creates a thread with note type', function () {
         ])
         ->assertRedirect();
 
-    $thread = \App\Domains\Conversation\Models\Thread::where('conversation_id', $this->conversation->id)
+    $thread = Thread::where('conversation_id', $this->conversation->id)
         ->where('type', 'note')
         ->latest()
         ->first();

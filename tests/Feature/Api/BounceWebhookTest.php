@@ -9,16 +9,16 @@ beforeEach(function () {
     Queue::fake();
 
     $this->workspace = Workspace::factory()->create();
-    $this->mailbox   = Mailbox::factory()->create([
-        'workspace_id'  => $this->workspace->id,
+    $this->mailbox = Mailbox::factory()->create([
+        'workspace_id' => $this->workspace->id,
         'webhook_token' => 'test-bounce-token',
-        'active'        => true,
+        'active' => true,
     ]);
 });
 
 test('Postmark bounce payload dispatches ProcessBounceJob', function () {
     $this->postJson('/api/webhooks/bounce/test-bounce-token', [
-        'Type'      => 'HardBounce',
+        'Type' => 'HardBounce',
         'Recipient' => 'user@example.com',
         'MessageID' => 'msg-123',
         'Description' => 'User unknown',
@@ -29,9 +29,9 @@ test('Postmark bounce payload dispatches ProcessBounceJob', function () {
 
 test('Mailgun bounce payload dispatches ProcessBounceJob', function () {
     $this->postJson('/api/webhooks/bounce/test-bounce-token', [
-        'event'     => 'failed',
+        'event' => 'failed',
         'recipient' => 'user@mailgun.com',
-        'error'     => 'Mailbox full',
+        'error' => 'Mailbox full',
     ])->assertOk();
 
     Queue::assertPushed(ProcessBounceJob::class);
@@ -39,9 +39,9 @@ test('Mailgun bounce payload dispatches ProcessBounceJob', function () {
 
 test('SES bounce payload dispatches ProcessBounceJob', function () {
     $this->postJson('/api/webhooks/bounce/test-bounce-token', [
-        'mail'   => ['messageId' => 'ses-abc', 'destination' => ['ses@example.com']],
+        'mail' => ['messageId' => 'ses-abc', 'destination' => ['ses@example.com']],
         'bounce' => [
-            'bounceType'        => 'Permanent',
+            'bounceType' => 'Permanent',
             'bouncedRecipients' => [['diagnosticCode' => '550 No such user']],
         ],
     ])->assertOk();
@@ -51,7 +51,7 @@ test('SES bounce payload dispatches ProcessBounceJob', function () {
 
 test('invalid webhook token returns 404', function () {
     $this->postJson('/api/webhooks/bounce/invalid-token', [
-        'Type'      => 'HardBounce',
+        'Type' => 'HardBounce',
         'Recipient' => 'user@example.com',
     ])->assertNotFound();
 
@@ -62,7 +62,7 @@ test('inactive mailbox token returns 404', function () {
     $this->mailbox->update(['active' => false]);
 
     $this->postJson('/api/webhooks/bounce/test-bounce-token', [
-        'Type'      => 'HardBounce',
+        'Type' => 'HardBounce',
         'Recipient' => 'user@example.com',
     ])->assertNotFound();
 

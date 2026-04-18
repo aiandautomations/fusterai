@@ -2,14 +2,15 @@
 
 namespace App\Domains\Conversation\Jobs;
 
+use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
+use App\Enums\ThreadType;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use App\Enums\ThreadType;
 
 /**
  * Records an email bounce as an activity note on the conversation
@@ -22,10 +23,10 @@ class ProcessBounceJob implements ShouldQueue
     public int $tries = 3;
 
     public function __construct(
-        public readonly int     $mailboxId,
-        public readonly string  $toEmail,
-        public readonly string  $bounceType,       // 'hard' | 'soft'
-        public readonly string  $bounceMessage,
+        public readonly int $mailboxId,
+        public readonly string $toEmail,
+        public readonly string $bounceType,       // 'hard' | 'soft'
+        public readonly string $bounceMessage,
         public readonly ?string $originalMessageId = null,
     ) {
         $this->onQueue('email-inbound');
@@ -37,21 +38,22 @@ class ProcessBounceJob implements ShouldQueue
 
         if (! $conversation) {
             Log::warning('ProcessBounceJob: no conversation found', [
-                'mailbox_id'  => $this->mailboxId,
-                'to_email'    => $this->toEmail,
+                'mailbox_id' => $this->mailboxId,
+                'to_email' => $this->toEmail,
                 'bounce_type' => $this->bounceType,
             ]);
+
             return;
         }
 
         $conversation->threads()->create([
-            'type'       => 'activity',
-            'body'       => "<p>⚠️ Email bounced ({$this->bounceType}): {$this->bounceMessage}</p>",
+            'type' => 'activity',
+            'body' => "<p>⚠️ Email bounced ({$this->bounceType}): {$this->bounceMessage}</p>",
             'body_plain' => "Email bounced ({$this->bounceType}): {$this->bounceMessage}",
-            'source'     => 'email',
-            'meta'       => [
-                'bounce_type'    => $this->bounceType,
-                'bounce_to'      => $this->toEmail,
+            'source' => 'email',
+            'meta' => [
+                'bounce_type' => $this->bounceType,
+                'bounce_to' => $this->toEmail,
                 'bounce_message' => $this->bounceMessage,
             ],
         ]);
@@ -68,7 +70,7 @@ class ProcessBounceJob implements ShouldQueue
 
         Log::info('ProcessBounceJob: bounce recorded', [
             'conversation_id' => $conversation->id,
-            'bounce_type'     => $this->bounceType,
+            'bounce_type' => $this->bounceType,
         ]);
     }
 
@@ -79,11 +81,11 @@ class ProcessBounceJob implements ShouldQueue
      * 1. Match by outbound_message_id stored in thread meta (precise, for our own emails)
      * 2. Match by inbound message_id stored in thread meta (legacy / fallback)
      *
-     * @return array{0: \App\Domains\Conversation\Models\Conversation|null, 1: Thread|null}
+     * @return array{0: Conversation|null, 1: Thread|null}
      */
     private function resolveConversation(): array
     {
-        if (!$this->originalMessageId) {
+        if (! $this->originalMessageId) {
             return [null, null];
         }
 

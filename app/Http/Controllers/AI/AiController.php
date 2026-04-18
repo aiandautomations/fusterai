@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\AI;
 
-use App\Domains\Conversation\Models\AiSuggestion;
-use App\Domains\Conversation\Models\Conversation;
 use App\Domains\AI\Jobs\GenerateReplySuggestionJob;
 use App\Domains\AI\Jobs\SummarizeConversationJob;
+use App\Domains\Conversation\Models\AiSuggestion;
+use App\Domains\Conversation\Models\Conversation;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -4,15 +4,17 @@ use App\Domains\Conversation\Jobs\ProcessInboundEmailJob;
 use App\Domains\Conversation\Jobs\SendAutoReplyJob;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
+use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Queue::fake();
 
-    $this->workspace = \App\Models\Workspace::factory()->create();
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = \App\Domains\Customer\Models\Customer::factory()->create([
+    $this->workspace = Workspace::factory()->create();
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create([
         'workspace_id' => $this->workspace->id,
     ]);
 });
@@ -22,21 +24,21 @@ beforeEach(function () {
 function baseEmailData(array $overrides = []): array
 {
     return array_merge([
-        'message_id'  => '<msg-' . uniqid() . '@mail.example.com>',
-        'subject'     => 'Help needed',
-        'from_email'  => 'customer@example.com',
-        'from_name'   => 'A Customer',
-        'body_html'   => '<p>Hello, I need help.</p>',
-        'body_text'   => 'Hello, I need help.',
+        'message_id' => '<msg-'.uniqid().'@mail.example.com>',
+        'subject' => 'Help needed',
+        'from_email' => 'customer@example.com',
+        'from_name' => 'A Customer',
+        'body_html' => '<p>Hello, I need help.</p>',
+        'body_text' => 'Hello, I need help.',
         'in_reply_to' => '',
-        'references'  => '',
+        'references' => '',
         'attachments' => [],
-        'cc'          => [],
-        'headers'     => [
-            'auto_submitted'           => '',
+        'cc' => [],
+        'headers' => [
+            'auto_submitted' => '',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ], $overrides);
 }
@@ -57,10 +59,10 @@ test('normal email creates a conversation and thread', function () {
 test('email with Auto-Submitted auto-replied header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => 'auto-replied',
+            'auto_submitted' => 'auto-replied',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -72,10 +74,10 @@ test('email with Auto-Submitted auto-replied header is silently dropped', functi
 test('email with Auto-Submitted auto-generated header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => 'auto-generated',
+            'auto_submitted' => 'auto-generated',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -87,10 +89,10 @@ test('email with Auto-Submitted auto-generated header is silently dropped', func
 test('email with X-FusterAI-AutoReply header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => '',
+            'auto_submitted' => '',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '1',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '1',
         ],
     ]);
 
@@ -102,10 +104,10 @@ test('email with X-FusterAI-AutoReply header is silently dropped', function () {
 test('email with X-Auto-Response-Suppress header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => '',
+            'auto_submitted' => '',
             'x_auto_response_suppress' => 'All',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -117,10 +119,10 @@ test('email with X-Auto-Response-Suppress header is silently dropped', function 
 test('email with Precedence bulk header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => '',
+            'auto_submitted' => '',
             'x_auto_response_suppress' => '',
-            'precedence'               => 'bulk',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => 'bulk',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -132,10 +134,10 @@ test('email with Precedence bulk header is silently dropped', function () {
 test('email with Precedence junk header is silently dropped', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => '',
+            'auto_submitted' => '',
             'x_auto_response_suppress' => '',
-            'precedence'               => 'junk',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => 'junk',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -163,11 +165,11 @@ test('email with automatic reply subject is silently dropped', function () {
 test('email with Auto-Submitted no is treated as normal', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'headers'    => [
-            'auto_submitted'           => 'no',
+        'headers' => [
+            'auto_submitted' => 'no',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -179,10 +181,10 @@ test('email with Auto-Submitted no is treated as normal', function () {
 test('dropped auto-reply does not dispatch SendAutoReplyJob', function () {
     $data = baseEmailData([
         'headers' => [
-            'auto_submitted'           => 'auto-replied',
+            'auto_submitted' => 'auto-replied',
             'x_auto_response_suppress' => '',
-            'precedence'               => '',
-            'x_fusterai_auto_reply'    => '',
+            'precedence' => '',
+            'x_fusterai_auto_reply' => '',
         ],
     ]);
 
@@ -196,7 +198,7 @@ test('dropped auto-reply does not dispatch SendAutoReplyJob', function () {
 test('CC recipients are stored in thread meta', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'cc'         => [
+        'cc' => [
             ['email' => 'cc1@example.com', 'name' => 'CC One'],
             ['email' => 'cc2@example.com', 'name' => 'CC Two'],
         ],
@@ -230,7 +232,7 @@ test('thread meta CC is empty array when no CC recipients', function () {
 test('Fwd: prefix is stripped from subject when creating a new conversation', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'subject'    => 'Fwd: Help with billing',
+        'subject' => 'Fwd: Help with billing',
     ]);
 
     (new ProcessInboundEmailJob($this->mailbox->id, $data))->handle();
@@ -241,7 +243,7 @@ test('Fwd: prefix is stripped from subject when creating a new conversation', fu
 test('Fw: prefix is stripped from subject', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'subject'    => 'Fw: Invoice question',
+        'subject' => 'Fw: Invoice question',
     ]);
 
     (new ProcessInboundEmailJob($this->mailbox->id, $data))->handle();
@@ -252,7 +254,7 @@ test('Fw: prefix is stripped from subject', function () {
 test('multiple forward prefixes are all stripped', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'subject'    => 'Fwd: Fwd: Re: Help needed',
+        'subject' => 'Fwd: Fwd: Re: Help needed',
     ]);
 
     (new ProcessInboundEmailJob($this->mailbox->id, $data))->handle();
@@ -263,7 +265,7 @@ test('multiple forward prefixes are all stripped', function () {
 test('subject without prefix is kept as-is', function () {
     $data = baseEmailData([
         'from_email' => $this->customer->email,
-        'subject'    => 'My account is broken',
+        'subject' => 'My account is broken',
     ]);
 
     (new ProcessInboundEmailJob($this->mailbox->id, $data))->handle();
@@ -276,13 +278,13 @@ test('subject without prefix is kept as-is', function () {
 test('reply email is appended to existing conversation via In-Reply-To', function () {
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
     ]);
 
     $data = baseEmailData([
-        'from_email'  => $this->customer->email,
-        'in_reply_to' => '<conversation-' . $conversation->id . '@fusterai>',
+        'from_email' => $this->customer->email,
+        'in_reply_to' => '<conversation-'.$conversation->id.'@fusterai>',
     ]);
 
     (new ProcessInboundEmailJob($this->mailbox->id, $data))->handle();
@@ -293,7 +295,7 @@ test('reply email is appended to existing conversation via In-Reply-To', functio
 
 test('email with unknown In-Reply-To creates a new conversation', function () {
     $data = baseEmailData([
-        'from_email'  => $this->customer->email,
+        'from_email' => $this->customer->email,
         'in_reply_to' => '<unknown-message-id@external.com>',
     ]);
 

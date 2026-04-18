@@ -17,10 +17,10 @@ class StoreConversationRequest extends FormRequest
         $workspaceId = $this->user()->workspace_id;
 
         return [
-            'mailbox_id'  => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
-            'subject'     => ['required', 'string', 'max:255'],
+            'mailbox_id' => ['required', Rule::exists('mailboxes', 'id')->where('workspace_id', $workspaceId)],
+            'subject' => ['required', 'string', 'max:255'],
             'customer_id' => ['required', Rule::exists('customers', 'id')->where('workspace_id', $workspaceId)],
-            'body'        => ['required', 'string'],
+            'body' => ['required', 'string'],
         ];
     }
 }

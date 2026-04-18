@@ -44,22 +44,22 @@ class NewThreadReceived implements ShouldBroadcast
 
         return [
             'thread' => [
-                'id'              => $this->thread->id,
+                'id' => $this->thread->id,
                 'conversation_id' => $this->thread->conversation_id,
-                'user_id'         => $this->thread->user_id,
-                'customer_id'     => $this->thread->customer_id,
-                'type'            => $this->thread->type,
-                'body'            => $this->thread->body,
-                'source'          => $this->thread->source,
-                'created_at'      => $this->thread->created_at,
-                'user'            => $this->thread->user?->only(['id', 'name', 'avatar']),
-                'customer'        => $this->thread->customer?->only(['id', 'name', 'avatar']),
-                'attachments'     => $this->thread->attachments->map(fn($a) => [
-                    'id'        => $a->id,
-                    'filename'  => $a->filename,
+                'user_id' => $this->thread->user_id,
+                'customer_id' => $this->thread->customer_id,
+                'type' => $this->thread->type,
+                'body' => $this->thread->body,
+                'source' => $this->thread->source,
+                'created_at' => $this->thread->created_at,
+                'user' => $this->thread->user?->only(['id', 'name', 'avatar']),
+                'customer' => $this->thread->customer?->only(['id', 'name', 'avatar']),
+                'attachments' => $this->thread->attachments->map(fn ($a) => [
+                    'id' => $a->id,
+                    'filename' => $a->filename,
                     'mime_type' => $a->mime_type,
-                    'size'      => $a->size,
-                    'url'       => $a->url,
+                    'size' => $a->size,
+                    'url' => $a->url,
                 ])->all(),
             ],
         ];

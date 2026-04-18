@@ -10,14 +10,14 @@ use App\Models\Workspace;
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->mailbox   = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer  = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->agent     = User::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->agent = User::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $this->customer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $this->customer->id,
         'channel_type' => 'email',
     ]);
 });
@@ -28,10 +28,10 @@ test('resolveCcRecipients returns CC from last customer thread meta', function (
     // Customer thread with CC in meta
     Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'user_id'         => null,
-        'type'            => 'message',
-        'meta'            => ['cc' => [
+        'customer_id' => $this->customer->id,
+        'user_id' => null,
+        'type' => 'message',
+        'meta' => ['cc' => [
             ['email' => 'cc1@example.com', 'name' => 'CC One'],
             ['email' => 'cc2@example.com', 'name' => 'CC Two'],
         ]],
@@ -39,13 +39,13 @@ test('resolveCcRecipients returns CC from last customer thread meta', function (
 
     $replyThread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
-        'customer_id'     => null,
-        'type'            => 'message',
+        'user_id' => $this->agent->id,
+        'customer_id' => null,
+        'type' => 'message',
     ]);
 
     $conversation = $this->conversation->load('threads');
-    $job          = new SendReplyJob($replyThread, $conversation);
+    $job = new SendReplyJob($replyThread, $conversation);
 
     $method = new ReflectionMethod(SendReplyJob::class, 'resolveCcRecipients');
     $method->setAccessible(true);
@@ -59,13 +59,13 @@ test('resolveCcRecipients returns CC from last customer thread meta', function (
 test('resolveCcRecipients returns empty array when no customer threads exist', function () {
     $replyThread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
-        'customer_id'     => null,
-        'type'            => 'message',
+        'user_id' => $this->agent->id,
+        'customer_id' => null,
+        'type' => 'message',
     ]);
 
     $conversation = $this->conversation->load('threads');
-    $job          = new SendReplyJob($replyThread, $conversation);
+    $job = new SendReplyJob($replyThread, $conversation);
 
     $method = new ReflectionMethod(SendReplyJob::class, 'resolveCcRecipients');
     $method->setAccessible(true);
@@ -77,21 +77,21 @@ test('resolveCcRecipients returns empty array when no customer threads exist', f
 test('resolveCcRecipients returns empty array when customer thread has no CC meta', function () {
     Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'user_id'         => null,
-        'type'            => 'message',
-        'meta'            => ['message_id' => '<some@id>', 'in_reply_to' => '', 'from_email' => 'x@x.com'],
+        'customer_id' => $this->customer->id,
+        'user_id' => null,
+        'type' => 'message',
+        'meta' => ['message_id' => '<some@id>', 'in_reply_to' => '', 'from_email' => 'x@x.com'],
     ]);
 
     $replyThread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
-        'customer_id'     => null,
-        'type'            => 'message',
+        'user_id' => $this->agent->id,
+        'customer_id' => null,
+        'type' => 'message',
     ]);
 
     $conversation = $this->conversation->load('threads');
-    $job          = new SendReplyJob($replyThread, $conversation);
+    $job = new SendReplyJob($replyThread, $conversation);
 
     $method = new ReflectionMethod(SendReplyJob::class, 'resolveCcRecipients');
     $method->setAccessible(true);
@@ -104,32 +104,32 @@ test('resolveCcRecipients picks the most recent customer thread when multiple ex
     // Older customer thread with CC
     Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'user_id'         => null,
-        'type'            => 'message',
-        'meta'            => ['cc' => [['email' => 'old-cc@example.com', 'name' => 'Old CC']]],
-        'created_at'      => now()->subHour(),
+        'customer_id' => $this->customer->id,
+        'user_id' => null,
+        'type' => 'message',
+        'meta' => ['cc' => [['email' => 'old-cc@example.com', 'name' => 'Old CC']]],
+        'created_at' => now()->subHour(),
     ]);
 
     // Newer customer thread with different CC
     Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'customer_id'     => $this->customer->id,
-        'user_id'         => null,
-        'type'            => 'message',
-        'meta'            => ['cc' => [['email' => 'new-cc@example.com', 'name' => 'New CC']]],
-        'created_at'      => now(),
+        'customer_id' => $this->customer->id,
+        'user_id' => null,
+        'type' => 'message',
+        'meta' => ['cc' => [['email' => 'new-cc@example.com', 'name' => 'New CC']]],
+        'created_at' => now(),
     ]);
 
     $replyThread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
-        'customer_id'     => null,
-        'type'            => 'message',
+        'user_id' => $this->agent->id,
+        'customer_id' => null,
+        'type' => 'message',
     ]);
 
     $conversation = $this->conversation->load('threads');
-    $job          = new SendReplyJob($replyThread, $conversation);
+    $job = new SendReplyJob($replyThread, $conversation);
 
     $method = new ReflectionMethod(SendReplyJob::class, 'resolveCcRecipients');
     $method->setAccessible(true);
@@ -143,24 +143,24 @@ test('resolveCcRecipients picks the most recent customer thread when multiple ex
 test('reply job skips send when customer has no email', function () {
     $noEmailCustomer = Customer::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'email'        => '',
+        'email' => '',
     ]);
 
     $conversation = Conversation::factory()->create([
         'workspace_id' => $this->workspace->id,
-        'mailbox_id'   => $this->mailbox->id,
-        'customer_id'  => $noEmailCustomer->id,
+        'mailbox_id' => $this->mailbox->id,
+        'customer_id' => $noEmailCustomer->id,
         'channel_type' => 'email',
     ]);
 
     $thread = Thread::factory()->create([
         'conversation_id' => $conversation->id,
-        'user_id'         => $this->agent->id,
-        'type'            => 'message',
+        'user_id' => $this->agent->id,
+        'type' => 'message',
     ]);
 
     // Should complete without throwing (early return path)
-    expect(fn () => (new SendReplyJob($thread, $conversation))->handle())->not->toThrow(\Exception::class);
+    expect(fn () => (new SendReplyJob($thread, $conversation))->handle())->not->toThrow(Exception::class);
 });
 
 // ── buildSubject ──────────────────────────────────────────────────────────────
@@ -170,10 +170,10 @@ test('buildSubject prepends Re: when subject does not already have it', function
 
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
+        'user_id' => $this->agent->id,
     ]);
 
-    $job    = new SendReplyJob($thread, $this->conversation);
+    $job = new SendReplyJob($thread, $this->conversation);
     $method = new ReflectionMethod(SendReplyJob::class, 'buildSubject');
     $method->setAccessible(true);
 
@@ -185,10 +185,10 @@ test('buildSubject does not double-prefix Re: when already present', function ()
 
     $thread = Thread::factory()->create([
         'conversation_id' => $this->conversation->id,
-        'user_id'         => $this->agent->id,
+        'user_id' => $this->agent->id,
     ]);
 
-    $job    = new SendReplyJob($thread, $this->conversation);
+    $job = new SendReplyJob($thread, $this->conversation);
     $method = new ReflectionMethod(SendReplyJob::class, 'buildSubject');
     $method->setAccessible(true);
 

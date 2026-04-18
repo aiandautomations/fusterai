@@ -21,11 +21,11 @@ class AiSettingsService
     {
         $workspace = Workspace::findOrFail($workspaceId);
         /** @var array<string, mixed> $settings */
-        $settings  = $workspace->settings ?? [];
+        $settings = $workspace->settings ?? [];
 
         $provider = $settings['ai_provider'] ?? 'anthropic';
-        $model    = $settings['ai_model'] ?? null;
-        $baseUrl  = $settings['ai_base_url'] ?? null;
+        $model = $settings['ai_model'] ?? null;
+        $baseUrl = $settings['ai_base_url'] ?? null;
 
         // Decrypt and inject the API key into the runtime config.
         // config()->set() is the correct way to override config values for the
@@ -40,8 +40,8 @@ class AiSettingsService
             if ($key) {
                 match ($provider) {
                     'openai', 'openai-compatible' => config(['ai.providers.openai.key' => $key]),
-                    'openrouter'                  => config(['ai.providers.openrouter.key' => $key]),
-                    default                       => config(['ai.providers.anthropic.key' => $key]),
+                    'openrouter' => config(['ai.providers.openrouter.key' => $key]),
+                    default => config(['ai.providers.anthropic.key' => $key]),
                 };
             }
         }
@@ -58,9 +58,9 @@ class AiSettingsService
 
         // Map provider name to the Lab enum the SDK uses for driver selection.
         $lab = match ($provider) {
-            'anthropic'  => Lab::Anthropic,
+            'anthropic' => Lab::Anthropic,
             'openrouter' => Lab::OpenAI, // openrouter driver is openai-compatible
-            default      => Lab::OpenAI, // covers 'openai' and 'openai-compatible'
+            default => Lab::OpenAI, // covers 'openai' and 'openai-compatible'
         };
 
         return ['lab' => $lab, 'model' => $model];
@@ -87,20 +87,20 @@ class AiSettingsService
     {
         $workspace = Workspace::findOrFail($workspaceId);
         /** @var array<string, mixed> $settings */
-        $settings  = $workspace->settings ?? [];
+        $settings = $workspace->settings ?? [];
 
         return [
             'provider' => $settings['ai_provider'] ?? 'anthropic',
-            'model'    => $settings['ai_model']    ?? null,
+            'model' => $settings['ai_model'] ?? null,
             'base_url' => $settings['ai_base_url'] ?? null,
-            'key_set'  => ! empty($settings['ai_api_key']),
+            'key_set' => ! empty($settings['ai_api_key']),
             'features' => $settings['ai_features'] ?? [
-                'reply_suggestions'   => true,
+                'reply_suggestions' => true,
                 'auto_categorization' => true,
-                'summarization'       => true,
+                'summarization' => true,
             ],
             'rag' => $settings['ai_rag'] ?? [
-                'top_k'     => 5,
+                'top_k' => 5,
                 'min_score' => 0.7,
             ],
         ];
@@ -115,10 +115,10 @@ class AiSettingsService
     {
         $workspace = Workspace::findOrFail($workspaceId);
         /** @var array<string, mixed> $settings */
-        $settings  = $workspace->settings ?? [];
+        $settings = $workspace->settings ?? [];
 
         $settings['ai_provider'] = $validated['provider'];
-        $settings['ai_model']    = $validated['model'] ?? null;
+        $settings['ai_model'] = $validated['model'] ?? null;
 
         // base_url is only meaningful for openai-compatible; clear it otherwise
         if ($validated['provider'] === 'openai-compatible') {
@@ -133,13 +133,13 @@ class AiSettingsService
         }
 
         $settings['ai_features'] = [
-            'reply_suggestions'   => (bool) ($validated['feature_reply_suggestions']   ?? true),
+            'reply_suggestions' => (bool) ($validated['feature_reply_suggestions'] ?? true),
             'auto_categorization' => (bool) ($validated['feature_auto_categorization'] ?? true),
-            'summarization'       => (bool) ($validated['feature_summarization']        ?? true),
+            'summarization' => (bool) ($validated['feature_summarization'] ?? true),
         ];
 
         $settings['ai_rag'] = [
-            'top_k'     => (int)   ($validated['rag_top_k']     ?? 5),
+            'top_k' => (int) ($validated['rag_top_k'] ?? 5),
             'min_score' => (float) ($validated['rag_min_score'] ?? 0.7),
         ];
 

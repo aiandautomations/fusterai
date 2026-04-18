@@ -15,7 +15,7 @@ class UpdateMailboxesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mailbox_ids'   => ['nullable', 'array'],
+            'mailbox_ids' => ['nullable', 'array'],
             'mailbox_ids.*' => ['integer', Rule::exists('mailboxes', 'id')->where('workspace_id', $this->user()->workspace_id)],
         ];
     }
