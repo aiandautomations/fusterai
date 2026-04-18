@@ -1,26 +1,30 @@
-import React, { useState } from 'react'
-import { useForm, router } from '@inertiajs/react'
-import AppLayout from '@/Layouts/AppLayout'
-import { Button } from '@/Components/ui/button'
-import { Input } from '@/Components/ui/input'
-import { Label } from '@/Components/ui/label'
-import { cn } from '@/lib/utils'
-import ColorPicker from '@/Components/ColorPicker'
+import React, { useState } from 'react';
+import { useForm, router } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { cn } from '@/lib/utils';
+import ColorPicker from '@/Components/ColorPicker';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-    DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu'
-import { TagIcon, SearchIcon, MoreHorizontalIcon, CheckIcon, PencilIcon } from 'lucide-react'
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
+import { TagIcon, SearchIcon, MoreHorizontalIcon, CheckIcon, PencilIcon } from 'lucide-react';
 
 interface Tag {
-    id: number
-    name: string
-    color: string
-    conversations_count: number
+    id: number;
+    name: string;
+    color: string;
+    conversations_count: number;
 }
 
-interface Props { tags: Tag[] }
-
+interface Props {
+    tags: Tag[];
+}
 
 // ── Tag chip preview ──────────────────────────────────────────────────────────
 
@@ -32,17 +36,17 @@ function TagChip({ name, color }: { name: string; color: string }) {
         >
             {name || 'preview'}
         </span>
-    )
+    );
 }
 
 // ── Inline edit form ──────────────────────────────────────────────────────────
 
 function EditTagForm({ tag, onCancel }: { tag: Tag; onCancel: () => void }) {
-    const { data, setData, patch, processing } = useForm({ name: tag.name, color: tag.color })
+    const { data, setData, patch, processing } = useForm({ name: tag.name, color: tag.color });
 
     function submit(e: React.FormEvent) {
-        e.preventDefault()
-        patch(`/tags/${tag.id}`, { onSuccess: onCancel })
+        e.preventDefault();
+        patch(`/tags/${tag.id}`, { onSuccess: onCancel });
     }
 
     return (
@@ -53,7 +57,7 @@ function EditTagForm({ tag, onCancel }: { tag: Tag; onCancel: () => void }) {
                     <div className="flex items-center gap-2">
                         <Input
                             value={data.name}
-                            onChange={e => setData('name', e.target.value)}
+                            onChange={(e) => setData('name', e.target.value)}
                             className="h-8 text-sm"
                             required
                             autoFocus
@@ -64,41 +68,40 @@ function EditTagForm({ tag, onCancel }: { tag: Tag; onCancel: () => void }) {
             </div>
             <div className="space-y-1.5">
                 <Label className="text-xs">Color</Label>
-                <ColorPicker value={data.color} onChange={c => setData('color', c)} />
+                <ColorPicker value={data.color} onChange={(c) => setData('color', c)} />
             </div>
             <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={processing} className="h-7 text-xs">Save</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">Cancel</Button>
+                <Button type="submit" size="sm" disabled={processing} className="h-7 text-xs">
+                    Save
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">
+                    Cancel
+                </Button>
             </div>
         </form>
-    )
+    );
 }
 
 // ── Tag row ───────────────────────────────────────────────────────────────────
 
-function TagRow({ tag, editingId, setEditingId }: {
-    tag: Tag
-    editingId: number | null
-    setEditingId: (id: number | null) => void
-}) {
-    const isEditing = editingId === tag.id
+function TagRow({ tag, editingId, setEditingId }: { tag: Tag; editingId: number | null; setEditingId: (id: number | null) => void }) {
+    const isEditing = editingId === tag.id;
 
     function destroy() {
-        if (!confirm(`Delete tag "${tag.name}"? This will remove it from all conversations.`)) return
-        router.delete(`/tags/${tag.id}`)
+        if (!confirm(`Delete tag "${tag.name}"? This will remove it from all conversations.`)) return;
+        router.delete(`/tags/${tag.id}`);
     }
 
     return (
-        <div className={cn(
-            'rounded-xl border border-border bg-background overflow-hidden transition-shadow',
-            isEditing && 'shadow-sm ring-1 ring-primary/20',
-        )}>
+        <div
+            className={cn(
+                'rounded-xl border border-border bg-background overflow-hidden transition-shadow',
+                isEditing && 'shadow-sm ring-1 ring-primary/20',
+            )}
+        >
             <div className="flex items-center gap-4 px-4 py-3">
                 {/* Color dot */}
-                <span
-                    className="h-3 w-3 rounded-full shrink-0"
-                    style={{ backgroundColor: tag.color }}
-                />
+                <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
 
                 {/* Chip preview */}
                 <TagChip name={tag.name} color={tag.color} />
@@ -133,27 +136,26 @@ function TagRow({ tag, editingId, setEditingId }: {
 
             {isEditing && <EditTagForm tag={tag} onCancel={() => setEditingId(null)} />}
         </div>
-    )
+    );
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsTags({ tags }: Props) {
-    const [editingId, setEditingId] = useState<number | null>(null)
-    const [search, setSearch] = useState('')
-    const { data, setData, post, processing, errors, reset } = useForm({ name: '', color: '#6366f1' })
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [search, setSearch] = useState('');
+    const { data, setData, post, processing, errors, reset } = useForm({ name: '', color: '#6366f1' });
 
     function submit(e: React.FormEvent) {
-        e.preventDefault()
-        post('/tags', { onSuccess: () => reset() })
+        e.preventDefault();
+        post('/tags', { onSuccess: () => reset() });
     }
 
-    const filtered = tags.filter(t => t.name.toLowerCase().includes(search.toLowerCase()))
+    const filtered = tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
         <AppLayout title="Tags">
             <div className="w-full px-6 py-8 space-y-6">
-
                 {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Tags</h1>
@@ -172,7 +174,7 @@ export default function SettingsTags({ tags }: Props) {
                                 <div className="flex items-center gap-2">
                                     <Input
                                         value={data.name}
-                                        onChange={e => setData('name', e.target.value)}
+                                        onChange={(e) => setData('name', e.target.value)}
                                         placeholder="e.g. billing"
                                         required
                                         className="h-9"
@@ -185,7 +187,7 @@ export default function SettingsTags({ tags }: Props) {
 
                         <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Color</Label>
-                            <ColorPicker value={data.color} onChange={c => setData('color', c)} />
+                            <ColorPicker value={data.color} onChange={(c) => setData('color', c)} />
                         </div>
 
                         <Button type="submit" disabled={processing} size="sm">
@@ -203,14 +205,16 @@ export default function SettingsTags({ tags }: Props) {
                                 <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                                 <Input
                                     value={search}
-                                    onChange={e => setSearch(e.target.value)}
+                                    onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search tags…"
                                     className="pl-9 h-9"
                                 />
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-2 rounded-lg border border-border shrink-0">
                                 <TagIcon className="h-3.5 w-3.5" />
-                                <span>{tags.length} tag{tags.length !== 1 ? 's' : ''}</span>
+                                <span>
+                                    {tags.length} tag{tags.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
                         </div>
 
@@ -220,13 +224,8 @@ export default function SettingsTags({ tags }: Props) {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {filtered.map(tag => (
-                                    <TagRow
-                                        key={tag.id}
-                                        tag={tag}
-                                        editingId={editingId}
-                                        setEditingId={setEditingId}
-                                    />
+                                {filtered.map((tag) => (
+                                    <TagRow key={tag.id} tag={tag} editingId={editingId} setEditingId={setEditingId} />
                                 ))}
                             </div>
                         )}
@@ -240,8 +239,7 @@ export default function SettingsTags({ tags }: Props) {
                         <p className="text-xs text-muted-foreground/70">Create your first tag above to start organising conversations.</p>
                     </div>
                 )}
-
             </div>
         </AppLayout>
-    )
+    );
 }

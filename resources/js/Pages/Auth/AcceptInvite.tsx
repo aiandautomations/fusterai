@@ -25,20 +25,13 @@ export default function AcceptInvite({ token, email }: AcceptInviteProps) {
     }
 
     return (
-        <AuthLayout
-            title="You're invited"
-            subtitle="Complete your profile to join the workspace"
-        >
+        <AuthLayout title="You're invited" subtitle="Complete your profile to join the workspace">
             <Head title="Accept Invite" />
 
             <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Email address</Label>
-                    <Input
-                        value={data.email}
-                        disabled
-                        className="bg-muted/50 text-muted-foreground cursor-not-allowed"
-                    />
+                    <Input value={data.email} disabled className="bg-muted/50 text-muted-foreground cursor-not-allowed" />
                 </div>
 
                 <div className="space-y-1.5">
@@ -51,9 +44,7 @@ export default function AcceptInvite({ token, email }: AcceptInviteProps) {
                         autoFocus
                         className={errors.name ? 'border-destructive' : ''}
                     />
-                    {errors.name && (
-                        <p className="text-xs text-destructive">{errors.name}</p>
-                    )}
+                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -67,9 +58,7 @@ export default function AcceptInvite({ token, email }: AcceptInviteProps) {
                             autoComplete="new-password"
                             className={errors.password ? 'border-destructive' : ''}
                         />
-                        {errors.password && (
-                            <p className="text-xs text-destructive">{errors.password}</p>
-                        )}
+                        {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium">Confirm</Label>

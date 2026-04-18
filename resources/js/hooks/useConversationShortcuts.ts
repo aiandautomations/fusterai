@@ -32,12 +32,7 @@ export function useConversationShortcuts(opts: ShortcutOpts) {
             }
 
             // Ignore when focus is inside an input/textarea/contenteditable
-            if (
-                target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA' ||
-                target.tagName === 'SELECT' ||
-                target.isContentEditable
-            ) {
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable) {
                 return;
             }
 
@@ -86,11 +81,7 @@ export function useConversationListShortcuts(opts: ListShortcutOpts) {
     useEffect(() => {
         function handler(e: KeyboardEvent) {
             const target = e.target as HTMLElement;
-            if (
-                target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA' ||
-                target.isContentEditable
-            ) {
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
                 return;
             }
 
@@ -102,17 +93,13 @@ export function useConversationListShortcuts(opts: ListShortcutOpts) {
             switch (e.key) {
                 case 'j': {
                     e.preventDefault();
-                    const next = idx < conversationIds.length - 1
-                        ? conversationIds[idx + 1]
-                        : conversationIds[0];
+                    const next = idx < conversationIds.length - 1 ? conversationIds[idx + 1] : conversationIds[0];
                     onSelect(next);
                     break;
                 }
                 case 'k': {
                     e.preventDefault();
-                    const prev = idx > 0
-                        ? conversationIds[idx - 1]
-                        : conversationIds[conversationIds.length - 1];
+                    const prev = idx > 0 ? conversationIds[idx - 1] : conversationIds[conversationIds.length - 1];
                     onSelect(prev);
                     break;
                 }

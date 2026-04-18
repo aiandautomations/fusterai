@@ -1,38 +1,48 @@
-import { Link, router } from '@inertiajs/react'
-import AppLayout from '@/Layouts/AppLayout'
-import { Card, CardContent } from '@/Components/ui/card'
-import { Badge } from '@/Components/ui/badge'
-import { Button } from '@/Components/ui/button'
-import { MailboxIcon, PlusIcon, SettingsIcon, InboxIcon, ArrowRightIcon, Clock3Icon, CircleDotIcon, MessageCircleIcon, GlobeIcon } from 'lucide-react'
+import { Link, router } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import { Card, CardContent } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
+import {
+    MailboxIcon,
+    PlusIcon,
+    SettingsIcon,
+    InboxIcon,
+    ArrowRightIcon,
+    Clock3Icon,
+    CircleDotIcon,
+    MessageCircleIcon,
+    GlobeIcon,
+} from 'lucide-react';
 
 interface Mailbox {
-    id: number
-    name: string
-    email: string
-    active: boolean
-    channel_type: string | null
-    conversations_count: number
-    open_count: number
-    pending_count: number
+    id: number;
+    name: string;
+    email: string;
+    active: boolean;
+    channel_type: string | null;
+    conversations_count: number;
+    open_count: number;
+    pending_count: number;
 }
 
 const channelBadge: Record<string, { label: string; className: string }> = {
-    email:    { label: 'Email',    className: 'bg-blue-500/10 text-blue-600 border-blue-200' },
+    email: { label: 'Email', className: 'bg-blue-500/10 text-blue-600 border-blue-200' },
     whatsapp: { label: 'WhatsApp', className: 'bg-[#25D366]/10 text-[#25D366] border-[#25D366]/20' },
-    chat:     { label: 'Live Chat',className: 'bg-violet-500/10 text-violet-600 border-violet-200' },
-    api:      { label: 'API',      className: 'bg-orange-500/10 text-orange-600 border-orange-200' },
-}
+    chat: { label: 'Live Chat', className: 'bg-violet-500/10 text-violet-600 border-violet-200' },
+    api: { label: 'API', className: 'bg-orange-500/10 text-orange-600 border-orange-200' },
+};
 
 interface Props {
-    mailboxes: Mailbox[]
+    mailboxes: Mailbox[];
 }
 
-const palette = ['#6366f1', '#14b8a6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4']
+const palette = ['#6366f1', '#14b8a6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4'];
 
 export default function MailboxesIndex({ mailboxes }: Props) {
-    const totalOpen = mailboxes.reduce((sum, mailbox) => sum + (mailbox.open_count ?? 0), 0)
-    const totalPending = mailboxes.reduce((sum, mailbox) => sum + (mailbox.pending_count ?? 0), 0)
-    const activeCount = mailboxes.filter((mailbox) => mailbox.active).length
+    const totalOpen = mailboxes.reduce((sum, mailbox) => sum + (mailbox.open_count ?? 0), 0);
+    const totalPending = mailboxes.reduce((sum, mailbox) => sum + (mailbox.pending_count ?? 0), 0);
+    const activeCount = mailboxes.filter((mailbox) => mailbox.active).length;
 
     return (
         <AppLayout title="Mailboxes">
@@ -40,9 +50,7 @@ export default function MailboxesIndex({ mailboxes }: Props) {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-semibold tracking-tight">Mailboxes</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Manage inbox channels and open each mailbox workspace.
-                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">Manage inbox channels and open each mailbox workspace.</p>
                     </div>
                     <Button asChild>
                         <Link href="/mailboxes/create">
@@ -118,7 +126,10 @@ export default function MailboxesIndex({ mailboxes }: Props) {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {mailbox.channel_type && channelBadge[mailbox.channel_type] && (
-                                                <Badge variant="outline" className={`text-xs ${channelBadge[mailbox.channel_type].className}`}>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-xs ${channelBadge[mailbox.channel_type].className}`}
+                                                >
                                                     {channelBadge[mailbox.channel_type].label}
                                                 </Badge>
                                             )}
@@ -128,7 +139,10 @@ export default function MailboxesIndex({ mailboxes }: Props) {
                                                 </Badge>
                                             )}
                                             <button
-                                                onClick={e => { e.stopPropagation(); router.get(`/mailboxes/${mailbox.id}/edit`) }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.get(`/mailboxes/${mailbox.id}/edit`);
+                                                }}
                                                 className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                                 title="Settings"
                                             >
@@ -171,5 +185,5 @@ export default function MailboxesIndex({ mailboxes }: Props) {
                 )}
             </div>
         </AppLayout>
-    )
+    );
 }

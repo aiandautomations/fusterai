@@ -12,25 +12,25 @@ import { registerSlot } from '@/Components/SlotRenderer';
 // Each entry maps a module alias → the slots it wants to fill.
 // To add a new module: import lazily and add an entry here.
 const moduleSlots: Record<string, { slot: string; component: React.LazyExoticComponent<React.ComponentType<any>> }[]> = {
-    SlaManager: [{
-        slot:      'conversation.sidebar.bottom',
-        component: React.lazy(() => import('../../Modules/SlaManager/Resources/js/SlaSidebarPanel')),
-    }],
-    SatisfactionSurvey: [{
-        slot:      'conversation.sidebar.bottom',
-        component: React.lazy(() => import('../../Modules/SatisfactionSurvey/Resources/js/SurveySidebarPanel')),
-    }],
+    SlaManager: [
+        {
+            slot: 'conversation.sidebar.bottom',
+            component: React.lazy(() => import('../../Modules/SlaManager/Resources/js/SlaSidebarPanel')),
+        },
+    ],
+    SatisfactionSurvey: [
+        {
+            slot: 'conversation.sidebar.bottom',
+            component: React.lazy(() => import('../../Modules/SatisfactionSurvey/Resources/js/SurveySidebarPanel')),
+        },
+    ],
 };
 
 const appName = document.querySelector('meta[name="app-name"]')?.getAttribute('content') ?? 'FusterAI';
 
 createInertiaApp({
     title: (title) => `${title} — ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(
-            `./Pages/${name}.tsx`,
-            import.meta.glob('./Pages/**/*.tsx'),
-        ),
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
     setup({ el, App, props }) {
         // Register slots only for modules the backend reports as active.
         // Because components are lazy, the actual JS chunk is only fetched

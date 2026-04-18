@@ -7,8 +7,11 @@ import { Label } from '@/Components/ui/label';
 import { cn } from '@/lib/utils';
 import ColorPicker from '@/Components/ColorPicker';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-    DropdownMenuSeparator, DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import { FolderIcon, SearchIcon, MoreHorizontalIcon, PencilIcon } from 'lucide-react';
 import type { Folder } from '@/types';
@@ -16,7 +19,6 @@ import type { Folder } from '@/types';
 interface Props {
     folders: (Folder & { conversations_count: number })[];
 }
-
 
 function EditFolderForm({ folder, onCancel }: { folder: Folder & { conversations_count: number }; onCancel: () => void }) {
     const { data, setData, patch, processing } = useForm({ name: folder.name, color: folder.color, icon: folder.icon });
@@ -34,33 +36,39 @@ function EditFolderForm({ folder, onCancel }: { folder: Folder & { conversations
                     <div className="flex items-center gap-2">
                         <Input
                             value={data.name}
-                            onChange={e => setData('name', e.target.value)}
+                            onChange={(e) => setData('name', e.target.value)}
                             className="h-8 text-sm"
                             required
                             autoFocus
                         />
-                        {data.name && (
-                            <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: data.color }} />
-                        )}
+                        {data.name && <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: data.color }} />}
                     </div>
                 </div>
             </div>
             <div className="space-y-1.5">
                 <Label className="text-xs">Color</Label>
-                <ColorPicker value={data.color} onChange={c => setData('color', c)} />
+                <ColorPicker value={data.color} onChange={(c) => setData('color', c)} />
             </div>
             <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={processing} className="h-7 text-xs">Save</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">Cancel</Button>
+                <Button type="submit" size="sm" disabled={processing} className="h-7 text-xs">
+                    Save
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">
+                    Cancel
+                </Button>
             </div>
         </form>
     );
 }
 
-function FolderRow({ folder, editingId, setEditingId }: {
-    folder: Folder & { conversations_count: number }
-    editingId: number | null
-    setEditingId: (id: number | null) => void
+function FolderRow({
+    folder,
+    editingId,
+    setEditingId,
+}: {
+    folder: Folder & { conversations_count: number };
+    editingId: number | null;
+    setEditingId: (id: number | null) => void;
 }) {
     const isEditing = editingId === folder.id;
 
@@ -70,10 +78,12 @@ function FolderRow({ folder, editingId, setEditingId }: {
     }
 
     return (
-        <div className={cn(
-            'rounded-xl border border-border bg-background overflow-hidden transition-shadow',
-            isEditing && 'shadow-sm ring-1 ring-primary/20',
-        )}>
+        <div
+            className={cn(
+                'rounded-xl border border-border bg-background overflow-hidden transition-shadow',
+                isEditing && 'shadow-sm ring-1 ring-primary/20',
+            )}
+        >
             <div className="flex items-center gap-4 px-4 py-3">
                 <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
                 <span className="text-[13.5px] font-medium text-foreground flex-1">{folder.name}</span>
@@ -113,13 +123,12 @@ export default function FoldersSettings({ folders }: Props) {
         post('/settings/folders', { onSuccess: () => reset() });
     }
 
-    const filtered = folders.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+    const filtered = folders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
         <AppLayout>
             <Head title="Folders" />
             <div className="w-full px-6 py-8 space-y-6">
-
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Custom Folders</h1>
                     <p className="text-sm text-muted-foreground mt-1">Organize conversations into custom buckets.</p>
@@ -135,7 +144,7 @@ export default function FoldersSettings({ folders }: Props) {
                                 <div className="flex items-center gap-2">
                                     <Input
                                         value={data.name}
-                                        onChange={e => setData('name', e.target.value)}
+                                        onChange={(e) => setData('name', e.target.value)}
                                         placeholder="e.g. VIP customers"
                                         required
                                         className="h-9"
@@ -149,7 +158,7 @@ export default function FoldersSettings({ folders }: Props) {
                         </div>
                         <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Color</Label>
-                            <ColorPicker value={data.color} onChange={c => setData('color', c)} />
+                            <ColorPicker value={data.color} onChange={(c) => setData('color', c)} />
                         </div>
                         <Button type="submit" disabled={processing || !data.name.trim()} size="sm">
                             {processing ? 'Creating…' : 'Create folder'}
@@ -165,14 +174,16 @@ export default function FoldersSettings({ folders }: Props) {
                                 <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                                 <Input
                                     value={search}
-                                    onChange={e => setSearch(e.target.value)}
+                                    onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search folders…"
                                     className="pl-9 h-9"
                                 />
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-2 rounded-lg border border-border shrink-0">
                                 <FolderIcon className="h-3.5 w-3.5" />
-                                <span>{folders.length} folder{folders.length !== 1 ? 's' : ''}</span>
+                                <span>
+                                    {folders.length} folder{folders.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
                         </div>
 
@@ -182,13 +193,8 @@ export default function FoldersSettings({ folders }: Props) {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {filtered.map(folder => (
-                                    <FolderRow
-                                        key={folder.id}
-                                        folder={folder}
-                                        editingId={editingId}
-                                        setEditingId={setEditingId}
-                                    />
+                                {filtered.map((folder) => (
+                                    <FolderRow key={folder.id} folder={folder} editingId={editingId} setEditingId={setEditingId} />
                                 ))}
                             </div>
                         )}
@@ -199,10 +205,11 @@ export default function FoldersSettings({ folders }: Props) {
                     <div className="rounded-xl border border-dashed border-border py-16 text-center space-y-2">
                         <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground/40" />
                         <p className="text-sm font-medium text-muted-foreground">No folders yet</p>
-                        <p className="text-xs text-muted-foreground/70">Create your first folder above to start organising conversations.</p>
+                        <p className="text-xs text-muted-foreground/70">
+                            Create your first folder above to start organising conversations.
+                        </p>
                     </div>
                 )}
-
             </div>
         </AppLayout>
     );

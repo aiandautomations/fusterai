@@ -1,10 +1,10 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/figtree";
-@import "@fontsource-variable/manrope";
-@import "./global.css";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/figtree';
+@import '@fontsource-variable/manrope';
+@import './global.css';
 
 @custom-variant dark (&:is(.dark *));
 

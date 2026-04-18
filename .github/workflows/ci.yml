@@ -72,6 +72,15 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Typecheck frontend
+        run: npm run typecheck
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Check frontend formatting
+        run: npm run format:check
+
       - name: Build frontend assets
         run: npm run build
 

@@ -38,21 +38,17 @@ const STORAGE_KEYS = {
     contrast: 'fusterai-theme-contrast',
 } as const;
 
-export function withAppearanceDefaults(
-    input?: Partial<AppearanceSettings> | null,
-): AppearanceSettings {
+export function withAppearanceDefaults(input?: Partial<AppearanceSettings> | null): AppearanceSettings {
     return {
-        mode:     input?.mode     ?? 'system',
-        color:    input?.color    ?? 'violet',
-        font:     input?.font     ?? 'figtree',
-        radius:   input?.radius   ?? 'sm',
+        mode: input?.mode ?? 'system',
+        color: input?.color ?? 'violet',
+        font: input?.font ?? 'figtree',
+        radius: input?.radius ?? 'sm',
         contrast: input?.contrast ?? 'balanced',
     };
 }
 
-export function readStoredAppearance(
-    fallback?: Partial<AppearanceSettings> | null,
-): AppearanceSettings {
+export function readStoredAppearance(fallback?: Partial<AppearanceSettings> | null): AppearanceSettings {
     const defaults = withAppearanceDefaults(fallback);
 
     const mode = window.localStorage.getItem(STORAGE_KEYS.mode) as AppearanceMode | null;

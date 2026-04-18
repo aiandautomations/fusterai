@@ -55,10 +55,15 @@ export default function Show({ kb, documents }: Props) {
                     </div>
                     <div className="flex gap-2">
                         <Link href={route('ai.knowledge-bases.edit', kb.id)}>
-                            <Button variant="outline" size="sm">Settings</Button>
+                            <Button variant="outline" size="sm">
+                                Settings
+                            </Button>
                         </Link>
                         <Link href={route('ai.kb.documents.create', { knowledgeBase: kb.id }) + '?tab=url'}>
-                            <Button variant="outline" size="sm"><LinkIcon className="h-3.5 w-3.5 mr-1.5" />Import URL</Button>
+                            <Button variant="outline" size="sm">
+                                <LinkIcon className="h-3.5 w-3.5 mr-1.5" />
+                                Import URL
+                            </Button>
                         </Link>
                         <Link href={route('ai.kb.documents.create', { knowledgeBase: kb.id })}>
                             <Button size="sm">+ New Document</Button>
@@ -72,13 +77,10 @@ export default function Show({ kb, documents }: Props) {
                 {documents.length === 0 ? (
                     <Card className="border-dashed">
                         <CardContent className="p-12 text-center">
-                        <p className="text-muted-foreground">No documents yet.</p>
-                        <Link
-                            href={route('ai.kb.documents.create', { knowledgeBase: kb.id })}
-                            className="mt-4 inline-block"
-                        >
-                            <Button variant="outline">Add first document</Button>
-                        </Link>
+                            <p className="text-muted-foreground">No documents yet.</p>
+                            <Link href={route('ai.kb.documents.create', { knowledgeBase: kb.id })} className="mt-4 inline-block">
+                                <Button variant="outline">Add first document</Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 ) : (
@@ -94,7 +96,10 @@ export default function Show({ kb, documents }: Props) {
                                             {doc.title}
                                         </Link>
                                         {doc.meta?.index_error ? (
-                                            <span title={doc.meta.index_error} className="flex items-center gap-1 text-[11px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                                            <span
+                                                title={doc.meta.index_error}
+                                                className="flex items-center gap-1 text-[11px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded"
+                                            >
                                                 <AlertTriangleIcon className="h-3 w-3" /> Index failed
                                             </span>
                                         ) : doc.indexed_at ? (
@@ -113,7 +118,9 @@ export default function Show({ kb, documents }: Props) {
                                 </div>
                                 <div className="flex gap-2">
                                     <Link href={route('ai.kb.documents.edit', { knowledgeBase: kb.id, document: doc.id })}>
-                                        <Button variant="ghost" size="sm">Edit</Button>
+                                        <Button variant="ghost" size="sm">
+                                            Edit
+                                        </Button>
                                     </Link>
                                     <Button
                                         variant="ghost"
@@ -133,7 +140,8 @@ export default function Show({ kb, documents }: Props) {
                 <div className="border border-destructive/30 rounded-xl p-4">
                     <h3 className="text-sm font-medium text-destructive mb-2">Danger Zone</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                        Deleting this knowledge base will permanently remove all {documents.length} document{documents.length !== 1 ? 's' : ''}.
+                        Deleting this knowledge base will permanently remove all {documents.length} document
+                        {documents.length !== 1 ? 's' : ''}.
                     </p>
                     <Button variant="destructive" size="sm" onClick={deleteKb}>
                         Delete Knowledge Base

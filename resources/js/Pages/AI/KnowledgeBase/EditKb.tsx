@@ -46,47 +46,41 @@ export default function EditKb({ kb }: Props) {
 
                 <Card className="max-w-3xl bg-card/75">
                     <CardContent className="p-6">
-                <form onSubmit={submit} className="space-y-5">
-                    <div className="space-y-1.5">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                            id="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
-                        />
-                        {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                    </div>
+                        <form onSubmit={submit} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name">Name</Label>
+                                <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                            </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="description">
-                            Description <span className="text-muted-foreground">(optional)</span>
-                        </Label>
-                        <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
-                        />
-                        {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-                    </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="description">
+                                    Description <span className="text-muted-foreground">(optional)</span>
+                                </Label>
+                                <Textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                />
+                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                            </div>
 
-                    <div className="flex items-center gap-3">
-                        <Checkbox
-                            id="active"
-                            checked={data.active}
-                            onCheckedChange={(checked) => setData('active', !!checked)}
-                        />
-                        <Label htmlFor="active">
-                            Active — AI will use this knowledge base for reply suggestions
-                        </Label>
-                    </div>
+                            <div className="flex items-center gap-3">
+                                <Checkbox id="active" checked={data.active} onCheckedChange={(checked) => setData('active', !!checked)} />
+                                <Label htmlFor="active">Active — AI will use this knowledge base for reply suggestions</Label>
+                            </div>
 
-                    <div className="flex gap-3 pt-2">
-                        <Button type="submit" disabled={processing}>Save Changes</Button>
-                        <Link href={route('ai.knowledge-bases.show', kb.id)}>
-                            <Button type="button" variant="ghost">Cancel</Button>
-                        </Link>
-                    </div>
-                </form>
+                            <div className="flex gap-3 pt-2">
+                                <Button type="submit" disabled={processing}>
+                                    Save Changes
+                                </Button>
+                                <Link href={route('ai.knowledge-bases.show', kb.id)}>
+                                    <Button type="button" variant="ghost">
+                                        Cancel
+                                    </Button>
+                                </Link>
+                            </div>
+                        </form>
                     </CardContent>
                 </Card>
             </div>

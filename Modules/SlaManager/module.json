@@ -4,14 +4,7 @@
     "description": "Track SLA policies and breach detection per conversation priority.",
     "version": "1.0.0",
     "hooks": {
-        "actions": [
-            "conversation.created",
-            "conversation.updated",
-            "thread.created"
-        ],
-        "filters": [
-            "conversation.show.extra",
-            "ai.system_prompt"
-        ]
+        "actions": ["conversation.created", "conversation.updated", "thread.created"],
+        "filters": ["conversation.show.extra", "ai.system_prompt"]
     }
 }

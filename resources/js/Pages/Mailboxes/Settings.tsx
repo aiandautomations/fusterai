@@ -164,7 +164,6 @@ export default function MailboxSettings({ mailbox }: Props) {
             <Head title={`${mailbox.name} — Settings`} />
 
             <div className="w-full px-6 py-8">
-
                 {/* Page header */}
                 <div className="mb-8">
                     <Link
@@ -185,14 +184,11 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <p className="text-sm text-muted-foreground">{mailbox.email}</p>
                             </div>
                         </div>
-                        <Badge variant={mailbox.active ? 'success' : 'secondary'}>
-                            {mailbox.active ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <Badge variant={mailbox.active ? 'success' : 'secondary'}>{mailbox.active ? 'Active' : 'Inactive'}</Badge>
                     </div>
                 </div>
 
                 <form onSubmit={submit} className="space-y-6">
-
                     {/* General */}
                     <Card>
                         <CardHeader>
@@ -200,9 +196,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <MailIcon className="h-4 w-4 text-muted-foreground" />
                                 <CardTitle>General</CardTitle>
                             </div>
-                            <CardDescription>
-                                Basic mailbox identity and outgoing email signature.
-                            </CardDescription>
+                            <CardDescription>Basic mailbox identity and outgoing email signature.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <div className="grid grid-cols-2 gap-5">
@@ -225,11 +219,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 </Field>
                             </div>
 
-                            <Field
-                                label="Email signature"
-                                htmlFor="signature"
-                                hint="Appended to the bottom of every outgoing reply."
-                            >
+                            <Field label="Email signature" htmlFor="signature" hint="Appended to the bottom of every outgoing reply.">
                                 <textarea
                                     id="signature"
                                     rows={3}
@@ -249,11 +239,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                         Inactive mailboxes will not fetch emails or send replies.
                                     </p>
                                 </div>
-                                <Switch
-                                    id="active"
-                                    checked={data.active}
-                                    onCheckedChange={(v) => setData('active', v)}
-                                />
+                                <Switch id="active" checked={data.active} onCheckedChange={(v) => setData('active', v)} />
                             </div>
                         </CardContent>
                     </Card>
@@ -265,18 +251,14 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <ServerIcon className="h-4 w-4 text-muted-foreground" />
                                 <CardTitle>Incoming Mail (IMAP)</CardTitle>
                             </div>
-                            <CardDescription>
-                                Configure how FusterAI fetches emails from your inbox.
-                            </CardDescription>
+                            <CardDescription>Configure how FusterAI fetches emails from your inbox.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <Field label="IMAP host" htmlFor="imap-host">
                                 <Input
                                     id="imap-host"
                                     value={data.imap_config.host}
-                                    onChange={(e) =>
-                                        setData('imap_config', { ...data.imap_config, host: e.target.value })
-                                    }
+                                    onChange={(e) => setData('imap_config', { ...data.imap_config, host: e.target.value })}
                                     placeholder="imap.gmail.com"
                                 />
                             </Field>
@@ -286,9 +268,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <Input
                                         id="imap-port"
                                         value={data.imap_config.port}
-                                        onChange={(e) =>
-                                            setData('imap_config', { ...data.imap_config, port: e.target.value })
-                                        }
+                                        onChange={(e) => setData('imap_config', { ...data.imap_config, port: e.target.value })}
                                         placeholder="993"
                                     />
                                 </Field>
@@ -296,9 +276,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <NativeSelect
                                         id="imap-encryption"
                                         value={data.imap_config.encryption}
-                                        onChange={(v) =>
-                                            setData('imap_config', { ...data.imap_config, encryption: v })
-                                        }
+                                        onChange={(v) => setData('imap_config', { ...data.imap_config, encryption: v })}
                                     >
                                         <option value="ssl">SSL</option>
                                         <option value="tls">TLS</option>
@@ -314,9 +292,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <Input
                                         id="imap-username"
                                         value={data.imap_config.username}
-                                        onChange={(e) =>
-                                            setData('imap_config', { ...data.imap_config, username: e.target.value })
-                                        }
+                                        onChange={(e) => setData('imap_config', { ...data.imap_config, username: e.target.value })}
                                         placeholder="you@gmail.com"
                                     />
                                 </Field>
@@ -328,9 +304,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <PasswordInput
                                         id="imap-password"
                                         value={data.imap_config.password}
-                                        onChange={(v) =>
-                                            setData('imap_config', { ...data.imap_config, password: v })
-                                        }
+                                        onChange={(v) => setData('imap_config', { ...data.imap_config, password: v })}
                                     />
                                 </Field>
                             </div>
@@ -353,9 +327,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <Input
                                     id="smtp-host"
                                     value={data.smtp_config.host}
-                                    onChange={(e) =>
-                                        setData('smtp_config', { ...data.smtp_config, host: e.target.value })
-                                    }
+                                    onChange={(e) => setData('smtp_config', { ...data.smtp_config, host: e.target.value })}
                                     placeholder="smtp.gmail.com"
                                 />
                             </Field>
@@ -365,9 +337,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <Input
                                         id="smtp-port"
                                         value={data.smtp_config.port}
-                                        onChange={(e) =>
-                                            setData('smtp_config', { ...data.smtp_config, port: e.target.value })
-                                        }
+                                        onChange={(e) => setData('smtp_config', { ...data.smtp_config, port: e.target.value })}
                                         placeholder="587"
                                     />
                                 </Field>
@@ -375,9 +345,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <NativeSelect
                                         id="smtp-encryption"
                                         value={data.smtp_config.encryption}
-                                        onChange={(v) =>
-                                            setData('smtp_config', { ...data.smtp_config, encryption: v })
-                                        }
+                                        onChange={(v) => setData('smtp_config', { ...data.smtp_config, encryption: v })}
                                     >
                                         <option value="tls">TLS (recommended)</option>
                                         <option value="ssl">SSL</option>
@@ -393,9 +361,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <Input
                                         id="smtp-username"
                                         value={data.smtp_config.username}
-                                        onChange={(e) =>
-                                            setData('smtp_config', { ...data.smtp_config, username: e.target.value })
-                                        }
+                                        onChange={(e) => setData('smtp_config', { ...data.smtp_config, username: e.target.value })}
                                         placeholder="you@gmail.com"
                                     />
                                 </Field>
@@ -403,9 +369,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     <PasswordInput
                                         id="smtp-password"
                                         value={data.smtp_config.password}
-                                        onChange={(v) =>
-                                            setData('smtp_config', { ...data.smtp_config, password: v })
-                                        }
+                                        onChange={(v) => setData('smtp_config', { ...data.smtp_config, password: v })}
                                     />
                                 </Field>
                             </div>
@@ -434,9 +398,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <Switch
                                     id="auto-reply-enabled"
                                     checked={data.auto_reply_config.enabled}
-                                    onCheckedChange={(v) =>
-                                        setData('auto_reply_config', { ...data.auto_reply_config, enabled: v })
-                                    }
+                                    onCheckedChange={(v) => setData('auto_reply_config', { ...data.auto_reply_config, enabled: v })}
                                 />
                             </div>
 
@@ -468,7 +430,9 @@ export default function MailboxSettings({ mailbox }: Props) {
                                                     body: e.target.value,
                                                 })
                                             }
-                                            placeholder={"Hi {{customer_name}},\n\nThanks for reaching out! We've received your message and will get back to you within 1 business day.\n\nBest regards,\nSupport Team"}
+                                            placeholder={
+                                                "Hi {{customer_name}},\n\nThanks for reaching out! We've received your message and will get back to you within 1 business day.\n\nBest regards,\nSupport Team"
+                                            }
                                         />
                                     </Field>
                                 </>
@@ -524,7 +488,9 @@ export default function MailboxSettings({ mailbox }: Props) {
                                     </div>
                                     <div>
                                         <CardTitle className="text-base">WhatsApp</CardTitle>
-                                        <CardDescription className="text-xs">Connect a WhatsApp Business number to this mailbox</CardDescription>
+                                        <CardDescription className="text-xs">
+                                            Connect a WhatsApp Business number to this mailbox
+                                        </CardDescription>
                                     </div>
                                 </div>
                                 <Button variant="outline" size="sm" asChild>
@@ -540,9 +506,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                     {/* Security note */}
                     <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
                         <ShieldCheckIcon className="h-4 w-4 mt-0.5 shrink-0 text-success" />
-                        <p>
-                            IMAP and SMTP credentials are encrypted at rest using AES-256 before being stored in the database.
-                        </p>
+                        <p>IMAP and SMTP credentials are encrypted at rest using AES-256 before being stored in the database.</p>
                     </div>
 
                     {/* Save */}
@@ -557,7 +521,6 @@ export default function MailboxSettings({ mailbox }: Props) {
                             {processing ? 'Saving…' : 'Save changes'}
                         </Button>
                     </div>
-
                 </form>
             </div>
         </AppLayout>

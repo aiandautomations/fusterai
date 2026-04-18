@@ -1,47 +1,51 @@
-import React from 'react'
-import { router } from '@inertiajs/react'
-import AppLayout from '@/Layouts/AppLayout'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
-import { Input } from '@/Components/ui/input'
-import { ChevronDownIcon } from 'lucide-react'
-import { type Paginated } from '@/types'
+import React from 'react';
+import { router } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { Input } from '@/Components/ui/input';
+import { ChevronDownIcon } from 'lucide-react';
+import { type Paginated } from '@/types';
 
-interface Causer { id: number; name: string; email: string }
+interface Causer {
+    id: number;
+    name: string;
+    email: string;
+}
 interface LogEntry {
-    id: number
-    log_name: string
-    description: string
-    subject_type: string | null
-    subject_id: number | null
-    causer: Causer | null
-    properties: Record<string, unknown>
-    created_at: string
+    id: number;
+    log_name: string;
+    description: string;
+    subject_type: string | null;
+    subject_id: number | null;
+    causer: Causer | null;
+    properties: Record<string, unknown>;
+    created_at: string;
 }
 
 interface Props {
-    logs: Paginated<LogEntry>
-    days: number
-    search: string
+    logs: Paginated<LogEntry>;
+    days: number;
+    search: string;
 }
 
 function formatSubject(type: string | null) {
-    if (!type) return '—'
-    return type.split('\\').pop() ?? type
+    if (!type) return '—';
+    return type.split('\\').pop() ?? type;
 }
 
 function formatDate(d: string) {
-    return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function DiffViewer({ properties }: { properties: Record<string, unknown> }) {
-    const [open, setOpen] = React.useState(false)
-    const attrs = (properties?.attributes ?? properties?.old) as Record<string, unknown> | null
-    if (!attrs || Object.keys(attrs).length === 0) return <span className="text-xs text-muted-foreground/50">—</span>
+    const [open, setOpen] = React.useState(false);
+    const attrs = (properties?.attributes ?? properties?.old) as Record<string, unknown> | null;
+    if (!attrs || Object.keys(attrs).length === 0) return <span className="text-xs text-muted-foreground/50">—</span>;
 
     return (
         <div>
             <button
-                onClick={() => setOpen(v => !v)}
+                onClick={() => setOpen((v) => !v)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
                 <ChevronDownIcon className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -53,18 +57,22 @@ function DiffViewer({ properties }: { properties: Record<string, unknown> }) {
                 </pre>
             )}
         </div>
-    )
+    );
 }
 
 export default function AuditLog({ logs, days, search }: Props) {
-    const [searchVal, setSearchVal] = React.useState(search)
+    const [searchVal, setSearchVal] = React.useState(search);
 
     function applyFilters(opts: { days?: number; search?: string; page?: number } = {}) {
-        router.get('/settings/audit-log', {
-            days:   opts.days   ?? days,
-            search: opts.search ?? searchVal,
-            page:   opts.page,
-        }, { preserveState: true, replace: true })
+        router.get(
+            '/settings/audit-log',
+            {
+                days: opts.days ?? days,
+                search: opts.search ?? searchVal,
+                page: opts.page,
+            },
+            { preserveState: true, replace: true },
+        );
     }
 
     return (
@@ -103,17 +111,29 @@ export default function AuditLog({ logs, days, search }: Props) {
                         <table className="w-full text-sm min-w-[640px]">
                             <thead>
                                 <tr className="border-b border-border/60 bg-muted/30">
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em] whitespace-nowrap">Date</th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">User</th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">Event</th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">Subject</th>
-                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">Changes</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em] whitespace-nowrap">
+                                        Date
+                                    </th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                                        User
+                                    </th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                                        Event
+                                    </th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                                        Subject
+                                    </th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                                        Changes
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
                                 {logs.data.map((log) => (
                                     <tr key={log.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(log.created_at)}</td>
+                                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                                            {formatDate(log.created_at)}
+                                        </td>
                                         <td className="px-4 py-3">
                                             {log.causer ? (
                                                 <div>
@@ -129,7 +149,9 @@ export default function AuditLog({ logs, days, search }: Props) {
                                             {formatSubject(log.subject_type)}
                                             {log.subject_id ? <span className="text-xs"> #{log.subject_id}</span> : null}
                                         </td>
-                                        <td className="px-4 py-3"><DiffViewer properties={log.properties} /></td>
+                                        <td className="px-4 py-3">
+                                            <DiffViewer properties={log.properties} />
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -163,5 +185,5 @@ export default function AuditLog({ logs, days, search }: Props) {
                 )}
             </div>
         </AppLayout>
-    )
+    );
 }

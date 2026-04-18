@@ -31,7 +31,7 @@ export default function EditDocument({ kb, document }: Props) {
     const [tab, setTab] = useState<'write' | 'url'>(defaultTab);
 
     const { data, setData, post, patch, processing, errors } = useForm({
-        title:   document?.title ?? '',
+        title: document?.title ?? '',
         content: document?.content ?? '',
     });
 
@@ -60,7 +60,7 @@ export default function EditDocument({ kb, document }: Props) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
                 body: JSON.stringify({ url }),
             });
@@ -127,7 +127,8 @@ export default function EditDocument({ kb, document }: Props) {
                     <Card className="bg-card/75">
                         <CardContent className="p-6">
                             <p className="text-sm text-muted-foreground mb-4">
-                                Paste a URL and we'll fetch the page content, extract the text, and index it in your knowledge base automatically. Great for help articles, docs pages, or FAQs.
+                                Paste a URL and we'll fetch the page content, extract the text, and index it in your knowledge base
+                                automatically. Great for help articles, docs pages, or FAQs.
                             </p>
 
                             {urlStatus === 'done' ? (
@@ -135,7 +136,9 @@ export default function EditDocument({ kb, document }: Props) {
                                     <CheckCircleIcon className="h-4 w-4 shrink-0" />
                                     <div>
                                         <p className="font-medium">URL queued for indexing</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">The page will be fetched and available in your knowledge base within a few seconds.</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            The page will be fetched and available in your knowledge base within a few seconds.
+                                        </p>
                                     </div>
                                 </div>
                             ) : (
@@ -161,7 +164,9 @@ export default function EditDocument({ kb, document }: Props) {
                                             {urlStatus === 'loading' ? 'Fetching…' : 'Import URL'}
                                         </Button>
                                         <Link href={route('ai.knowledge-bases.show', kb.id)}>
-                                            <Button type="button" variant="ghost">Cancel</Button>
+                                            <Button type="button" variant="ghost">
+                                                Cancel
+                                            </Button>
                                         </Link>
                                     </div>
                                 </form>
@@ -169,7 +174,12 @@ export default function EditDocument({ kb, document }: Props) {
 
                             {urlStatus === 'done' && (
                                 <div className="flex gap-3 mt-4">
-                                    <Button variant="outline" onClick={() => { setUrlStatus('idle'); }}>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setUrlStatus('idle');
+                                        }}
+                                    >
                                         Import another URL
                                     </Button>
                                     <Link href={route('ai.knowledge-bases.show', kb.id)}>
@@ -201,10 +211,7 @@ export default function EditDocument({ kb, document }: Props) {
                                 <div className="space-y-1.5">
                                     <Label>Content</Label>
                                     <div className="overflow-hidden rounded-lg border border-border/80 bg-background">
-                                        <RichTextEditor
-                                            value={data.content}
-                                            onChange={(html) => setData('content', html)}
-                                        />
+                                        <RichTextEditor value={data.content} onChange={(html) => setData('content', html)} />
                                     </div>
                                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
                                 </div>
@@ -214,7 +221,9 @@ export default function EditDocument({ kb, document }: Props) {
                                         {isEditing ? 'Save Changes' : 'Create Document'}
                                     </Button>
                                     <Link href={route('ai.knowledge-bases.show', kb.id)}>
-                                        <Button type="button" variant="ghost">Cancel</Button>
+                                        <Button type="button" variant="ghost">
+                                            Cancel
+                                        </Button>
                                     </Link>
                                 </div>
                             </form>

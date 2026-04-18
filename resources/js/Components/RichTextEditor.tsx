@@ -64,8 +64,8 @@ function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.Muta
 
         render: () => {
             let popup: HTMLDivElement | null = null;
-            let items: Agent[]              = [];
-            let selectedIndex               = 0;
+            let items: Agent[] = [];
+            let selectedIndex = 0;
             let selectFn: ((item: Agent) => void) | null = null;
 
             function render() {
@@ -77,9 +77,7 @@ function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.Muta
                     btn.textContent = `@${item.name}`;
                     btn.className = [
                         'w-full text-left px-3 py-2 text-sm transition-colors border-b border-border/40 last:border-0',
-                        i === selectedIndex
-                            ? 'bg-accent text-accent-foreground'
-                            : 'hover:bg-muted/60',
+                        i === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60',
                     ].join(' ');
                     btn.addEventListener('mousedown', (e) => {
                         e.preventDefault();
@@ -101,15 +99,17 @@ function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.Muta
             }
 
             return {
-                onStart: (props: { items: Agent[]; command: (item: { id: string; label: string }) => void; clientRect?: (() => DOMRect | null) | null }) => {
+                onStart: (props: {
+                    items: Agent[];
+                    command: (item: { id: string; label: string }) => void;
+                    clientRect?: (() => DOMRect | null) | null;
+                }) => {
                     items = props.items;
                     selectedIndex = 0;
                     selectFn = (item: Agent) => props.command({ id: String(item.id), label: item.name });
 
                     popup = document.createElement('div');
-                    popup.className = [
-                        'absolute z-50 w-52 rounded-lg border border-border bg-popover shadow-lg overflow-hidden',
-                    ].join(' ');
+                    popup.className = ['absolute z-50 w-52 rounded-lg border border-border bg-popover shadow-lg overflow-hidden'].join(' ');
                     popup.style.position = 'fixed';
 
                     document.body.appendChild(popup);
@@ -117,12 +117,16 @@ function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.Muta
 
                     const rect = props.clientRect?.();
                     if (rect) {
-                        popup.style.top  = `${rect.bottom + 4}px`;
+                        popup.style.top = `${rect.bottom + 4}px`;
                         popup.style.left = `${rect.left}px`;
                     }
                 },
 
-                onUpdate: (props: { items: Agent[]; command: (item: { id: string; label: string }) => void; clientRect?: (() => DOMRect | null) | null }) => {
+                onUpdate: (props: {
+                    items: Agent[];
+                    command: (item: { id: string; label: string }) => void;
+                    clientRect?: (() => DOMRect | null) | null;
+                }) => {
                     items = props.items;
                     selectedIndex = 0;
                     selectFn = (item: Agent) => props.command({ id: String(item.id), label: item.name });
@@ -130,7 +134,7 @@ function buildMentionSuggestion(workspaceAgents: Agent[], enabledRef: React.Muta
 
                     const rect = props.clientRect?.();
                     if (rect && popup) {
-                        popup.style.top  = `${rect.bottom + 4}px`;
+                        popup.style.top = `${rect.bottom + 4}px`;
                         popup.style.left = `${rect.left}px`;
                     }
                 },
@@ -185,9 +189,7 @@ function ToolbarButton({
             title={title}
             className={cn(
                 'p-1.5 rounded text-sm transition-colors',
-                active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 disabled && 'opacity-40 cursor-not-allowed',
             )}
         >
@@ -198,20 +200,14 @@ function ToolbarButton({
 
 // ── Canned response picker ────────────────────────────────────────────────────
 
-function CannedResponsePicker({
-    editor,
-    mailboxId,
-}: {
-    editor: Editor;
-    mailboxId?: number;
-}) {
-    const [open, setOpen]       = useState(false);
-    const [query, setQuery]     = useState('');
+function CannedResponsePicker({ editor, mailboxId }: { editor: Editor; mailboxId?: number }) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
     const [results, setResults] = useState<CannedResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [highlighted, setHighlighted] = useState(0);
-    const inputRef  = useRef<HTMLInputElement>(null);
-    const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     // Close on outside click
@@ -238,24 +234,27 @@ function CannedResponsePicker({
         }
     }, [open]);
 
-    const fetchResults = useCallback((q: string) => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(async () => {
-            setLoading(true);
-            try {
-                const params = new URLSearchParams({ q });
-                if (mailboxId) params.set('mailbox_id', String(mailboxId));
-                const res  = await fetch(`/canned-responses/search?${params}`, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                const data = await res.json();
-                setResults(data);
-                setHighlighted(0);
-            } finally {
-                setLoading(false);
-            }
-        }, 150);
-    }, [mailboxId]);
+    const fetchResults = useCallback(
+        (q: string) => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(async () => {
+                setLoading(true);
+                try {
+                    const params = new URLSearchParams({ q });
+                    if (mailboxId) params.set('mailbox_id', String(mailboxId));
+                    const res = await fetch(`/canned-responses/search?${params}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const data = await res.json();
+                    setResults(data);
+                    setHighlighted(0);
+                } finally {
+                    setLoading(false);
+                }
+            }, 150);
+        },
+        [mailboxId],
+    );
 
     function onQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
         setQuery(e.target.value);
@@ -270,10 +269,10 @@ function CannedResponsePicker({
     function onKeyDown(e: React.KeyboardEvent) {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setHighlighted(h => Math.min(h + 1, results.length - 1));
+            setHighlighted((h) => Math.min(h + 1, results.length - 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setHighlighted(h => Math.max(h - 1, 0));
+            setHighlighted((h) => Math.max(h - 1, 0));
         } else if (e.key === 'Enter' && results[highlighted]) {
             e.preventDefault();
             insert(results[highlighted]);
@@ -284,11 +283,7 @@ function CannedResponsePicker({
 
     return (
         <div ref={wrapperRef} className="relative">
-            <ToolbarButton
-                onClick={() => setOpen(o => !o)}
-                active={open}
-                title="Insert canned response"
-            >
+            <ToolbarButton onClick={() => setOpen((o) => !o)} active={open} title="Insert canned response">
                 <ZapIcon className="h-3.5 w-3.5" />
             </ToolbarButton>
 
@@ -309,11 +304,7 @@ function CannedResponsePicker({
 
                     {/* Results */}
                     <div className="max-h-56 overflow-y-auto">
-                        {loading && (
-                            <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                Searching…
-                            </p>
-                        )}
+                        {loading && <p className="px-3 py-4 text-center text-xs text-muted-foreground">Searching…</p>}
 
                         {!loading && results.length === 0 && (
                             <p className="px-3 py-4 text-center text-xs text-muted-foreground">
@@ -321,31 +312,31 @@ function CannedResponsePicker({
                             </p>
                         )}
 
-                        {!loading && results.map((r, i) => (
-                            <button
-                                key={r.id}
-                                type="button"
-                                onMouseDown={(e) => { e.preventDefault(); insert(r); }}
-                                onMouseEnter={() => setHighlighted(i)}
-                                className={cn(
-                                    'w-full text-left px-3 py-2.5 transition-colors border-b border-border/50 last:border-0',
-                                    highlighted === i
-                                        ? 'bg-accent text-accent-foreground'
-                                        : 'hover:bg-muted/50',
-                                )}
-                            >
-                                <p className="text-sm font-medium leading-tight">{r.name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                                    {r.content.replace(/<[^>]+>/g, ' ').trim()}
-                                </p>
-                            </button>
-                        ))}
+                        {!loading &&
+                            results.map((r, i) => (
+                                <button
+                                    key={r.id}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        insert(r);
+                                    }}
+                                    onMouseEnter={() => setHighlighted(i)}
+                                    className={cn(
+                                        'w-full text-left px-3 py-2.5 transition-colors border-b border-border/50 last:border-0',
+                                        highlighted === i ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/50',
+                                    )}
+                                >
+                                    <p className="text-sm font-medium leading-tight">{r.name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                        {r.content.replace(/<[^>]+>/g, ' ').trim()}
+                                    </p>
+                                </button>
+                            ))}
                     </div>
 
                     <div className="px-3 py-1.5 border-t border-border bg-muted/30">
-                        <p className="text-[10px] text-muted-foreground">
-                            ↑↓ navigate · Enter insert · Esc close
-                        </p>
+                        <p className="text-[10px] text-muted-foreground">↑↓ navigate · Enter insert · Esc close</p>
                     </div>
                 </div>
             )}
@@ -364,19 +355,11 @@ function Toolbar({ editor, mailboxId }: { editor: Editor; mailboxId?: number }) 
 
     return (
         <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border flex-wrap">
-            <ToolbarButton
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                active={editor.isActive('bold')}
-                title="Bold"
-            >
+            <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">
                 <BoldIcon className="h-3.5 w-3.5" />
             </ToolbarButton>
 
-            <ToolbarButton
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                active={editor.isActive('italic')}
-                title="Italic"
-            >
+            <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic">
                 <ItalicIcon className="h-3.5 w-3.5" />
             </ToolbarButton>
 
@@ -443,18 +426,10 @@ function Toolbar({ editor, mailboxId }: { editor: Editor; mailboxId?: number }) 
             <CannedResponsePicker editor={editor} mailboxId={mailboxId} />
 
             <div className="ml-auto flex items-center gap-0.5">
-                <ToolbarButton
-                    onClick={() => editor.chain().focus().undo().run()}
-                    disabled={!editor.can().undo()}
-                    title="Undo"
-                >
+                <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
                     <Undo2Icon className="h-3.5 w-3.5" />
                 </ToolbarButton>
-                <ToolbarButton
-                    onClick={() => editor.chain().focus().redo().run()}
-                    disabled={!editor.can().redo()}
-                    title="Redo"
-                >
+                <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
                     <Redo2Icon className="h-3.5 w-3.5" />
                 </ToolbarButton>
             </div>

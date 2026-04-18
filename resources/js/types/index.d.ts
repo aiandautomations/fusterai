@@ -46,7 +46,25 @@ export interface PageProps {
     };
     appearance?: {
         mode: 'light' | 'dark' | 'system';
-        color: 'neutral' | 'amber' | 'blue' | 'cyan' | 'emerald' | 'fuchsia' | 'green' | 'indigo' | 'lime' | 'orange' | 'pink' | 'purple' | 'red' | 'rose' | 'sky' | 'teal' | 'violet' | 'yellow';
+        color:
+            | 'neutral'
+            | 'amber'
+            | 'blue'
+            | 'cyan'
+            | 'emerald'
+            | 'fuchsia'
+            | 'green'
+            | 'indigo'
+            | 'lime'
+            | 'orange'
+            | 'pink'
+            | 'purple'
+            | 'red'
+            | 'rose'
+            | 'sky'
+            | 'teal'
+            | 'violet'
+            | 'yellow';
         font: 'inter' | 'figtree' | 'manrope' | 'system';
         radius: 'sm' | 'md' | 'lg' | 'xl';
         contrast: 'soft' | 'balanced' | 'strong';

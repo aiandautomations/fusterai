@@ -1,46 +1,46 @@
-import React from 'react'
-import { Head, useForm } from '@inertiajs/react'
-import AppLayout from '@/Layouts/AppLayout'
-import { Button } from '@/Components/ui/button'
-import { Switch } from '@/Components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
-import { UsersIcon, MailboxIcon, ShuffleIcon } from 'lucide-react'
+import React from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import AppLayout from '@/Layouts/AppLayout';
+import { Button } from '@/Components/ui/button';
+import { Switch } from '@/Components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { UsersIcon, MailboxIcon, ShuffleIcon } from 'lucide-react';
 
 interface MailboxConfig {
-    mailbox_id: number
-    mailbox_name: string
-    mailbox_email: string
-    mode: 'round_robin' | 'least_loaded'
-    active: boolean
-    agent_count: number
+    mailbox_id: number;
+    mailbox_name: string;
+    mailbox_email: string;
+    mode: 'round_robin' | 'least_loaded';
+    active: boolean;
+    agent_count: number;
 }
 
 interface Props {
-    configs: MailboxConfig[]
+    configs: MailboxConfig[];
 }
 
 const MODE_LABELS: Record<string, string> = {
-    round_robin:   'Round Robin',
-    least_loaded:  'Least Loaded',
-}
+    round_robin: 'Round Robin',
+    least_loaded: 'Least Loaded',
+};
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-    round_robin:  'Assign to each agent in turn, evenly distributing load.',
+    round_robin: 'Assign to each agent in turn, evenly distributing load.',
     least_loaded: 'Assign to the agent with the fewest open conversations.',
-}
+};
 
 export default function RoutingSettings({ configs }: Props) {
-    const { data, setData, post, processing, errors } = useForm({ configs })
+    const { data, setData, post, processing, errors } = useForm({ configs });
 
     function updateConfig(index: number, field: keyof MailboxConfig, value: unknown) {
-        const updated = [...data.configs]
-        updated[index] = { ...updated[index], [field]: value }
-        setData('configs', updated)
+        const updated = [...data.configs];
+        updated[index] = { ...updated[index], [field]: value };
+        setData('configs', updated);
     }
 
     function submit(e: React.FormEvent) {
-        e.preventDefault()
-        post('/settings/routing')
+        e.preventDefault();
+        post('/settings/routing');
     }
 
     return (
@@ -87,7 +87,7 @@ export default function RoutingSettings({ configs }: Props) {
                                     <div>
                                         <Select
                                             value={config.mode}
-                                            onValueChange={v => updateConfig(i, 'mode', v)}
+                                            onValueChange={(v) => updateConfig(i, 'mode', v)}
                                             disabled={!config.active}
                                         >
                                             <SelectTrigger className="w-full">
@@ -109,9 +109,7 @@ export default function RoutingSettings({ configs }: Props) {
                                             </SelectContent>
                                         </Select>
                                         {config.active && (
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {MODE_DESCRIPTIONS[config.mode]}
-                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">{MODE_DESCRIPTIONS[config.mode]}</p>
                                         )}
                                     </div>
 
@@ -124,7 +122,7 @@ export default function RoutingSettings({ configs }: Props) {
                                     {/* Active toggle */}
                                     <Switch
                                         checked={config.active}
-                                        onCheckedChange={v => updateConfig(i, 'active', v)}
+                                        onCheckedChange={(v) => updateConfig(i, 'active', v)}
                                         disabled={config.agent_count === 0}
                                         title={config.agent_count === 0 ? 'Assign agents to this mailbox first' : undefined}
                                     />
@@ -132,9 +130,7 @@ export default function RoutingSettings({ configs }: Props) {
                             ))}
                         </div>
 
-                        {typeof errors.configs === 'string' && (
-                            <p className="text-xs text-destructive">{errors.configs}</p>
-                        )}
+                        {typeof errors.configs === 'string' && <p className="text-xs text-destructive">{errors.configs}</p>}
 
                         <div className="flex justify-end">
                             <Button type="submit" disabled={processing}>
@@ -145,5 +141,5 @@ export default function RoutingSettings({ configs }: Props) {
                 )}
             </div>
         </AppLayout>
-    )
+    );
 }

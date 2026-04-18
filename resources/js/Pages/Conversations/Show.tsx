@@ -46,9 +46,9 @@ interface Props {
 }
 
 const priorityConfig = {
-    low:    { label: 'Low',    color: 'bg-muted text-muted-foreground' },
+    low: { label: 'Low', color: 'bg-muted text-muted-foreground' },
     normal: { label: 'Normal', color: 'bg-info/10 text-info' },
-    high:   { label: 'High',   color: 'bg-warning/15 text-warning' },
+    high: { label: 'High', color: 'bg-warning/15 text-warning' },
     urgent: { label: 'Urgent', color: 'bg-destructive/10 text-destructive' },
 } as const;
 
@@ -123,12 +123,8 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         const presence = window.Echo?.join(`conversation.${conversation.id}.presence`);
         presence
             ?.here((members: { id: number; name: string }[]) => setViewers(members))
-            ?.joining((member: { id: number; name: string }) =>
-                setViewers((v) => [...v.filter((x) => x.id !== member.id), member]),
-            )
-            ?.leaving((member: { id: number; name: string }) =>
-                setViewers((v) => v.filter((x) => x.id !== member.id)),
-            );
+            ?.joining((member: { id: number; name: string }) => setViewers((v) => [...v.filter((x) => x.id !== member.id), member]))
+            ?.leaving((member: { id: number; name: string }) => setViewers((v) => v.filter((x) => x.id !== member.id)));
 
         return () => {
             window.Echo?.leave(`conversation.${conversation.id}`);
@@ -242,16 +238,12 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
 
             {/* Mobile inspector backdrop */}
             {mobileInspectorOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
-                    onClick={() => setMobileInspectorOpen(false)}
-                />
+                <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileInspectorOpen(false)} />
             )}
 
             <div className="flex h-full overflow-hidden">
                 {/* ── Thread column ── */}
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
                     {/* Header */}
                     <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/60 bg-background shrink-0">
                         <div className="flex-1 min-w-0">
@@ -259,10 +251,18 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                             <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[11px] text-muted-foreground/70">{conversation.mailbox?.name}</span>
                                 <span className="text-muted-foreground/30 text-[10px]">·</span>
-                                <span className={cn('text-[11px] px-1.5 py-0.5 rounded-md font-medium', priorityConfig[conversation.priority]?.color)}>
+                                <span
+                                    className={cn(
+                                        'text-[11px] px-1.5 py-0.5 rounded-md font-medium',
+                                        priorityConfig[conversation.priority]?.color,
+                                    )}
+                                >
                                     {priorityConfig[conversation.priority]?.label}
                                 </span>
-                                <Badge variant={conversation.status === 'open' ? 'default' : 'secondary'} className="capitalize text-[11px] h-5 px-1.5">
+                                <Badge
+                                    variant={conversation.status === 'open' ? 'default' : 'secondary'}
+                                    className="capitalize text-[11px] h-5 px-1.5"
+                                >
                                     {conversation.status}
                                 </Badge>
                                 {/* Collision detection */}
@@ -312,11 +312,11 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                 {snoozeOpen && (
                                     <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 py-1 w-40">
                                         {[
-                                            { label: '1 hour',    mins: 60 },
-                                            { label: '3 hours',   mins: 180 },
-                                            { label: 'Tomorrow',  mins: 60 * 24 },
-                                            { label: '3 days',    mins: 60 * 24 * 3 },
-                                            { label: '1 week',    mins: 60 * 24 * 7 },
+                                            { label: '1 hour', mins: 60 },
+                                            { label: '3 hours', mins: 180 },
+                                            { label: 'Tomorrow', mins: 60 * 24 },
+                                            { label: '3 days', mins: 60 * 24 * 3 },
+                                            { label: '1 week', mins: 60 * 24 * 7 },
                                         ].map(({ label, mins }) => (
                                             <button
                                                 key={label}
@@ -344,30 +344,33 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                     <div className="border-t border-border/60 bg-background p-4 shrink-0">
                         <SlotRenderer name="conversation.reply.before" props={{ conversation }} />
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1">
-                            {(['message', 'note'] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setData('type', t)}
-                                    className={cn(
-                                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
-                                        data.type === t
-                                            ? t === 'message'
-                                                ? 'bg-primary/10 text-primary'
-                                                : 'bg-warning/10 text-warning'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                                    )}
-                                >
-                                    {t === 'message'
-                                        ? <><SendIcon className="h-3 w-3" /> Reply</>
-                                        : <><StickyNoteIcon className="h-3 w-3" /> Note</>
-                                    }
-                                </button>
-                            ))}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground/50 hidden sm:block">
-                              r reply · n note · c close
-                          </span>
+                            <div className="flex items-center gap-1">
+                                {(['message', 'note'] as const).map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setData('type', t)}
+                                        className={cn(
+                                            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
+                                            data.type === t
+                                                ? t === 'message'
+                                                    ? 'bg-primary/10 text-primary'
+                                                    : 'bg-warning/10 text-warning'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                        )}
+                                    >
+                                        {t === 'message' ? (
+                                            <>
+                                                <SendIcon className="h-3 w-3" /> Reply
+                                            </>
+                                        ) : (
+                                            <>
+                                                <StickyNoteIcon className="h-3 w-3" /> Note
+                                            </>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground/50 hidden sm:block">r reply · n note · c close</span>
                         </div>
 
                         <form onSubmit={submitReply}>
@@ -375,7 +378,11 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                                 <RichTextEditor
                                     value={data.body}
                                     onChange={(html) => setData('body', html)}
-                                    placeholder={data.type === 'message' ? 'Write your reply…' : 'Write an internal note… (type @ to mention an agent)'}
+                                    placeholder={
+                                        data.type === 'message'
+                                            ? 'Write your reply…'
+                                            : 'Write an internal note… (type @ to mention an agent)'
+                                    }
                                     minHeight="100px"
                                     mailboxId={conversation.mailbox_id}
                                     agents={agents}
@@ -409,14 +416,15 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                 </div>
 
                 {/* ── Right sidebar ── */}
-                <div className={cn(
-                    'shrink-0 border-l border-border flex flex-col overflow-y-auto bg-background',
-                    // Desktop: always visible fixed width
-                    'hidden md:flex md:w-72',
-                    // Mobile: slide-in overlay from the right
-                    mobileInspectorOpen && 'flex fixed inset-y-0 right-0 z-50 w-80 md:relative md:inset-auto md:z-auto shadow-2xl',
-                )}>
-
+                <div
+                    className={cn(
+                        'shrink-0 border-l border-border flex flex-col overflow-y-auto bg-background',
+                        // Desktop: always visible fixed width
+                        'hidden md:flex md:w-72',
+                        // Mobile: slide-in overlay from the right
+                        mobileInspectorOpen && 'flex fixed inset-y-0 right-0 z-50 w-80 md:relative md:inset-auto md:z-auto shadow-2xl',
+                    )}
+                >
                     {/* Mobile close button */}
                     {mobileInspectorOpen && (
                         <div className="flex md:hidden items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -435,7 +443,13 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                     {!aiConfigured && (
                         <div className="mx-4 mt-4 flex items-start gap-2 text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg px-3 py-2.5">
                             <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                            <span>AI is not configured. <a href={route('settings.ai')} className="underline font-medium">Add an API key</a> to enable suggestions.</span>
+                            <span>
+                                AI is not configured.{' '}
+                                <a href={route('settings.ai')} className="underline font-medium">
+                                    Add an API key
+                                </a>{' '}
+                                to enable suggestions.
+                            </span>
                         </div>
                     )}
 
@@ -526,7 +540,10 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
                         onToggleFollow={toggleFollow}
                     />
 
-                    <SlotRenderer name="conversation.sidebar.bottom" props={{ conversation, survey, conversationStatus: conversation.status }} />
+                    <SlotRenderer
+                        name="conversation.sidebar.bottom"
+                        props={{ conversation, survey, conversationStatus: conversation.status }}
+                    />
                 </div>
             </div>
         </AppLayout>
@@ -545,7 +562,10 @@ function ThreadBubble({ thread }: { thread: Thread }) {
         return (
             <div className="flex items-center gap-3 py-1">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground shrink-0 px-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.body) }} />
+                <span
+                    className="text-xs text-muted-foreground shrink-0 px-2"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.body) }}
+                />
                 <div className="flex-1 h-px bg-border" />
             </div>
         );
@@ -571,8 +591,8 @@ function ThreadBubble({ thread }: { thread: Thread }) {
                         isNote
                             ? 'bg-warning/10 border border-warning/30 text-foreground shadow-sm'
                             : isFromCustomer
-                                ? 'bg-card border border-border/60 text-foreground shadow-sm'
-                                : 'bg-primary text-primary-foreground prose-invert shadow-sm',
+                              ? 'bg-card border border-border/60 text-foreground shadow-sm'
+                              : 'bg-primary text-primary-foreground prose-invert shadow-sm',
                     )}
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.body) }}
                 />

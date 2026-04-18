@@ -6,9 +6,18 @@ import { cn } from '@/lib/utils';
 import type { CustomView, Mailbox, Tag } from '@/types';
 
 const COLOR_OPTIONS = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-    '#f97316', '#eab308', '#22c55e', '#14b8a6',
-    '#3b82f6', '#06b6d4', '#64748b', '#1e293b',
+    '#6366f1',
+    '#8b5cf6',
+    '#ec4899',
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#22c55e',
+    '#14b8a6',
+    '#3b82f6',
+    '#06b6d4',
+    '#64748b',
+    '#1e293b',
 ];
 
 interface ViewBuilderModalProps {
@@ -34,26 +43,26 @@ export default function ViewBuilderModal({
     const canShare = ['super_admin', 'admin', 'manager'].includes(userRole);
 
     const src = editingView?.filters ?? {};
-    const cf  = currentFilters ?? {};
+    const cf = currentFilters ?? {};
 
-    const [name,        setName]        = useState(editingView?.name ?? '');
-    const [color,       setColor]       = useState(editingView?.color ?? '#6366f1');
-    const [isShared,    setIsShared]    = useState(editingView?.is_shared ?? false);
-    const [status,      setStatus]      = useState(src.status       ?? cf.status    ?? '');
-    const [assigned,    setAssigned]    = useState(src.assigned     ?? cf.assigned  ?? '');
-    const [mailboxId,   setMailboxId]   = useState(src.mailbox_id   ? String(src.mailbox_id)   : cf.mailbox ?? '');
-    const [tagId,       setTagId]       = useState(src.tag_id       ? String(src.tag_id)       : cf.tag     ?? '');
-    const [priority,    setPriority]    = useState(src.priority     ?? cf.priority  ?? '');
+    const [name, setName] = useState(editingView?.name ?? '');
+    const [color, setColor] = useState(editingView?.color ?? '#6366f1');
+    const [isShared, setIsShared] = useState(editingView?.is_shared ?? false);
+    const [status, setStatus] = useState(src.status ?? cf.status ?? '');
+    const [assigned, setAssigned] = useState(src.assigned ?? cf.assigned ?? '');
+    const [mailboxId, setMailboxId] = useState(src.mailbox_id ? String(src.mailbox_id) : (cf.mailbox ?? ''));
+    const [tagId, setTagId] = useState(src.tag_id ? String(src.tag_id) : (cf.tag ?? ''));
+    const [priority, setPriority] = useState(src.priority ?? cf.priority ?? '');
     const [channelType, setChannelType] = useState(src.channel_type ?? '');
-    const [submitting,  setSubmitting]  = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     function buildFilters(): CustomView['filters'] {
         const f: CustomView['filters'] = {};
-        if (status)      f.status       = status;
-        if (assigned)    f.assigned     = assigned;
-        if (mailboxId)   f.mailbox_id   = Number(mailboxId);
-        if (tagId)       f.tag_id       = Number(tagId);
-        if (priority)    f.priority     = priority;
+        if (status) f.status = status;
+        if (assigned) f.assigned = assigned;
+        if (mailboxId) f.mailbox_id = Number(mailboxId);
+        if (tagId) f.tag_id = Number(tagId);
+        if (priority) f.priority = priority;
         if (channelType) f.channel_type = channelType;
         return f;
     }
@@ -68,18 +77,19 @@ export default function ViewBuilderModal({
         if (editingView) {
             router.patch(`/views/${editingView.id}`, payload, {
                 onSuccess: () => onClose(),
-                onError:   () => setSubmitting(false),
+                onError: () => setSubmitting(false),
             });
         } else {
             router.post('/views', payload, {
                 onSuccess: () => onClose(),
-                onError:   () => setSubmitting(false),
+                onError: () => setSubmitting(false),
             });
         }
     }
 
-    const selectClass = 'w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring';
-    const labelClass  = 'text-xs font-medium text-muted-foreground';
+    const selectClass =
+        'w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring';
+    const labelClass = 'text-xs font-medium text-muted-foreground';
 
     return (
         <div
@@ -89,9 +99,7 @@ export default function ViewBuilderModal({
             <div className="bg-card rounded-xl shadow-2xl border border-border w-full max-w-md mx-4 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-                    <h2 className="font-semibold text-base">
-                        {editingView ? 'Edit View' : 'New View'}
-                    </h2>
+                    <h2 className="font-semibold text-base">{editingView ? 'Edit View' : 'New View'}</h2>
                     <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
                         <XIcon className="h-4 w-4" />
                     </button>
@@ -99,7 +107,6 @@ export default function ViewBuilderModal({
 
                 <form onSubmit={submit} className="flex flex-col flex-1 min-h-0">
                     <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
-
                         {/* Name */}
                         <div className="space-y-1.5">
                             <label className={labelClass}>Name *</label>
@@ -134,9 +141,7 @@ export default function ViewBuilderModal({
                             </div>
                         </div>
 
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-1">
-                            Filters
-                        </p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-1">Filters</p>
 
                         {/* Status */}
                         <div className="space-y-1.5">
@@ -159,7 +164,9 @@ export default function ViewBuilderModal({
                                 <option value="me">Me</option>
                                 <option value="none">Unassigned</option>
                                 {agents.map((a) => (
-                                    <option key={a.id} value={String(a.id)}>{a.name}</option>
+                                    <option key={a.id} value={String(a.id)}>
+                                        {a.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -170,7 +177,11 @@ export default function ViewBuilderModal({
                                 <label className={labelClass}>Mailbox</label>
                                 <select value={mailboxId} onChange={(e) => setMailboxId(e.target.value)} className={selectClass}>
                                     <option value="">Any</option>
-                                    {mailboxes.map((m) => <option key={m.id} value={String(m.id)}>{m.name}</option>)}
+                                    {mailboxes.map((m) => (
+                                        <option key={m.id} value={String(m.id)}>
+                                            {m.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         )}
@@ -181,7 +192,11 @@ export default function ViewBuilderModal({
                                 <label className={labelClass}>Tag</label>
                                 <select value={tagId} onChange={(e) => setTagId(e.target.value)} className={selectClass}>
                                     <option value="">Any</option>
-                                    {tags.map((t) => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+                                    {tags.map((t) => (
+                                        <option key={t.id} value={String(t.id)}>
+                                            {t.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         )}
@@ -228,10 +243,12 @@ export default function ViewBuilderModal({
                                         isShared ? 'bg-primary' : 'bg-muted-foreground/30',
                                     )}
                                 >
-                                    <span className={cn(
-                                        'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
-                                        isShared ? 'translate-x-4' : 'translate-x-1',
-                                    )} />
+                                    <span
+                                        className={cn(
+                                            'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                                            isShared ? 'translate-x-4' : 'translate-x-1',
+                                        )}
+                                    />
                                 </button>
                             </div>
                         )}
@@ -239,7 +256,9 @@ export default function ViewBuilderModal({
 
                     {/* Footer */}
                     <div className="flex justify-end gap-2 px-5 py-4 border-t border-border shrink-0">
-                        <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+                            Cancel
+                        </Button>
                         <Button type="submit" size="sm" disabled={submitting || !name.trim()}>
                             {submitting ? 'Saving…' : editingView ? 'Save Changes' : 'Create View'}
                         </Button>

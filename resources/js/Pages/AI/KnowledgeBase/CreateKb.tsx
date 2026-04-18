@@ -33,39 +33,43 @@ export default function CreateKb() {
 
                 <Card className="max-w-3xl bg-card/75">
                     <CardContent className="p-6">
-                <form onSubmit={submit} className="space-y-5">
-                    <div className="space-y-1.5">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                            id="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
-                            placeholder="e.g. Product Documentation"
-                            autoFocus
-                        />
-                        {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                    </div>
+                        <form onSubmit={submit} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    placeholder="e.g. Product Documentation"
+                                    autoFocus
+                                />
+                                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                            </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="description">
-                            Description <span className="text-muted-foreground">(optional)</span>
-                        </Label>
-                        <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
-                            placeholder="Brief description of what this knowledge base contains"
-                        />
-                        {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-                    </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="description">
+                                    Description <span className="text-muted-foreground">(optional)</span>
+                                </Label>
+                                <Textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                    placeholder="Brief description of what this knowledge base contains"
+                                />
+                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                            </div>
 
-                    <div className="flex gap-3 pt-2">
-                        <Button type="submit" disabled={processing}>Create Knowledge Base</Button>
-                        <Link href={route('ai.kb.index')}>
-                            <Button type="button" variant="ghost">Cancel</Button>
-                        </Link>
-                    </div>
-                </form>
+                            <div className="flex gap-3 pt-2">
+                                <Button type="submit" disabled={processing}>
+                                    Create Knowledge Base
+                                </Button>
+                                <Link href={route('ai.kb.index')}>
+                                    <Button type="button" variant="ghost">
+                                        Cancel
+                                    </Button>
+                                </Link>
+                            </div>
+                        </form>
                     </CardContent>
                 </Card>
             </div>

@@ -9,15 +9,45 @@ import { ImageIcon, XIcon, UploadIcon, ZapIcon } from 'lucide-react';
 
 const TIMEZONES = [
     'UTC',
-    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-    'America/Anchorage', 'America/Honolulu', 'America/Toronto', 'America/Vancouver',
-    'America/Sao_Paulo', 'America/Mexico_City', 'America/Buenos_Aires',
-    'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Madrid', 'Europe/Rome',
-    'Europe/Amsterdam', 'Europe/Stockholm', 'Europe/Warsaw', 'Europe/Istanbul', 'Europe/Moscow',
-    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Colombo', 'Asia/Dhaka', 'Asia/Karachi',
-    'Asia/Kathmandu', 'Asia/Bangkok', 'Asia/Jakarta', 'Asia/Singapore', 'Asia/Kuala_Lumpur',
-    'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Seoul',
-    'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Perth',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Anchorage',
+    'America/Honolulu',
+    'America/Toronto',
+    'America/Vancouver',
+    'America/Sao_Paulo',
+    'America/Mexico_City',
+    'America/Buenos_Aires',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Madrid',
+    'Europe/Rome',
+    'Europe/Amsterdam',
+    'Europe/Stockholm',
+    'Europe/Warsaw',
+    'Europe/Istanbul',
+    'Europe/Moscow',
+    'Asia/Dubai',
+    'Asia/Kolkata',
+    'Asia/Colombo',
+    'Asia/Dhaka',
+    'Asia/Karachi',
+    'Asia/Kathmandu',
+    'Asia/Bangkok',
+    'Asia/Jakarta',
+    'Asia/Singapore',
+    'Asia/Kuala_Lumpur',
+    'Asia/Shanghai',
+    'Asia/Hong_Kong',
+    'Asia/Tokyo',
+    'Asia/Seoul',
+    'Australia/Sydney',
+    'Australia/Melbourne',
+    'Australia/Brisbane',
+    'Australia/Perth',
     'Pacific/Auckland',
 ];
 
@@ -112,13 +142,7 @@ export default function GeneralSettings({ workspace, branding }: Props) {
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="ws-slug">Workspace slug</Label>
-                                <Input
-                                    id="ws-slug"
-                                    value={workspace.slug}
-                                    readOnly
-                                    disabled
-                                    className="bg-muted cursor-not-allowed"
-                                />
+                                <Input id="ws-slug" value={workspace.slug} readOnly disabled className="bg-muted cursor-not-allowed" />
                                 <p className="text-xs text-muted-foreground">Slug cannot be changed.</p>
                             </div>
 
@@ -131,7 +155,9 @@ export default function GeneralSettings({ workspace, branding }: Props) {
                                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
                                     {TIMEZONES.map((tz) => (
-                                        <option key={tz} value={tz}>{tz}</option>
+                                        <option key={tz} value={tz}>
+                                            {tz}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -150,12 +176,13 @@ export default function GeneralSettings({ workspace, branding }: Props) {
                     <div className="flex items-start gap-4 px-6 py-5 border-b border-border">
                         <div>
                             <h2 className="text-[15px] font-semibold">Branding</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">Customise the logo and company name shown in the app sidebar.</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Customise the logo and company name shown in the app sidebar.
+                            </p>
                         </div>
                     </div>
                     <div className="px-6 py-5">
                         <form onSubmit={handleBrandingSubmit} className="space-y-5">
-
                             {/* Logo upload */}
                             <div className="space-y-2">
                                 <Label>Company logo</Label>
@@ -222,7 +249,9 @@ export default function GeneralSettings({ workspace, branding }: Props) {
                                     onChange={(e) => brandingForm.setData('branding_name', e.target.value)}
                                     placeholder="Acme Corp"
                                 />
-                                <p className="text-xs text-muted-foreground">Shown in the sidebar next to your logo. Defaults to workspace name if empty.</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Shown in the sidebar next to your logo. Defaults to workspace name if empty.
+                                </p>
                                 {brandingForm.errors.branding_name && (
                                     <p className="text-xs text-destructive">{brandingForm.errors.branding_name}</p>
                                 )}
@@ -257,7 +286,9 @@ export default function GeneralSettings({ workspace, branding }: Props) {
                     <div className="flex items-start gap-4 px-6 py-5 border-b border-border">
                         <div>
                             <h2 className="text-[15px] font-semibold">Team Members</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">Add or remove team members and manage their mailbox access.</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Add or remove team members and manage their mailbox access.
+                            </p>
                         </div>
                     </div>
                     <div className="px-6 py-5 flex gap-2">

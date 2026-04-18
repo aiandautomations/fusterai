@@ -30,15 +30,8 @@ export default function ResetPassword({ token, email }: Props) {
             <form onSubmit={submit} className="space-y-4">
                 <div>
                     <Label className="mb-1.5">Email address</Label>
-                    <Input
-                        type="email"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        autoComplete="email"
-                    />
-                    {errors.email && (
-                        <p className="mt-1 text-xs text-destructive">{errors.email}</p>
-                    )}
+                    <Input type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} autoComplete="email" />
+                    {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
                 </div>
 
                 <div>
@@ -51,9 +44,7 @@ export default function ResetPassword({ token, email }: Props) {
                         autoComplete="new-password"
                         autoFocus
                     />
-                    {errors.password && (
-                        <p className="mt-1 text-xs text-destructive">{errors.password}</p>
-                    )}
+                    {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password}</p>}
                 </div>
 
                 <div>
@@ -65,9 +56,7 @@ export default function ResetPassword({ token, email }: Props) {
                         placeholder="••••••••"
                         autoComplete="new-password"
                     />
-                    {errors.password_confirmation && (
-                        <p className="mt-1 text-xs text-destructive">{errors.password_confirmation}</p>
-                    )}
+                    {errors.password_confirmation && <p className="mt-1 text-xs text-destructive">{errors.password_confirmation}</p>}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={processing}>

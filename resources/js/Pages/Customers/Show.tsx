@@ -18,17 +18,17 @@ interface Props {
 }
 
 const statusColors: Record<string, string> = {
-    open:    'default',
+    open: 'default',
     pending: 'warning',
-    closed:  'secondary',
-    spam:    'destructive',
+    closed: 'secondary',
+    spam: 'destructive',
 } as const;
 
 export default function CustomerShow({ customer }: Props) {
-    const [notes, setNotes]       = useState(customer.notes ?? '');
-    const [saving, setSaving]     = useState(false);
-    const [saved, setSaved]       = useState(false);
-    const debounceRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [notes, setNotes] = useState(customer.notes ?? '');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const saveNotes = async (value: string) => {
         setSaving(true);
@@ -39,7 +39,7 @@ export default function CustomerShow({ customer }: Props) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
                 body: JSON.stringify({ notes: value }),
             });
@@ -93,9 +93,7 @@ export default function CustomerShow({ customer }: Props) {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                                {customer.is_blocked && (
-                                    <Badge variant="destructive">Blocked</Badge>
-                                )}
+                                {customer.is_blocked && <Badge variant="destructive">Blocked</Badge>}
                                 <Badge variant="secondary">{customer.conversations_count} conversations</Badge>
                             </div>
                         </div>

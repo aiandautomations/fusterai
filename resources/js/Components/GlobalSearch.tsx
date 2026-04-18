@@ -15,10 +15,10 @@ interface SearchResult {
 }
 
 const statusColors: Record<string, string> = {
-    open:    'text-info bg-info/10',
+    open: 'text-info bg-info/10',
     pending: 'text-warning bg-warning/15',
-    closed:  'text-muted-foreground bg-muted',
-    spam:    'text-destructive bg-destructive/10',
+    closed: 'text-muted-foreground bg-muted',
+    spam: 'text-destructive bg-destructive/10',
 };
 
 export default function GlobalSearch() {
@@ -114,7 +114,10 @@ export default function GlobalSearch() {
                 results.map((result, i) => (
                     <button
                         key={result.id}
-                        onClick={() => { router.visit(result.url); setOpen(false); }}
+                        onClick={() => {
+                            router.visit(result.url);
+                            setOpen(false);
+                        }}
                         onMouseEnter={() => setSelected(i)}
                         className={cn(
                             'w-full text-left px-3 py-2.5 flex items-start gap-2.5 transition-colors',

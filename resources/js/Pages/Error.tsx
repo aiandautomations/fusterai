@@ -29,15 +29,9 @@ export default function Error({ status }: { status: number }) {
         <>
             <Head title={`${status} — ${title}`} />
             <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
-                <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                    Error {status}
-                </p>
-                <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground">
-                    {title}
-                </h1>
-                <p className="mt-4 max-w-md text-base text-muted-foreground">
-                    {description}
-                </p>
+                <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Error {status}</p>
+                <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground">{title}</h1>
+                <p className="mt-4 max-w-md text-base text-muted-foreground">{description}</p>
                 <div className="mt-8 flex gap-3">
                     <Link
                         href="/"

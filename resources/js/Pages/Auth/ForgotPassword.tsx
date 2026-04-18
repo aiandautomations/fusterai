@@ -15,10 +15,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
     }
 
     return (
-        <AuthLayout
-            title="Forgot your password?"
-            subtitle="Enter your email and we'll send you a reset link."
-        >
+        <AuthLayout title="Forgot your password?" subtitle="Enter your email and we'll send you a reset link.">
             <Head title="Forgot Password" />
 
             {status && (
@@ -38,9 +35,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         autoComplete="email"
                         autoFocus
                     />
-                    {errors.email && (
-                        <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
 
                 <div className="pt-1">

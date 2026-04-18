@@ -47,9 +47,7 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                         autoFocus
                         className={errors.email ? 'border-destructive' : ''}
                     />
-                    {errors.email && (
-                        <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -69,17 +67,11 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                         autoComplete="current-password"
                         className={errors.password ? 'border-destructive' : ''}
                     />
-                    {errors.password && (
-                        <p className="text-xs text-destructive">{errors.password}</p>
-                    )}
+                    {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
                 </div>
 
                 <div className="flex items-center gap-2 pt-0.5">
-                    <Checkbox
-                        id="remember"
-                        checked={data.remember}
-                        onCheckedChange={(checked) => setData('remember', !!checked)}
-                    />
+                    <Checkbox id="remember" checked={data.remember} onCheckedChange={(checked) => setData('remember', !!checked)} />
                     <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground cursor-pointer">
                         Keep me signed in for 30 days
                     </Label>

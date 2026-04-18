@@ -59,20 +59,21 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
         <AppLayout>
             <Head title="Live Chat" />
             <div className="w-full px-6 py-8 space-y-6">
-
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Live Chat</h1>
-                            <p className="text-sm text-muted-foreground mt-1">Embed the widget on your site and configure the chat experience.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="secondary">
-                                <MessageSquareIcon className="h-3 w-3 mr-1" />
-                                Workspace #{workspaceId}
-                            </Badge>
-                        </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Live Chat</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Embed the widget on your site and configure the chat experience.
+                        </p>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                            <MessageSquareIcon className="h-3 w-3 mr-1" />
+                            Workspace #{workspaceId}
+                        </Badge>
+                    </div>
+                </div>
 
                 <div className="grid gap-6 xl:grid-cols-2">
                     {/* Embed Snippet */}
@@ -80,7 +81,8 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
                         <CardHeader>
                             <CardTitle>Embed Snippet</CardTitle>
                             <CardDescription>
-                                Paste this before the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;/body&gt;</code> tag of every page where you want the chat widget.
+                                Paste this before the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;/body&gt;</code> tag of
+                                every page where you want the chat widget.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -102,9 +104,9 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
                             <div className="rounded-xl border border-border divide-y divide-border text-[13px]">
                                 {[
                                     { label: 'Workspace ID', value: String(workspaceId) },
-                                    { label: 'Reverb Host',  value: `${snippet.wsScheme}://${snippet.wsHost}:${snippet.wsPort}` },
-                                    { label: 'API Base',     value: snippet.apiBase },
-                                    { label: 'Widget URL',   value: `${snippet.apiBase}/livechat/widget.js` },
+                                    { label: 'Reverb Host', value: `${snippet.wsScheme}://${snippet.wsHost}:${snippet.wsPort}` },
+                                    { label: 'API Base', value: snippet.apiBase },
+                                    { label: 'Widget URL', value: `${snippet.apiBase}/livechat/widget.js` },
                                 ].map(({ label, value }) => (
                                     <div key={label} className="flex items-center justify-between px-4 py-2.5 gap-4">
                                         <span className="text-muted-foreground shrink-0">{label}</span>
@@ -156,7 +158,10 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
                                                     onClick={() => setData('color', themeColorHex)}
                                                     className="flex items-center gap-1 text-[11px] text-primary hover:underline"
                                                 >
-                                                    <span className="inline-block h-2 w-2 rounded-full border border-primary/30" style={{ backgroundColor: themeColorHex }} />
+                                                    <span
+                                                        className="inline-block h-2 w-2 rounded-full border border-primary/30"
+                                                        style={{ backgroundColor: themeColorHex }}
+                                                    />
                                                     Use theme
                                                 </button>
                                             )}
@@ -178,7 +183,10 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
                                         </div>
                                         {data.color.toLowerCase() === themeColorHex.toLowerCase() && (
                                             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: themeColorHex }} />
+                                                <span
+                                                    className="inline-block h-2 w-2 rounded-full"
+                                                    style={{ backgroundColor: themeColorHex }}
+                                                />
                                                 Synced with theme
                                             </p>
                                         )}
@@ -186,7 +194,10 @@ export default function LiveChatSettings({ workspaceId, themeColorHex, config, s
 
                                     <div className="space-y-1.5">
                                         <Label htmlFor="position">Widget position</Label>
-                                        <Select value={data.position} onValueChange={(v: 'bottom-right' | 'bottom-left') => setData('position', v)}>
+                                        <Select
+                                            value={data.position}
+                                            onValueChange={(v: 'bottom-right' | 'bottom-left') => setData('position', v)}
+                                        >
                                             <SelectTrigger id="position" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>

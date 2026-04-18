@@ -16,10 +16,7 @@ interface BoundaryState {
     hasError: boolean;
 }
 
-class SlotErrorBoundary extends React.Component<
-    { slotName: string; children: React.ReactNode },
-    BoundaryState
-> {
+class SlotErrorBoundary extends React.Component<{ slotName: string; children: React.ReactNode }, BoundaryState> {
     constructor(props: { slotName: string; children: React.ReactNode }) {
         super(props);
         this.state = { hasError: false };

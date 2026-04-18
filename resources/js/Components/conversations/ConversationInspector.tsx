@@ -1,11 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
 import { cn, getInitials } from '@/lib/utils';
 import type { Conversation, Folder, Mailbox, Tag, User } from '@/types';
 import StatusDot from '@/Components/StatusDot';
@@ -42,16 +37,16 @@ interface Props {
 }
 
 const STATUS_CONFIG = {
-    open:    { label: 'Open',    dot: 'bg-emerald-500', active: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400' },
-    pending: { label: 'Pending', dot: 'bg-amber-400',   active: 'bg-amber-400/12 text-amber-700 dark:text-amber-400' },
-    closed:  { label: 'Closed',  dot: 'bg-muted-foreground/40', active: 'bg-muted/60 text-foreground/70' },
-    spam:    { label: 'Spam',    dot: 'bg-rose-400',    active: 'bg-rose-400/12 text-rose-700 dark:text-rose-400' },
+    open: { label: 'Open', dot: 'bg-emerald-500', active: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400' },
+    pending: { label: 'Pending', dot: 'bg-amber-400', active: 'bg-amber-400/12 text-amber-700 dark:text-amber-400' },
+    closed: { label: 'Closed', dot: 'bg-muted-foreground/40', active: 'bg-muted/60 text-foreground/70' },
+    spam: { label: 'Spam', dot: 'bg-rose-400', active: 'bg-rose-400/12 text-rose-700 dark:text-rose-400' },
 } as const;
 
 const PRIORITY_CONFIG = {
-    low:    { label: 'Low',    active: 'bg-background text-foreground/70 shadow-sm' },
+    low: { label: 'Low', active: 'bg-background text-foreground/70 shadow-sm' },
     normal: { label: 'Normal', active: 'bg-background text-info shadow-sm' },
-    high:   { label: 'High',   active: 'bg-background text-warning shadow-sm' },
+    high: { label: 'High', active: 'bg-background text-warning shadow-sm' },
     urgent: { label: 'Urgent', active: 'bg-background text-destructive shadow-sm' },
 } as const;
 
@@ -84,7 +79,6 @@ export default function ConversationInspector({
 
     return (
         <div className={cn('flex flex-col overflow-y-auto bg-background', className)}>
-
             {/* ── Customer ── */}
             <div className="px-4 py-4 border-b border-border">
                 <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Customer</p>
@@ -125,7 +119,7 @@ export default function ConversationInspector({
                         <p className="text-[11px] text-muted-foreground/70 font-medium">Mailbox</p>
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-[12px] font-medium hover:bg-muted/50 transition-colors text-left border border-transparent hover:border-border">
-                                {mailboxes.find(m => m.id === conversation.mailbox_id)?.name ?? 'Select mailbox'}
+                                {mailboxes.find((m) => m.id === conversation.mailbox_id)?.name ?? 'Select mailbox'}
                                 <ChevronDownIcon className="h-3 w-3 text-muted-foreground/50 ml-1 shrink-0" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-52">
@@ -157,12 +151,12 @@ export default function ConversationInspector({
                                     onClick={() => onStatusChange(s)}
                                     className={cn(
                                         'flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all',
-                                        isActive
-                                            ? cfg.active
-                                            : 'text-muted-foreground/60 hover:bg-muted/50 hover:text-foreground/80',
+                                        isActive ? cfg.active : 'text-muted-foreground/60 hover:bg-muted/50 hover:text-foreground/80',
                                     )}
                                 >
-                                    <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', isActive ? cfg.dot : 'bg-muted-foreground/25')} />
+                                    <span
+                                        className={cn('w-1.5 h-1.5 rounded-full shrink-0', isActive ? cfg.dot : 'bg-muted-foreground/25')}
+                                    />
                                     {cfg.label}
                                 </button>
                             );
@@ -222,7 +216,9 @@ export default function ConversationInspector({
                                         </Avatar>
                                         <StatusDot status={assignedAgent.status} size="sm" />
                                     </div>
-                                    <span className="text-[12px] font-medium text-foreground/90 flex-1 text-left truncate">{assignedAgent.name}</span>
+                                    <span className="text-[12px] font-medium text-foreground/90 flex-1 text-left truncate">
+                                        {assignedAgent.name}
+                                    </span>
                                 </>
                             ) : (
                                 <>
@@ -279,7 +275,9 @@ export default function ConversationInspector({
                 {availableTags.length > 0 && (
                     <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors group">
-                            <span className="size-3.5 rounded-full border border-dashed border-muted-foreground/40 inline-flex items-center justify-center text-[10px] group-hover:border-foreground/40">+</span>
+                            <span className="size-3.5 rounded-full border border-dashed border-muted-foreground/40 inline-flex items-center justify-center text-[10px] group-hover:border-foreground/40">
+                                +
+                            </span>
                             Add tag
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-44">
@@ -321,7 +319,9 @@ export default function ConversationInspector({
                     {availableFolders.length > 0 && onAddFolder && (
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors group">
-                                <span className="size-3.5 rounded-full border border-dashed border-muted-foreground/40 inline-flex items-center justify-center text-[10px] group-hover:border-foreground/40">+</span>
+                                <span className="size-3.5 rounded-full border border-dashed border-muted-foreground/40 inline-flex items-center justify-center text-[10px] group-hover:border-foreground/40">
+                                    +
+                                </span>
                                 Add to folder
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-44">
@@ -381,12 +381,15 @@ export default function ConversationInspector({
                         <div className="flex items-center gap-2.5">
                             <span className="text-lg">{survey.rating === 'good' ? '👍' : '👎'}</span>
                             <div>
-                                <p className={cn('text-[12px] font-semibold', survey.rating === 'good' ? 'text-emerald-600' : 'text-destructive')}>
+                                <p
+                                    className={cn(
+                                        'text-[12px] font-semibold',
+                                        survey.rating === 'good' ? 'text-emerald-600' : 'text-destructive',
+                                    )}
+                                >
                                     {survey.rating === 'good' ? 'Positive' : 'Negative'}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                    {new Date(survey.responded_at).toLocaleDateString()}
-                                </p>
+                                <p className="text-[11px] text-muted-foreground">{new Date(survey.responded_at).toLocaleDateString()}</p>
                             </div>
                         </div>
                     ) : (

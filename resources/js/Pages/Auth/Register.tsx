@@ -20,10 +20,7 @@ export default function Register() {
     }
 
     return (
-        <AuthLayout
-            title="Create your workspace"
-            subtitle="Set up FusterAI for your team in under a minute"
-        >
+        <AuthLayout title="Create your workspace" subtitle="Set up FusterAI for your team in under a minute">
             <Head title="Get started" />
 
             <form onSubmit={submit} className="space-y-4">
@@ -37,9 +34,7 @@ export default function Register() {
                         autoFocus
                         className={errors.workspace_name ? 'border-destructive' : ''}
                     />
-                    {errors.workspace_name && (
-                        <p className="text-xs text-destructive">{errors.workspace_name}</p>
-                    )}
+                    {errors.workspace_name && <p className="text-xs text-destructive">{errors.workspace_name}</p>}
                 </div>
 
                 {/* Divider */}
@@ -59,9 +54,7 @@ export default function Register() {
                         autoComplete="name"
                         className={errors.name ? 'border-destructive' : ''}
                     />
-                    {errors.name && (
-                        <p className="text-xs text-destructive">{errors.name}</p>
-                    )}
+                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
 
                 {/* Email */}
@@ -75,9 +68,7 @@ export default function Register() {
                         autoComplete="email"
                         className={errors.email ? 'border-destructive' : ''}
                     />
-                    {errors.email && (
-                        <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
 
                 {/* Password row — side by side */}
@@ -92,9 +83,7 @@ export default function Register() {
                             autoComplete="new-password"
                             className={errors.password ? 'border-destructive' : ''}
                         />
-                        {errors.password && (
-                            <p className="text-xs text-destructive">{errors.password}</p>
-                        )}
+                        {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium">Confirm</Label>
@@ -116,7 +105,9 @@ export default function Register() {
 
                 <p className="text-center text-xs text-muted-foreground">
                     Already have an account?{' '}
-                    <a href="/login" className="text-primary font-medium hover:underline">Sign in</a>
+                    <a href="/login" className="text-primary font-medium hover:underline">
+                        Sign in
+                    </a>
                 </p>
             </form>
         </AuthLayout>

@@ -8,8 +8,28 @@ export function cn(...inputs: ClassValue[]) {
 
 export function sanitizeHtml(html: string): string {
     return DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['p','br','b','i','u','em','strong','a','ul','ol','li','blockquote','code','pre','h1','h2','h3','span','div'],
-        ALLOWED_ATTR: ['href','target','rel','class'],
+        ALLOWED_TAGS: [
+            'p',
+            'br',
+            'b',
+            'i',
+            'u',
+            'em',
+            'strong',
+            'a',
+            'ul',
+            'ol',
+            'li',
+            'blockquote',
+            'code',
+            'pre',
+            'h1',
+            'h2',
+            'h3',
+            'span',
+            'div',
+        ],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
         ALLOW_DATA_ATTR: false,
     });
 }

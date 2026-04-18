@@ -7,27 +7,45 @@ import { Button } from '@/Components/ui/button';
 import ConversationInspector from '@/Components/conversations/ConversationInspector';
 import { cn, getInitials, sanitizeHtml } from '@/lib/utils';
 import type { Conversation, Mailbox, Tag, Thread, User, Customer, Attachment, Paginated, PageProps, Folder, CustomView } from '@/types';
-import { InboxIcon, PlusIcon, ClockIcon, SendIcon, StickyNoteIcon, XIcon, SearchIcon, PanelRightCloseIcon, PanelRightOpenIcon, ExternalLinkIcon, MailboxIcon, ChevronDownIcon, CheckSquareIcon, CheckIcon, KeyboardIcon, BookmarkIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import {
+    InboxIcon,
+    PlusIcon,
+    ClockIcon,
+    SendIcon,
+    StickyNoteIcon,
+    XIcon,
+    SearchIcon,
+    PanelRightCloseIcon,
+    PanelRightOpenIcon,
+    ExternalLinkIcon,
+    MailboxIcon,
+    ChevronDownIcon,
+    CheckSquareIcon,
+    CheckIcon,
+    KeyboardIcon,
+    BookmarkIcon,
+    PencilIcon,
+    Trash2Icon,
+} from 'lucide-react';
 import ViewBuilderModal from '@/Components/ViewBuilderModal';
 import { Checkbox } from '@/Components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
 import RichTextEditor from '@/Components/RichTextEditor';
 import type { Editor } from '@tiptap/react';
 import { useConversationListShortcuts } from '@/hooks/useConversationShortcuts';
 
 // ── Canned response picker (Tiptap-aware) ─────────────────────────────────────
 
-interface CannedResponse { id: number; name: string; content: string }
+interface CannedResponse {
+    id: number;
+    name: string;
+    content: string;
+}
 
 function useCannedResponsePicker(mailboxId?: number) {
-    const [results, setResults]     = useState<CannedResponse[]>([]);
+    const [results, setResults] = useState<CannedResponse[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-    const editorRef   = useRef<Editor | null>(null);
+    const editorRef = useRef<Editor | null>(null);
     const slashPosRef = useRef<number | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,7 +68,10 @@ function useCannedResponsePicker(mailboxId?: number) {
                 try {
                     const mbParam = mailboxId ? `&mailbox_id=${mailboxId}` : '';
                     const res = await fetch(`/canned-responses/search?q=${encodeURIComponent(query)}${mbParam}`);
-                    if (!res.ok) { setResults([]); return; }
+                    if (!res.ok) {
+                        setResults([]);
+                        return;
+                    }
                     const data: CannedResponse[] = await res.json();
                     setResults(data);
                 } catch {
@@ -67,27 +88,42 @@ function useCannedResponsePicker(mailboxId?: number) {
         const editor = editorRef.current;
         if (!editor || slashPosRef.current === null) return;
         const to = editor.state.selection.from;
-        editor.chain()
-            .deleteRange({ from: slashPosRef.current, to })
-            .insertContent(r.content)
-            .focus()
-            .run();
+        editor.chain().deleteRange({ from: slashPosRef.current, to }).insertContent(r.content).focus().run();
         setResults([]);
         slashPosRef.current = null;
     }, []);
 
-    const onKeyDown = useCallback((e: KeyboardEvent) => {
-        if (!results.length) return;
-        if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => (i + 1) % results.length); }
-        if (e.key === 'ArrowUp')   { e.preventDefault(); setActiveIndex(i => (i - 1 + results.length) % results.length); }
-        if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickResponse(results[activeIndex]); }
-        if (e.key === 'Escape')    { setResults([]); slashPosRef.current = null; }
-    }, [results, activeIndex, pickResponse]);
+    const onKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            if (!results.length) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActiveIndex((i) => (i + 1) % results.length);
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActiveIndex((i) => (i - 1 + results.length) % results.length);
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                pickResponse(results[activeIndex]);
+            }
+            if (e.key === 'Escape') {
+                setResults([]);
+                slashPosRef.current = null;
+            }
+        },
+        [results, activeIndex, pickResponse],
+    );
 
     return { results, activeIndex, onEditorReady, onEditorUpdate, pickResponse, onKeyDown };
 }
 
-function CannedDropdown({ results, activeIndex, onPick }: {
+function CannedDropdown({
+    results,
+    activeIndex,
+    onPick,
+}: {
     results: CannedResponse[];
     activeIndex: number;
     onPick: (r: CannedResponse) => void;
@@ -99,7 +135,10 @@ function CannedDropdown({ results, activeIndex, onPick }: {
                 <button
                     key={r.id}
                     type="button"
-                    onMouseDown={(e) => { e.preventDefault(); onPick(r); }}
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        onPick(r);
+                    }}
                     className={cn(
                         'w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-muted/60 transition-colors',
                         i === activeIndex && 'bg-muted/60',
@@ -162,7 +201,6 @@ interface Props {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 function relativeTime(dateStr?: string): string {
     if (!dateStr) return '';
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -178,24 +216,32 @@ function buildConversationLink(conversationId: number): string {
 
 // ── New conversation modal ────────────────────────────────────────────────────
 
-interface CustomerOption { id: number; name: string; email: string }
+interface CustomerOption {
+    id: number;
+    name: string;
+    email: string;
+}
 
 function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; onClose: () => void }) {
     const [mailboxId, setMailboxId] = useState(mailboxes[0]?.id ?? '');
-    const [subject, setSubject]     = useState('');
-    const [body, setBody]           = useState('');
+    const [subject, setSubject] = useState('');
+    const [body, setBody] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const [customerQuery, setCustomerQuery]   = useState('');
+    const [customerQuery, setCustomerQuery] = useState('');
     const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
-    const [showDropdown, setShowDropdown]     = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     function searchCustomers(q: string) {
         setCustomerQuery(q);
         setSelectedCustomer(null);
-        if (!q.trim()) { setCustomerOptions([]); setShowDropdown(false); return; }
+        if (!q.trim()) {
+            setCustomerOptions([]);
+            setShowDropdown(false);
+            return;
+        }
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(async () => {
             const res = await fetch(`/customers/search?q=${encodeURIComponent(q)}`);
@@ -209,19 +255,26 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
         e.preventDefault();
         if (!selectedCustomer || !mailboxId || !subject.trim() || !body.trim()) return;
         setSubmitting(true);
-        router.post('/conversations', {
-            mailbox_id: mailboxId,
-            subject,
-            customer_id: selectedCustomer.id,
-            body,
-        }, {
-            onSuccess: () => onClose(),
-            onError: () => setSubmitting(false),
-        });
+        router.post(
+            '/conversations',
+            {
+                mailbox_id: mailboxId,
+                subject,
+                customer_id: selectedCustomer.id,
+                body,
+            },
+            {
+                onSuccess: () => onClose(),
+                onError: () => setSubmitting(false),
+            },
+        );
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
             <div className="bg-card rounded-xl shadow-2xl border border-border w-full max-w-lg mx-4 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
@@ -239,10 +292,14 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
                             <select
                                 className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                                 value={mailboxId}
-                                onChange={e => setMailboxId(Number(e.target.value))}
+                                onChange={(e) => setMailboxId(Number(e.target.value))}
                                 required
                             >
-                                {mailboxes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                {mailboxes.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                        {m.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -255,7 +312,14 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
                                         <span className="text-sm font-medium">{selectedCustomer.name}</span>
                                         <span className="text-xs text-muted-foreground ml-2">{selectedCustomer.email}</span>
                                     </div>
-                                    <button type="button" onClick={() => { setSelectedCustomer(null); setCustomerQuery(''); }} className="text-muted-foreground hover:text-foreground ml-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCustomer(null);
+                                            setCustomerQuery('');
+                                        }}
+                                        className="text-muted-foreground hover:text-foreground ml-2"
+                                    >
                                         <XIcon className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
@@ -266,16 +330,19 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
                                         className="w-full border border-input rounded-md pl-8 pr-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                                         placeholder="Search by name or email…"
                                         value={customerQuery}
-                                        onChange={e => searchCustomers(e.target.value)}
+                                        onChange={(e) => searchCustomers(e.target.value)}
                                         onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                                     />
                                     {showDropdown && customerOptions.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 overflow-hidden">
-                                            {customerOptions.map(c => (
+                                            {customerOptions.map((c) => (
                                                 <button
                                                     key={c.id}
                                                     type="button"
-                                                    onMouseDown={() => { setSelectedCustomer(c); setShowDropdown(false); }}
+                                                    onMouseDown={() => {
+                                                        setSelectedCustomer(c);
+                                                        setShowDropdown(false);
+                                                    }}
                                                     className="w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors"
                                                 >
                                                     <span className="text-sm font-medium">{c.name}</span>
@@ -300,7 +367,7 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
                                 className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                                 placeholder="e.g. Question about billing"
                                 value={subject}
-                                onChange={e => setSubject(e.target.value)}
+                                onChange={(e) => setSubject(e.target.value)}
                                 required
                             />
                         </div>
@@ -308,18 +375,15 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
                         {/* Message */}
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Message</label>
-                            <RichTextEditor
-                                value={body}
-                                onChange={setBody}
-                                placeholder="Write your message…"
-                                minHeight="120px"
-                            />
+                            <RichTextEditor value={body} onChange={setBody} placeholder="Write your message…" minHeight="120px" />
                         </div>
                     </div>
 
                     {/* Footer */}
                     <div className="flex justify-end gap-2 px-5 py-4 border-t border-border shrink-0">
-                        <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+                            Cancel
+                        </Button>
                         <Button
                             type="submit"
                             size="sm"
@@ -373,14 +437,15 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
         },
         {
             title: 'Global',
-            shortcuts: [
-                { key: '?', desc: 'Toggle this shortcuts panel' },
-            ],
+            shortcuts: [{ key: '?', desc: 'Toggle this shortcuts panel' }],
         },
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
             <div className="bg-card rounded-xl shadow-2xl border border-border w-full max-w-md mx-4 overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                     <div className="flex items-center gap-2">
@@ -394,7 +459,9 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
                 <div className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
                     {sections.map((section) => (
                         <div key={section.title}>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">{section.title}</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+                                {section.title}
+                            </p>
                             <div className="space-y-1.5">
                                 {section.shortcuts.map(({ key, desc }) => (
                                     <div key={key} className="flex items-center justify-between gap-4">
@@ -415,7 +482,19 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ConversationsIndex({ conversations, mailboxes, tags, folders, counts, filters, selected, agents, isFollowing, activeView, survey }: Props) {
+export default function ConversationsIndex({
+    conversations,
+    mailboxes,
+    tags,
+    folders,
+    counts,
+    filters,
+    selected,
+    agents,
+    isFollowing,
+    activeView,
+    survey,
+}: Props) {
     const { auth } = usePage<PageProps>().props;
     const isAgent = auth.user?.role === 'agent';
     const activeStatus = filters.status ?? 'open';
@@ -429,15 +508,15 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
 
-    const allIds = conversations.data.map(c => c.id);
-    const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+    const allIds = conversations.data.map((c) => c.id);
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
     const currentSelectedId = selected?.id ?? null;
 
     useConversationListShortcuts({
         conversationIds: allIds,
         currentId: currentSelectedId,
         onSelect: (id) => {
-            const conv = conversations.data.find(c => c.id === id);
+            const conv = conversations.data.find((c) => c.id === id);
             if (conv) selectConversation(conv);
         },
     });
@@ -447,7 +526,10 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
         function handler(e: KeyboardEvent) {
             const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-            if (e.key === '?') { e.preventDefault(); setShowShortcuts(v => !v); }
+            if (e.key === '?') {
+                e.preventDefault();
+                setShowShortcuts((v) => !v);
+            }
         }
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
@@ -455,9 +537,13 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
 
     function toggleSelect(id: number, e: React.MouseEvent) {
         e.stopPropagation();
-        setSelectedIds(prev => {
+        setSelectedIds((prev) => {
             const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
             return next;
         });
     }
@@ -504,11 +590,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
         if (!isAgent || appliedAgentDefaultRef.current || filters.assigned !== undefined) return;
 
         appliedAgentDefaultRef.current = true;
-        router.get(
-            '/conversations',
-            { ...filters, assigned: 'me' },
-            { preserveScroll: true, replace: true },
-        );
+        router.get('/conversations', { ...filters, assigned: 'me' }, { preserveScroll: true, replace: true });
     }, [isAgent, filters]);
 
     // Real-time: reload list when a conversation is updated in this workspace
@@ -521,25 +603,34 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
     }, [auth.user?.workspace_id]);
 
     const statusTabs = [
-        { key: 'open',    label: 'Open',    count: counts.open },
+        { key: 'open', label: 'Open', count: counts.open },
         { key: 'pending', label: 'Pending', count: counts.pending },
         { key: 'snoozed', label: 'Snoozed', count: counts.snoozed },
-        { key: 'closed',  label: 'Closed' },
+        { key: 'closed', label: 'Closed' },
     ];
     const activeTag = tags.find((tag) => String(tag.id) === filters.tag);
 
     return (
-        <AppLayout fullHeight onCreateView={() => { setEditingView(null); setSaveAsFilters(undefined); setShowViewBuilder(true); }}>
+        <AppLayout
+            fullHeight
+            onCreateView={() => {
+                setEditingView(null);
+                setSaveAsFilters(undefined);
+                setShowViewBuilder(true);
+            }}
+        >
             <Head title="Conversations" />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* ── Panel 1: Conversation List ── */}
-                <div className={cn(
-                    'shrink-0 flex flex-col border-r border-border bg-background overflow-hidden',
-                    // Mobile: full width, hide when viewing detail
-                    'w-full md:w-[20rem] xl:w-[21rem]',
-                    mobileShowDetail ? 'hidden md:flex' : 'flex',
-                )}>
+                <div
+                    className={cn(
+                        'shrink-0 flex flex-col border-r border-border bg-background overflow-hidden',
+                        // Mobile: full width, hide when viewing detail
+                        'w-full md:w-[20rem] xl:w-[21rem]',
+                        mobileShowDetail ? 'hidden md:flex' : 'flex',
+                    )}
+                >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -604,11 +695,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                             >
                                 <KeyboardIcon className="h-3.5 w-3.5" />
                             </button>
-                            <Button
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs rounded-lg px-2.5"
-                                onClick={() => setShowNewConv(true)}
-                            >
+                            <Button size="sm" className="h-8 gap-1.5 text-xs rounded-lg px-2.5" onClick={() => setShowNewConv(true)}>
                                 <PlusIcon className="h-3.5 w-3.5" />
                                 New
                             </Button>
@@ -630,10 +717,12 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                             >
                                 {label}
                                 {count !== undefined && count > 0 && (
-                                    <span className={cn(
-                                        'ml-1.5 text-[10px] tabular-nums',
-                                        activeStatus === key ? 'opacity-75' : 'opacity-55',
-                                    )}>
+                                    <span
+                                        className={cn(
+                                            'ml-1.5 text-[10px] tabular-nums',
+                                            activeStatus === key ? 'opacity-75' : 'opacity-55',
+                                        )}
+                                    >
                                         {count}
                                     </span>
                                 )}
@@ -646,8 +735,8 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                         {/* Assignment segmented control */}
                         <div className="flex items-center bg-muted/60 rounded-lg p-0.5 gap-0.5">
                             {[
-                                { value: 'all',  label: 'All' },
-                                { value: 'me',   label: 'Mine' },
+                                { value: 'all', label: 'All' },
+                                { value: 'me', label: 'Mine' },
                                 { value: 'none', label: 'Unassigned' },
                             ].map(({ value, label }) => {
                                 const current = filters.assigned ?? (isAgent ? 'me' : 'all');
@@ -669,35 +758,43 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                         </div>
 
                         {/* Mailbox filter — popover */}
-                        {mailboxes.length > 1 && (() => {
-                            const activeMb = mailboxes.find(mb => filters.mailbox === String(mb.id));
-                            return (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className={cn(
-                                            'ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all border',
-                                            activeMb
-                                                ? 'border-primary/30 bg-primary/5 text-primary'
-                                                : 'border-border bg-background text-muted-foreground hover:text-foreground',
-                                        )}>
-                                            <MailboxIcon className="h-3 w-3" />
-                                            <span>{activeMb ? activeMb.name : 'All'}</span>
-                                            <ChevronDownIcon className="h-2.5 w-2.5 opacity-60" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
-                                        <DropdownMenuItem onClick={() => go({ mailbox: undefined, page: undefined })}>
-                                            <span className={cn(!activeMb && 'text-primary font-medium')}>All mailboxes</span>
-                                        </DropdownMenuItem>
-                                        {mailboxes.map((mb) => (
-                                            <DropdownMenuItem key={mb.id} onClick={() => go({ mailbox: String(mb.id), page: undefined })}>
-                                                <span className={cn(filters.mailbox === String(mb.id) && 'text-primary font-medium')}>{mb.name}</span>
+                        {mailboxes.length > 1 &&
+                            (() => {
+                                const activeMb = mailboxes.find((mb) => filters.mailbox === String(mb.id));
+                                return (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button
+                                                className={cn(
+                                                    'ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all border',
+                                                    activeMb
+                                                        ? 'border-primary/30 bg-primary/5 text-primary'
+                                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                                )}
+                                            >
+                                                <MailboxIcon className="h-3 w-3" />
+                                                <span>{activeMb ? activeMb.name : 'All'}</span>
+                                                <ChevronDownIcon className="h-2.5 w-2.5 opacity-60" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onClick={() => go({ mailbox: undefined, page: undefined })}>
+                                                <span className={cn(!activeMb && 'text-primary font-medium')}>All mailboxes</span>
                                             </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            );
-                        })()}
+                                            {mailboxes.map((mb) => (
+                                                <DropdownMenuItem
+                                                    key={mb.id}
+                                                    onClick={() => go({ mailbox: String(mb.id), page: undefined })}
+                                                >
+                                                    <span className={cn(filters.mailbox === String(mb.id) && 'text-primary font-medium')}>
+                                                        {mb.name}
+                                                    </span>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                );
+                            })()}
                     </div>
 
                     {/* Date range filter */}
@@ -706,7 +803,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                         <input
                             type="date"
                             value={filters.date_from ?? ''}
-                            onChange={e => go({ date_from: e.target.value || undefined, page: undefined })}
+                            onChange={(e) => go({ date_from: e.target.value || undefined, page: undefined })}
                             className="flex-1 min-w-0 text-[11px] border border-input rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                         />
                         <span className="text-[11px] text-muted-foreground shrink-0">To</span>
@@ -714,7 +811,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                             type="date"
                             value={filters.date_to ?? ''}
                             min={filters.date_from}
-                            onChange={e => go({ date_to: e.target.value || undefined, page: undefined })}
+                            onChange={(e) => go({ date_to: e.target.value || undefined, page: undefined })}
                             className="flex-1 min-w-0 text-[11px] border border-input rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                         />
                         {(filters.date_from || filters.date_to) && (
@@ -786,11 +883,16 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                     <DropdownMenuItem onClick={() => bulkAction('assign', { assigned_to: null })}>
                                         Unassign
                                     </DropdownMenuItem>
-                                    {agents.filter(a => a.id !== auth.user.id).map(agent => (
-                                        <DropdownMenuItem key={agent.id} onClick={() => bulkAction('assign', { assigned_to: agent.id })}>
-                                            {agent.name}
-                                        </DropdownMenuItem>
-                                    ))}
+                                    {agents
+                                        .filter((a) => a.id !== auth.user.id)
+                                        .map((agent) => (
+                                            <DropdownMenuItem
+                                                key={agent.id}
+                                                onClick={() => bulkAction('assign', { assigned_to: agent.id })}
+                                            >
+                                                {agent.name}
+                                            </DropdownMenuItem>
+                                        ))}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <DropdownMenu>
@@ -804,7 +906,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">
-                                    {(['urgent', 'high', 'normal', 'low'] as const).map(p => (
+                                    {(['urgent', 'high', 'normal', 'low'] as const).map((p) => (
                                         <DropdownMenuItem key={p} onClick={() => bulkAction('priority', { priority: p })}>
                                             <span className="capitalize">{p}</span>
                                         </DropdownMenuItem>
@@ -854,9 +956,7 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                 className="h-3.5 w-3.5"
                                 aria-label="Select all"
                             />
-                            <span className="text-[11px] text-muted-foreground">
-                                {allSelected ? 'Deselect all' : 'Select all'}
-                            </span>
+                            <span className="text-[11px] text-muted-foreground">{allSelected ? 'Deselect all' : 'Select all'}</span>
                         </div>
                     )}
 
@@ -889,13 +989,25 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                     {/* Pagination */}
                     {conversations.last_page > 1 && (
                         <div className="px-3 py-2 border-t border-border flex justify-between text-xs text-muted-foreground shrink-0">
-                            <span>{conversations.from}–{conversations.to} of {conversations.total}</span>
+                            <span>
+                                {conversations.from}–{conversations.to} of {conversations.total}
+                            </span>
                             <div className="flex gap-2">
                                 {conversations.current_page > 1 && (
-                                    <button onClick={() => go({ page: String(conversations.current_page - 1) })} className="hover:text-foreground">Prev</button>
+                                    <button
+                                        onClick={() => go({ page: String(conversations.current_page - 1) })}
+                                        className="hover:text-foreground"
+                                    >
+                                        Prev
+                                    </button>
                                 )}
                                 {conversations.current_page < conversations.last_page && (
-                                    <button onClick={() => go({ page: String(conversations.current_page + 1) })} className="hover:text-foreground">Next</button>
+                                    <button
+                                        onClick={() => go({ page: String(conversations.current_page + 1) })}
+                                        className="hover:text-foreground"
+                                    >
+                                        Next
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -903,11 +1015,13 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                 </div>
 
                 {/* ── Panel 2: Conversation Detail ── */}
-                <div className={cn(
-                    'flex-1 min-w-0 overflow-hidden flex flex-col',
-                    // Mobile: only show when a conversation is selected
-                    mobileShowDetail ? 'flex' : 'hidden md:flex',
-                )}>
+                <div
+                    className={cn(
+                        'flex-1 min-w-0 overflow-hidden flex flex-col',
+                        // Mobile: only show when a conversation is selected
+                        mobileShowDetail ? 'flex' : 'hidden md:flex',
+                    )}
+                >
                     {/* Mobile back button */}
                     {mobileShowDetail && (
                         <div className="flex md:hidden items-center border-b border-border px-3 py-2 shrink-0 bg-background">
@@ -916,7 +1030,14 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                                 onClick={() => setMobileShowDetail(false)}
                                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                                 </svg>
                                 Back to inbox
@@ -926,12 +1047,14 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                     {!selected ? (
                         <div className="flex h-full items-center justify-center bg-muted/10 relative">
                             {/* Subtle background pattern */}
-                            <div className="pointer-events-none absolute inset-0"
+                            <div
+                                className="pointer-events-none absolute inset-0"
                                 style={{
                                     backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
                                     backgroundSize: '24px 24px',
                                     opacity: 0.45,
-                                }} />
+                                }}
+                            />
                             <div className="relative text-center px-8">
                                 <div className="w-14 h-14 rounded-2xl bg-background border border-border shadow-sm flex items-center justify-center mx-auto mb-4">
                                     <InboxIcon className="h-6 w-6 text-muted-foreground/50" />
@@ -954,15 +1077,15 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
                     )}
                 </div>
             </div>
-            {showNewConv && (
-                <NewConversationModal mailboxes={mailboxes} onClose={() => setShowNewConv(false)} />
-            )}
-            {showShortcuts && (
-                <ShortcutsModal onClose={() => setShowShortcuts(false)} />
-            )}
+            {showNewConv && <NewConversationModal mailboxes={mailboxes} onClose={() => setShowNewConv(false)} />}
+            {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
             {showViewBuilder && (
                 <ViewBuilderModal
-                    onClose={() => { setShowViewBuilder(false); setEditingView(null); setSaveAsFilters(undefined); }}
+                    onClose={() => {
+                        setShowViewBuilder(false);
+                        setEditingView(null);
+                        setSaveAsFilters(undefined);
+                    }}
                     mailboxes={mailboxes}
                     tags={tags}
                     agents={agents}
@@ -979,9 +1102,9 @@ export default function ConversationsIndex({ conversations, mailboxes, tags, fol
 
 const priorityBar: Record<string, string> = {
     urgent: 'bg-destructive',
-    high:   'bg-warning',
+    high: 'bg-warning',
     normal: 'bg-transparent',
-    low:    'bg-transparent',
+    low: 'bg-transparent',
 };
 
 function ConversationRow({
@@ -1007,100 +1130,101 @@ function ConversationRow({
             )}
         >
             {/* Priority accent bar */}
-            <div className={cn(
-                'w-[3px] shrink-0 transition-colors',
-                isSelected ? 'bg-primary' : (priorityBar[conversation.priority] ?? 'bg-transparent'),
-            )} />
+            <div
+                className={cn(
+                    'w-[3px] shrink-0 transition-colors',
+                    isSelected ? 'bg-primary' : (priorityBar[conversation.priority] ?? 'bg-transparent'),
+                )}
+            />
 
             {/* Checkbox — visible on hover or when checked */}
-            <div
-                className="flex items-center pl-2 pr-0 py-3.5"
-                onClick={onCheck}
-            >
+            <div className="flex items-center pl-2 pr-0 py-3.5" onClick={onCheck}>
                 <Checkbox
                     checked={isChecked}
-                    className={cn(
-                        'h-3.5 w-3.5 transition-opacity',
-                        isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-                    )}
+                    className={cn('h-3.5 w-3.5 transition-opacity', isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}
                     aria-label="Select conversation"
                 />
             </div>
 
-            <button
-                type="button"
-                onClick={onClick}
-                className="flex-1 min-w-0 text-left"
-            >
-            <div className="flex-1 px-3 py-3.5 min-w-0">
-                <div className="flex items-start gap-2.5">
-                    <Avatar className="size-8 shrink-0 mt-0.5">
-                        <AvatarImage src={conversation.customer?.avatar ?? undefined} alt={conversation.customer?.name ?? ''} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                            {getInitials(conversation.customer?.name)}
-                        </AvatarFallback>
-                    </Avatar>
+            <button type="button" onClick={onClick} className="flex-1 min-w-0 text-left">
+                <div className="flex-1 px-3 py-3.5 min-w-0">
+                    <div className="flex items-start gap-2.5">
+                        <Avatar className="size-8 shrink-0 mt-0.5">
+                            <AvatarImage src={conversation.customer?.avatar ?? undefined} alt={conversation.customer?.name ?? ''} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                {getInitials(conversation.customer?.name)}
+                            </AvatarFallback>
+                        </Avatar>
 
-                    <div className="flex-1 min-w-0">
-                        {/* Name + time */}
-                        <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                {conversation.is_unread && !isSelected && (
-                                    <span className="h-2 w-2 rounded-full bg-primary shrink-0" aria-label="Unread" />
-                                )}
-                                <span className={cn(
-                                    'text-[13px] truncate leading-tight',
-                                    conversation.is_unread && !isSelected ? 'font-bold text-foreground' : 'font-semibold text-foreground/90',
-                                )}>
-                                    {conversation.customer?.name ?? 'Unknown'}
+                        <div className="flex-1 min-w-0">
+                            {/* Name + time */}
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    {conversation.is_unread && !isSelected && (
+                                        <span className="h-2 w-2 rounded-full bg-primary shrink-0" aria-label="Unread" />
+                                    )}
+                                    <span
+                                        className={cn(
+                                            'text-[13px] truncate leading-tight',
+                                            conversation.is_unread && !isSelected
+                                                ? 'font-bold text-foreground'
+                                                : 'font-semibold text-foreground/90',
+                                        )}
+                                    >
+                                        {conversation.customer?.name ?? 'Unknown'}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground/60 shrink-0 tabular-nums">
+                                    {relativeTime(conversation.last_reply_at ?? conversation.created_at)}
                                 </span>
                             </div>
-                            <span className="text-[11px] text-muted-foreground/60 shrink-0 tabular-nums">
-                                {relativeTime(conversation.last_reply_at ?? conversation.created_at)}
-                            </span>
-                        </div>
 
-                        {/* Subject */}
-                        <p className={cn(
-                            'text-[12.5px] truncate mb-2 leading-snug',
-                            conversation.is_unread && !isSelected ? 'text-foreground/80 font-medium' : 'text-muted-foreground',
-                        )}>
-                            {conversation.subject}
-                        </p>
+                            {/* Subject */}
+                            <p
+                                className={cn(
+                                    'text-[12.5px] truncate mb-2 leading-snug',
+                                    conversation.is_unread && !isSelected ? 'text-foreground/80 font-medium' : 'text-muted-foreground',
+                                )}
+                            >
+                                {conversation.subject}
+                            </p>
 
-                        {/* Metadata row */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            {isSnoozed && (
-                                <span className="inline-flex items-center gap-0.5 text-[11px] text-warning font-medium px-1.5 py-0.5 rounded-md bg-warning/10">
-                                    <ClockIcon className="h-2.5 w-2.5" />
-                                    Snoozed
-                                </span>
-                            )}
+                            {/* Metadata row */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {isSnoozed && (
+                                    <span className="inline-flex items-center gap-0.5 text-[11px] text-warning font-medium px-1.5 py-0.5 rounded-md bg-warning/10">
+                                        <ClockIcon className="h-2.5 w-2.5" />
+                                        Snoozed
+                                    </span>
+                                )}
 
-                            {(conversation.tags ?? []).slice(0, 2).map((tag) => (
-                                <span
-                                    key={tag.id}
-                                    className="text-[11px] px-1.5 py-0.5 rounded-md font-medium"
-                                    style={{ backgroundColor: tag.color + '1f', color: tag.color }}
-                                >
-                                    {tag.name}
-                                </span>
-                            ))}
+                                {(conversation.tags ?? []).slice(0, 2).map((tag) => (
+                                    <span
+                                        key={tag.id}
+                                        className="text-[11px] px-1.5 py-0.5 rounded-md font-medium"
+                                        style={{ backgroundColor: tag.color + '1f', color: tag.color }}
+                                    >
+                                        {tag.name}
+                                    </span>
+                                ))}
 
-                            {conversation.assigned_user && (
-                                <div className="ml-auto flex items-center gap-1">
-                                    <Avatar className="size-[18px]">
-                                        <AvatarImage src={conversation.assigned_user.avatar ?? undefined} alt={conversation.assigned_user.name} />
-                                        <AvatarFallback className="bg-muted text-muted-foreground text-[9px] font-semibold">
-                                            {getInitials(conversation.assigned_user.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </div>
-                            )}
+                                {conversation.assigned_user && (
+                                    <div className="ml-auto flex items-center gap-1">
+                                        <Avatar className="size-[18px]">
+                                            <AvatarImage
+                                                src={conversation.assigned_user.avatar ?? undefined}
+                                                alt={conversation.assigned_user.name}
+                                            />
+                                            <AvatarFallback className="bg-muted text-muted-foreground text-[9px] font-semibold">
+                                                {getInitials(conversation.assigned_user.name)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             </button>
         </div>
     );
@@ -1134,7 +1258,14 @@ function EmailDetail({
         if (typeof window === 'undefined') return true;
         return window.localStorage.getItem('conversation.inspector.open') !== '0';
     });
-    const { results: cannedResults, activeIndex: cannedIndex, onEditorReady, onEditorUpdate, pickResponse, onKeyDown: cannedKeyDown } = useCannedResponsePicker(conversation.mailbox_id ?? undefined);
+    const {
+        results: cannedResults,
+        activeIndex: cannedIndex,
+        onEditorReady,
+        onEditorUpdate,
+        pickResponse,
+        onKeyDown: cannedKeyDown,
+    } = useCannedResponsePicker(conversation.mailbox_id ?? undefined);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1255,7 +1386,12 @@ function EmailDetail({
                             </Button>
                         )}
                         {conversation.status !== 'pending' && (
-                            <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground hover:text-foreground" onClick={() => updateStatus('pending')}>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => updateStatus('pending')}
+                            >
                                 <ClockIcon className="h-3.5 w-3.5 mr-1" /> Pending
                             </Button>
                         )}
@@ -1290,17 +1426,22 @@ function EmailDetail({
 
                 {/* Reply editor */}
                 <div className="bg-background shrink-0 px-4 pb-4 pt-3">
-                    <div className={cn(
-                        'border rounded-xl overflow-hidden transition-colors',
-                        replyType === 'note' ? 'border-warning/40' : 'border-border',
-                    )}>
+                    <div
+                        className={cn(
+                            'border rounded-xl overflow-hidden transition-colors',
+                            replyType === 'note' ? 'border-warning/40' : 'border-border',
+                        )}
+                    >
                         {/* Tabs row — clicking a tab expands the editor */}
                         <div className="flex items-center gap-1 px-3 pt-2.5 pb-1">
                             {(['message', 'note'] as const).map((t) => (
                                 <button
                                     key={t}
                                     type="button"
-                                    onClick={() => { setReplyType(t); setReplyExpanded(true); }}
+                                    onClick={() => {
+                                        setReplyType(t);
+                                        setReplyExpanded(true);
+                                    }}
                                     className={cn(
                                         'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
                                         replyType === t && replyExpanded
@@ -1310,16 +1451,24 @@ function EmailDetail({
                                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                                     )}
                                 >
-                                    {t === 'message'
-                                        ? <><SendIcon className="h-3 w-3" /> Reply</>
-                                        : <><StickyNoteIcon className="h-3 w-3" /> Note</>
-                                    }
+                                    {t === 'message' ? (
+                                        <>
+                                            <SendIcon className="h-3 w-3" /> Reply
+                                        </>
+                                    ) : (
+                                        <>
+                                            <StickyNoteIcon className="h-3 w-3" /> Note
+                                        </>
+                                    )}
                                 </button>
                             ))}
                             {replyExpanded && (
                                 <button
                                     type="button"
-                                    onClick={() => { setReplyExpanded(false); setBody(''); }}
+                                    onClick={() => {
+                                        setReplyExpanded(false);
+                                        setBody('');
+                                    }}
                                     className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
                                 >
                                     <XIcon className="h-3.5 w-3.5" />
@@ -1334,7 +1483,11 @@ function EmailDetail({
                                     <RichTextEditor
                                         value={body}
                                         onChange={(html) => setBody(html)}
-                                        placeholder={replyType === 'message' ? 'Write your reply… (type / for canned responses)' : 'Write an internal note…'}
+                                        placeholder={
+                                            replyType === 'message'
+                                                ? 'Write your reply… (type / for canned responses)'
+                                                : 'Write an internal note…'
+                                        }
                                         minHeight="140px"
                                         className={cn(
                                             'border-0 border-t border-border rounded-none shadow-none',
@@ -1348,11 +1501,7 @@ function EmailDetail({
                                     />
                                 </div>
                                 <div className="flex items-center justify-end px-3 py-2.5 border-t border-border bg-muted/20">
-                                    <Button
-                                        type="submit"
-                                        disabled={sending || !body.trim() || body === '<p></p>'}
-                                        className="gap-1.5 px-5"
-                                    >
+                                    <Button type="submit" disabled={sending || !body.trim() || body === '<p></p>'} className="gap-1.5 px-5">
                                         <SendIcon className="h-3.5 w-3.5" />
                                         {replyType === 'message' ? 'Send Reply' : 'Add Note'}
                                     </Button>
@@ -1372,10 +1521,12 @@ function EmailDetail({
             </div>
 
             {/* ── Right sidebar ── */}
-            <div className={cn(
-                'shrink-0 bg-background transition-all duration-200',
-                inspectorOpen ? 'w-[17rem] border-l border-border flex' : 'w-0 overflow-hidden border-l-0',
-            )}>
+            <div
+                className={cn(
+                    'shrink-0 bg-background transition-all duration-200',
+                    inspectorOpen ? 'w-[17rem] border-l border-border flex' : 'w-0 overflow-hidden border-l-0',
+                )}
+            >
                 {inspectorOpen && (
                     <ConversationInspector
                         className="w-[17rem]"
@@ -1391,7 +1542,9 @@ function EmailDetail({
                         onAssignChange={assignTo}
                         onAddTag={addTag}
                         onAddFolder={(folderId) => syncFolders([...(conversation.folders ?? []).map((folder) => folder.id), folderId])}
-                        onRemoveFolder={(folderId) => syncFolders((conversation.folders ?? []).map((folder) => folder.id).filter((id) => id !== folderId))}
+                        onRemoveFolder={(folderId) =>
+                            syncFolders((conversation.folders ?? []).map((folder) => folder.id).filter((id) => id !== folderId))
+                        }
                         onToggleFollow={toggleFollow}
                     />
                 )}
@@ -1422,32 +1575,34 @@ function EmailThreadItem({ thread }: { thread: FullThread }) {
     }
 
     return (
-        <div className={cn(
-            'rounded-2xl text-sm overflow-hidden',
-            isNote
-                ? 'border border-amber-200/60 bg-amber-50/60 dark:border-amber-800/30 dark:bg-amber-950/20'
-                : isFromCustomer
-                    ? 'border border-border/70 bg-card shadow-sm'
-                    : 'border-l-[3px] border border-primary/20 border-l-primary/50 bg-primary/[0.025] shadow-sm',
-        )}>
+        <div
+            className={cn(
+                'rounded-2xl text-sm overflow-hidden',
+                isNote
+                    ? 'border border-amber-200/60 bg-amber-50/60 dark:border-amber-800/30 dark:bg-amber-950/20'
+                    : isFromCustomer
+                      ? 'border border-border/70 bg-card shadow-sm'
+                      : 'border-l-[3px] border border-primary/20 border-l-primary/50 bg-primary/[0.025] shadow-sm',
+            )}
+        >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
                 <div className="flex items-center gap-3 min-w-0">
                     <Avatar className="size-8 shrink-0">
                         <AvatarImage src={author?.avatar ?? undefined} alt={author?.name ?? 'Unknown'} />
-                        <AvatarFallback className={cn(
-                            'text-xs font-bold',
-                            isFromCustomer ? 'bg-muted text-foreground/70' : 'bg-primary/15 text-primary',
-                        )}>
+                        <AvatarFallback
+                            className={cn(
+                                'text-xs font-bold',
+                                isFromCustomer ? 'bg-muted text-foreground/70' : 'bg-primary/15 text-primary',
+                            )}
+                        >
                             {getInitials(author?.name)}
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                         <span className="font-semibold text-[13px] text-foreground">{author?.name ?? 'Unknown'}</span>
                         {isFromCustomer && (thread.customer as any)?.email && (
-                            <span className="text-[11px] text-muted-foreground/70 ml-2">
-                                {(thread.customer as any).email}
-                            </span>
+                            <span className="text-[11px] text-muted-foreground/70 ml-2">{(thread.customer as any).email}</span>
                         )}
                     </div>
                 </div>
@@ -1496,11 +1651,7 @@ function EmailThreadItem({ thread }: { thread: FullThread }) {
 
 // ── Chat detail view ──────────────────────────────────────────────────────────
 
-function ChatDetail({
-    conversation,
-}: {
-    conversation: FullConversation;
-}) {
+function ChatDetail({ conversation }: { conversation: FullConversation }) {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -1512,9 +1663,7 @@ function ChatDetail({
 
     // Sync local threads when Inertia reloads the selected conversation
     useEffect(() => {
-        setLocalThreads(
-            (conversation.threads ?? []).filter((t) => t.type === 'message' || t.type === 'note'),
-        );
+        setLocalThreads((conversation.threads ?? []).filter((t) => t.type === 'message' || t.type === 'note'));
     }, [conversation.threads]);
 
     // Real-time: subscribe to livechat channel for new customer messages
@@ -1573,16 +1722,11 @@ function ChatDetail({
     return (
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Header */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-background shrink-0">
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-sm font-semibold truncate">
-                            {conversation.customer?.name ?? 'Unknown'}
-                        </h2>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <Badge
-                                variant={conversation.status === 'open' ? 'default' : 'secondary'}
-                                className="capitalize text-xs"
-                        >
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-background shrink-0">
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-sm font-semibold truncate">{conversation.customer?.name ?? 'Unknown'}</h2>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <Badge variant={conversation.status === 'open' ? 'default' : 'secondary'} className="capitalize text-xs">
                             {conversation.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{conversation.mailbox?.name}</span>

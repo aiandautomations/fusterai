@@ -24,7 +24,7 @@ interface NotificationsResponse {
 
 function timeAgo(dateStr: string): string {
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60)   return 'just now';
+    if (diff < 60) return 'just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
@@ -32,10 +32,14 @@ function timeAgo(dateStr: string): string {
 
 function typeLabel(type: string): string {
     switch (type) {
-        case 'assigned':   return 'Assigned to you';
-        case 'new_reply':  return 'New customer reply';
-        case 'follower':   return 'Reply on followed ticket';
-        default:           return 'Notification';
+        case 'assigned':
+            return 'Assigned to you';
+        case 'new_reply':
+            return 'New customer reply';
+        case 'follower':
+            return 'Reply on followed ticket';
+        default:
+            return 'Notification';
     }
 }
 
@@ -121,9 +125,7 @@ export default function NotificationBell() {
             },
         }).then(() => {
             setUnreadCount((c) => Math.max(0, c - 1));
-            setNotifications((prev) =>
-                prev.map((n) => n.id === id ? { ...n, read_at: new Date().toISOString() } : n),
-            );
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
         });
     }
 
@@ -196,22 +198,14 @@ export default function NotificationBell() {
                                     )}
                                 >
                                     <div className="flex items-start gap-2.5">
-                                        {!n.read_at && (
-                                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                                        )}
+                                        {!n.read_at && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
                                         <div className={cn('min-w-0 flex-1', n.read_at && 'pl-4')}>
-                                            <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                                                {typeLabel(n.data.type)}
-                                            </p>
+                                            <p className="text-xs font-medium text-muted-foreground mb-0.5">{typeLabel(n.data.type)}</p>
                                             <p className="text-sm font-medium truncate">{n.data.subject}</p>
                                             {n.data.preview && (
-                                                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                    {n.data.preview}
-                                                </p>
+                                                <p className="text-xs text-muted-foreground truncate mt-0.5">{n.data.preview}</p>
                                             )}
-                                            <p className="text-[11px] text-muted-foreground/60 mt-1">
-                                                {timeAgo(n.created_at)}
-                                            </p>
+                                            <p className="text-[11px] text-muted-foreground/60 mt-1">{timeAgo(n.created_at)}</p>
                                         </div>
                                     </div>
                                 </button>

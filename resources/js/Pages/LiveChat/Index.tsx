@@ -46,9 +46,10 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
         window.axios
             .get(`/conversations/${selectedId}`, { headers: { 'X-Inertia': 'true', Accept: 'application/json' } })
             .then((res) => {
-                const conv: Conversation = (res.data as { props?: { conversation?: Conversation }; conversation?: Conversation }).props?.conversation
-                    ?? (res.data as { conversation?: Conversation }).conversation
-                    ?? res.data as Conversation;
+                const conv: Conversation =
+                    (res.data as { props?: { conversation?: Conversation }; conversation?: Conversation }).props?.conversation ??
+                    (res.data as { conversation?: Conversation }).conversation ??
+                    (res.data as Conversation);
                 setThreads(conv.threads ?? []);
             })
             .catch(() => setThreads([]))
@@ -121,9 +122,7 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
 
                     <div className="flex-1 overflow-y-auto">
                         {conversations.length === 0 && (
-                            <div className="py-12 text-center text-muted-foreground text-sm">
-                                No active live chat conversations.
-                            </div>
+                            <div className="py-12 text-center text-muted-foreground text-sm">No active live chat conversations.</div>
                         )}
 
                         {conversations.map((conv) => (
@@ -132,9 +131,7 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                                 onClick={() => setSelectedId(conv.id)}
                                 className={cn(
                                     'w-full text-left px-4 py-3 flex items-start gap-3 transition-colors',
-                                    selectedId === conv.id
-                                        ? 'bg-accent border-l-2 border-primary'
-                                        : 'hover:bg-muted/50',
+                                    selectedId === conv.id ? 'bg-accent border-l-2 border-primary' : 'hover:bg-muted/50',
                                 )}
                             >
                                 <Avatar className="w-8 h-8 flex-shrink-0">
@@ -153,9 +150,7 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                                             {relativeTime(conv.last_reply_at)}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                        {conv.subject}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.subject}</p>
                                 </div>
                             </button>
                         ))}
@@ -182,13 +177,9 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                                     </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <div className="font-semibold text-foreground text-sm">
-                                        {selected.customer?.name ?? 'Visitor'}
-                                    </div>
+                                    <div className="font-semibold text-foreground text-sm">{selected.customer?.name ?? 'Visitor'}</div>
                                     {selected.customer?.email && (
-                                        <div className="text-xs text-muted-foreground">
-                                            {selected.customer.email}
-                                        </div>
+                                        <div className="text-xs text-muted-foreground">{selected.customer.email}</div>
                                     )}
                                 </div>
                                 <Badge variant="outline" className="ml-auto text-xs">
@@ -199,23 +190,16 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                             {/* Messages */}
                             <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-3">
                                 {loadingThreads ? (
-                                    <div className="text-center text-muted-foreground text-sm py-8">
-                                        Loading messages…
-                                    </div>
+                                    <div className="text-center text-muted-foreground text-sm py-8">Loading messages…</div>
                                 ) : threads.length === 0 ? (
-                                    <div className="text-center text-muted-foreground text-sm py-8">
-                                        No messages yet.
-                                    </div>
+                                    <div className="text-center text-muted-foreground text-sm py-8">No messages yet.</div>
                                 ) : (
                                     threads.map((thread) => {
                                         const isVisitor = !!(thread.customer_id ?? thread.customer);
                                         return (
                                             <div
                                                 key={thread.id}
-                                                className={cn(
-                                                    'flex flex-col max-w-[70%]',
-                                                    isVisitor ? 'self-start' : 'self-end items-end',
-                                                )}
+                                                className={cn('flex flex-col max-w-[70%]', isVisitor ? 'self-start' : 'self-end items-end')}
                                             >
                                                 <div
                                                     className={cn(
@@ -227,10 +211,8 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.body) }}
                                                 />
                                                 <span className="text-[11px] text-muted-foreground mt-1 px-1">
-                                                    {isVisitor
-                                                        ? thread.customer?.name ?? 'Visitor'
-                                                        : thread.user?.name ?? 'You'}{' '}
-                                                    · {relativeTime(thread.created_at)}
+                                                    {isVisitor ? (thread.customer?.name ?? 'Visitor') : (thread.user?.name ?? 'You')} ·{' '}
+                                                    {relativeTime(thread.created_at)}
                                                 </span>
                                             </div>
                                         );

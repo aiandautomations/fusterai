@@ -7,16 +7,26 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "format": "prettier --write \"resources/**/*.{js,jsx,ts,tsx,css,json}\" \"Modules/**/*.{js,jsx,ts,tsx,css,json}\" \"*.{js,ts}\" package.json package-lock.json tsconfig.json components.json",
+        "format:check": "prettier --check \"resources/**/*.{js,jsx,ts,tsx,css,json}\" \"Modules/**/*.{js,jsx,ts,tsx,css,json}\" \"*.{js,ts}\" package.json package-lock.json tsconfig.json components.json",
+        "lint": "eslint \"resources/js/**/*.{js,jsx,ts,tsx}\" \"Modules/**/*.{js,jsx,ts,tsx}\"",
         "typecheck": "tsc --noEmit"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@tailwindcss/vite": "^4.2.1",
         "@vitejs/plugin-react": "^4.7.0",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
+        "eslint": "^10.2.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "globals": "^17.5.0",
         "laravel-vite-plugin": "^2.0.0",
+        "prettier": "^3.8.3",
         "shadcn": "^4.0.6",
         "tailwindcss": "^4.2.1",
+        "typescript-eslint": "^8.58.2",
         "vite": "^7.0.7"
     },
     "dependencies": {

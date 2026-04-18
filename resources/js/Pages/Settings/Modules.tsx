@@ -38,10 +38,14 @@ export default function ModulesSettings({ modules }: Props) {
                             <BoxIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                             <p className="font-medium text-foreground mb-1">No modules installed</p>
                             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                                Drop a module folder into <code className="bg-muted px-1 rounded text-xs">Modules/</code> and it will appear here automatically.
+                                Drop a module folder into <code className="bg-muted px-1 rounded text-xs">Modules/</code> and it will appear
+                                here automatically.
                             </p>
                             <p className="text-xs text-muted-foreground mt-3">
-                                Example: <code className="bg-muted px-1 rounded">Modules/SatisfactionSurvey/Providers/SatisfactionSurveyServiceProvider.php</code>
+                                Example:{' '}
+                                <code className="bg-muted px-1 rounded">
+                                    Modules/SatisfactionSurvey/Providers/SatisfactionSurveyServiceProvider.php
+                                </code>
                             </p>
                         </div>
                     ) : (
@@ -57,10 +61,15 @@ export default function ModulesSettings({ modules }: Props) {
                                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                                 v{module.version}
                                             </span>
-                                            {module.active
-                                                ? <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full">Active</span>
-                                                : <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Inactive</span>
-                                            }
+                                            {module.active ? (
+                                                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full">
+                                                    Active
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                                    Inactive
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-0.5">
                                             {module.description ?? 'No description provided.'}

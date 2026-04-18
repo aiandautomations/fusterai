@@ -9,46 +9,46 @@ import type { PageProps } from '@/types';
 type Provider = 'anthropic' | 'openai' | 'openai-compatible' | 'openrouter';
 
 const OPENROUTER_MODELS = [
-    { value: 'anthropic/claude-sonnet-4-5',      label: 'Claude Sonnet 4.5 (via OpenRouter)' },
-    { value: 'anthropic/claude-3.5-sonnet',      label: 'Claude 3.5 Sonnet (via OpenRouter)' },
-    { value: 'openai/gpt-4o',                    label: 'GPT-4o (via OpenRouter)' },
-    { value: 'google/gemini-2.0-flash-001',      label: 'Gemini 2.0 Flash (via OpenRouter)' },
-    { value: 'meta-llama/llama-3.3-70b-instruct',label: 'Llama 3.3 70B (via OpenRouter)' },
+    { value: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (via OpenRouter)' },
+    { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OpenRouter)' },
+    { value: 'openai/gpt-4o', label: 'GPT-4o (via OpenRouter)' },
+    { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash (via OpenRouter)' },
+    { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OpenRouter)' },
     { value: 'mistralai/mistral-small-3.1-24b-instruct', label: 'Mistral Small 3.1 (via OpenRouter)' },
 ];
 
 const ANTHROPIC_MODELS = [
-    { value: 'claude-opus-4-6',            label: 'Claude Opus 4.6 (most capable)' },
-    { value: 'claude-sonnet-4-6',          label: 'Claude Sonnet 4.6' },
-    { value: 'claude-haiku-4-5-20251001',  label: 'Claude Haiku 4.5 (fastest)' },
-    { value: 'claude-opus-4-5',            label: 'Claude Opus 4.5' },
-    { value: 'claude-sonnet-4-5',          label: 'Claude Sonnet 4.5' },
+    { value: 'claude-opus-4-6', label: 'Claude Opus 4.6 (most capable)' },
+    { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fastest)' },
+    { value: 'claude-opus-4-5', label: 'Claude Opus 4.5' },
+    { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
     { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-    { value: 'claude-3-haiku-20240307',    label: 'Claude 3 Haiku' },
+    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
 ];
 
 const OPENAI_MODELS = [
-    { value: 'gpt-4o',       label: 'GPT-4o' },
-    { value: 'gpt-4o-mini',  label: 'GPT-4o Mini' },
-    { value: 'gpt-4-turbo',  label: 'GPT-4 Turbo' },
-    { value: 'o3-mini',      label: 'o3-mini' },
-    { value: 'o1',           label: 'o1' },
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+    { value: 'o3-mini', label: 'o3-mini' },
+    { value: 'o1', label: 'o1' },
 ];
 
 const PRESETS = [
-    { label: 'OpenRouter',    url: 'https://openrouter.ai/api/v1' },
-    { label: 'Groq',          url: 'https://api.groq.com/openai/v1' },
-    { label: 'Together',      url: 'https://api.together.xyz/v1' },
+    { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
+    { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
+    { label: 'Together', url: 'https://api.together.xyz/v1' },
     { label: 'Ollama (local)', url: 'http://localhost:11434/v1' },
-    { label: 'Mistral',       url: 'https://api.mistral.ai/v1' },
-    { label: 'Perplexity',    url: 'https://api.perplexity.ai' },
+    { label: 'Mistral', url: 'https://api.mistral.ai/v1' },
+    { label: 'Perplexity', url: 'https://api.perplexity.ai' },
 ];
 
 const PROVIDER_LABELS: Record<Provider, string> = {
-    'anthropic':         'Anthropic',
-    'openai':            'OpenAI',
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
     'openai-compatible': 'OpenAI-compatible',
-    'openrouter':        'OpenRouter',
+    openrouter: 'OpenRouter',
 };
 
 interface AiConfig {
@@ -57,9 +57,9 @@ interface AiConfig {
     base_url: string | null;
     key_set: boolean;
     features: {
-        reply_suggestions:   boolean;
+        reply_suggestions: boolean;
         auto_categorization: boolean;
-        summarization:       boolean;
+        summarization: boolean;
     };
     rag: { top_k: number; min_score: number };
 }
@@ -69,7 +69,13 @@ interface Props extends PageProps {
 }
 
 // ── Small select primitive (avoids dependency on shadcn Select for this form) ──
-function NativeSelect({ id, value, onChange, children, className = '' }: {
+function NativeSelect({
+    id,
+    value,
+    onChange,
+    children,
+    className = '',
+}: {
     id?: string;
     value: string;
     onChange: (v: string) => void;
@@ -88,12 +94,7 @@ function NativeSelect({ id, value, onChange, children, className = '' }: {
     );
 }
 
-function Field({ label, hint, children, error }: {
-    label: string;
-    hint?: string;
-    children: React.ReactNode;
-    error?: string;
-}) {
+function Field({ label, hint, children, error }: { label: string; hint?: string; children: React.ReactNode; error?: string }) {
     return (
         <div className="space-y-1.5">
             <label className="text-sm font-medium">{label}</label>
@@ -116,7 +117,7 @@ export default function AIConfig({ aiConfig }: Props) {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': (document.querySelector('[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
             });
             const body = await res.json();
@@ -129,15 +130,15 @@ export default function AIConfig({ aiConfig }: Props) {
     }
 
     const { data, setData, patch, processing, errors } = useForm({
-        provider:                    aiConfig.provider   ?? 'anthropic' as Provider,
-        api_key:                     '',
-        model:                       aiConfig.model      ?? '',
-        base_url:                    aiConfig.base_url   ?? '',
-        feature_reply_suggestions:   aiConfig.features?.reply_suggestions   ?? true,
+        provider: aiConfig.provider ?? ('anthropic' as Provider),
+        api_key: '',
+        model: aiConfig.model ?? '',
+        base_url: aiConfig.base_url ?? '',
+        feature_reply_suggestions: aiConfig.features?.reply_suggestions ?? true,
         feature_auto_categorization: aiConfig.features?.auto_categorization ?? true,
-        feature_summarization:       aiConfig.features?.summarization        ?? true,
-        rag_top_k:                   aiConfig.rag?.top_k     ?? 5,
-        rag_min_score:               aiConfig.rag?.min_score ?? 0.7,
+        feature_summarization: aiConfig.features?.summarization ?? true,
+        rag_top_k: aiConfig.rag?.top_k ?? 5,
+        rag_min_score: aiConfig.rag?.min_score ?? 0.7,
     });
 
     function handleSubmit(e: React.FormEvent) {
@@ -145,11 +146,9 @@ export default function AIConfig({ aiConfig }: Props) {
         patch('/settings/ai');
     }
 
-    const isCompatible  = data.provider === 'openai-compatible';
-    const isOpenRouter  = data.provider === 'openrouter';
-    const models        = data.provider === 'anthropic'  ? ANTHROPIC_MODELS
-                        : data.provider === 'openrouter' ? OPENROUTER_MODELS
-                        : OPENAI_MODELS;
+    const isCompatible = data.provider === 'openai-compatible';
+    const isOpenRouter = data.provider === 'openrouter';
+    const models = data.provider === 'anthropic' ? ANTHROPIC_MODELS : data.provider === 'openrouter' ? OPENROUTER_MODELS : OPENAI_MODELS;
 
     return (
         <AppLayout>
@@ -167,19 +166,12 @@ export default function AIConfig({ aiConfig }: Props) {
                 <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
                     <div className="flex-1 text-sm">
                         <span className="font-medium">{PROVIDER_LABELS[data.provider]}</span>
-                        {data.model && (
-                            <span className="text-muted-foreground"> · {data.model}</span>
-                        )}
+                        {data.model && <span className="text-muted-foreground"> · {data.model}</span>}
                     </div>
-                    {aiConfig.key_set ? (
-                        <Badge variant="success">API key saved</Badge>
-                    ) : (
-                        <Badge variant="destructive">No API key</Badge>
-                    )}
+                    {aiConfig.key_set ? <Badge variant="success">API key saved</Badge> : <Badge variant="destructive">No API key</Badge>}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-
                     {/* ── Provider ─────────────────────────────────────────── */}
                     <section className="bg-white border border-border rounded-lg p-6 space-y-5">
                         <h2 className="font-medium text-base">Provider</h2>
@@ -233,7 +225,11 @@ export default function AIConfig({ aiConfig }: Props) {
                         {/* API Key */}
                         <Field
                             label="API Key"
-                            hint={aiConfig.key_set ? 'A key is already saved. Enter a new one to replace it, or leave blank to keep the existing key.' : 'Enter your API key. It will be encrypted before storage.'}
+                            hint={
+                                aiConfig.key_set
+                                    ? 'A key is already saved. Enter a new one to replace it, or leave blank to keep the existing key.'
+                                    : 'Enter your API key. It will be encrypted before storage.'
+                            }
                             error={errors.api_key}
                         >
                             <div className="relative">
@@ -272,13 +268,12 @@ export default function AIConfig({ aiConfig }: Props) {
                                 </div>
                             ) : isOpenRouter ? (
                                 <div className="space-y-1.5">
-                                    <NativeSelect
-                                        value={data.model}
-                                        onChange={(v) => setData('model', v)}
-                                    >
+                                    <NativeSelect value={data.model} onChange={(v) => setData('model', v)}>
                                         <option value="">Select a model</option>
                                         {OPENROUTER_MODELS.map((m) => (
-                                            <option key={m.value} value={m.value}>{m.label}</option>
+                                            <option key={m.value} value={m.value}>
+                                                {m.label}
+                                            </option>
                                         ))}
                                     </NativeSelect>
                                     <Input
@@ -297,13 +292,12 @@ export default function AIConfig({ aiConfig }: Props) {
                                     </a>
                                 </div>
                             ) : (
-                                <NativeSelect
-                                    value={data.model}
-                                    onChange={(v) => setData('model', v)}
-                                >
+                                <NativeSelect value={data.model} onChange={(v) => setData('model', v)}>
                                     <option value="">Select a model…</option>
                                     {models.map((m) => (
-                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                        <option key={m.value} value={m.value}>
+                                            {m.label}
+                                        </option>
                                     ))}
                                 </NativeSelect>
                             )}
@@ -314,11 +308,23 @@ export default function AIConfig({ aiConfig }: Props) {
                     <section className="bg-white border border-border rounded-lg p-6 space-y-4">
                         <h2 className="font-medium text-base">Feature Toggles</h2>
 
-                        {([
-                            { key: 'feature_reply_suggestions'   as const, label: 'Auto-suggest replies',     desc: 'Generate AI reply drafts when a new customer message arrives.' },
-                            { key: 'feature_auto_categorization' as const, label: 'Auto-categorize',          desc: 'Automatically set priority and tags when a conversation is created.' },
-                            { key: 'feature_summarization'       as const, label: 'Auto-summarize on close',  desc: 'Generate a brief summary when a conversation is closed.' },
-                        ]).map(({ key, label, desc }) => (
+                        {[
+                            {
+                                key: 'feature_reply_suggestions' as const,
+                                label: 'Auto-suggest replies',
+                                desc: 'Generate AI reply drafts when a new customer message arrives.',
+                            },
+                            {
+                                key: 'feature_auto_categorization' as const,
+                                label: 'Auto-categorize',
+                                desc: 'Automatically set priority and tags when a conversation is created.',
+                            },
+                            {
+                                key: 'feature_summarization' as const,
+                                label: 'Auto-summarize on close',
+                                desc: 'Generate a brief summary when a conversation is closed.',
+                            },
+                        ].map(({ key, label, desc }) => (
                             <label key={key} className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -345,7 +351,9 @@ export default function AIConfig({ aiConfig }: Props) {
                             <Field label="Top K results" hint="1 – 10" error={errors.rag_top_k}>
                                 <Input
                                     type="number"
-                                    min={1} max={10} step={1}
+                                    min={1}
+                                    max={10}
+                                    step={1}
                                     value={data.rag_top_k}
                                     onChange={(e) => setData('rag_top_k', parseInt(e.target.value, 10))}
                                 />
@@ -353,7 +361,9 @@ export default function AIConfig({ aiConfig }: Props) {
                             <Field label="Min similarity score" hint="0.0 – 1.0" error={errors.rag_min_score}>
                                 <Input
                                     type="number"
-                                    min={0} max={1} step={0.05}
+                                    min={0}
+                                    max={1}
+                                    step={0.05}
                                     value={data.rag_min_score}
                                     onChange={(e) => setData('rag_min_score', parseFloat(e.target.value))}
                                 />
@@ -372,12 +382,8 @@ export default function AIConfig({ aiConfig }: Props) {
                             >
                                 {testStatus === 'loading' ? 'Testing…' : 'Test connection'}
                             </Button>
-                            {testStatus === 'ok' && (
-                                <span className="text-sm text-success font-medium">{testMessage}</span>
-                            )}
-                            {testStatus === 'fail' && (
-                                <span className="text-sm text-destructive">{testMessage}</span>
-                            )}
+                            {testStatus === 'ok' && <span className="text-sm text-success font-medium">{testMessage}</span>}
+                            {testStatus === 'fail' && <span className="text-sm text-destructive">{testMessage}</span>}
                         </div>
                         <Button type="submit" disabled={processing}>
                             {processing ? 'Saving…' : 'Save AI settings'}

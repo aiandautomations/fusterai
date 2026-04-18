@@ -21,9 +21,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Unified customer directory and conversation history.
-                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">Unified customer directory and conversation history.</p>
                     </div>
 
                     <div className="relative w-72">
@@ -33,10 +31,14 @@ export default function CustomersIndex({ customers, filters }: Props) {
                             placeholder="Search customers…"
                             defaultValue={filters.search}
                             onChange={(e) => {
-                                router.get('/customers', { search: e.target.value }, {
-                                    preserveScroll: true,
-                                    replace: true,
-                                });
+                                router.get(
+                                    '/customers',
+                                    { search: e.target.value },
+                                    {
+                                        preserveScroll: true,
+                                        replace: true,
+                                    },
+                                );
                             }}
                         />
                     </div>
@@ -62,9 +64,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                 <AvatarFallback>{getInitials(customer.name)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-base font-semibold group-hover:text-primary transition-colors">
-                                    {customer.name}
-                                </p>
+                                <p className="text-base font-semibold group-hover:text-primary transition-colors">{customer.name}</p>
                                 <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
                                     {customer.email && (
                                         <span className="flex items-center gap-1">

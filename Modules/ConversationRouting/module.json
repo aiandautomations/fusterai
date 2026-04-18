@@ -4,9 +4,7 @@
     "description": "Automatically assign new conversations to agents using round-robin or least-loaded strategies.",
     "version": "1.0.0",
     "hooks": {
-        "actions": [
-            "conversation.created"
-        ],
+        "actions": ["conversation.created"],
         "filters": []
     }
 }
