@@ -32,7 +32,10 @@ class UserController extends Controller
                 'email' => $u->email,
                 'role' => $u->role,
                 'avatar' => $u->avatar,
-                'mailboxes' => $u->mailboxes->map(fn ($mb) => ['id' => $mb->id, 'name' => $mb->name]),
+                'mailboxes' => $u->mailboxes
+                    ->map(fn ($mb) => ['id' => $mb->id, 'name' => $mb->name])
+                    ->values()
+                    ->all(),
             ]);
 
         $mailboxes = Mailbox::where('workspace_id', $workspaceId)
