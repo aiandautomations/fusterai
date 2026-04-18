@@ -28,7 +28,7 @@ export default function GlobalSearch() {
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState(-1);
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
-    const debounce = useRef<ReturnType<typeof setTimeout>>();
+    const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +53,9 @@ export default function GlobalSearch() {
             return;
         }
 
-        clearTimeout(debounce.current);
+        if (debounce.current) {
+            clearTimeout(debounce.current);
+        }
         setLoading(true);
 
         debounce.current = setTimeout(async () => {

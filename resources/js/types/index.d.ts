@@ -1,6 +1,8 @@
 import { AxiosInstance } from 'axios';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import type { Config as ZiggyConfig } from 'ziggy-js';
+import 'vite/client';
 
 declare global {
     interface Window {
@@ -8,10 +10,18 @@ declare global {
         Echo: Echo;
         Pusher: typeof Pusher;
     }
+
+    function route(
+        name?: string,
+        params?: Record<string, unknown> | unknown[] | string | number,
+        absolute?: boolean,
+        config?: ZiggyConfig,
+    ): string;
 }
 
 // Shared Inertia props
 export interface PageProps {
+    [key: string]: unknown;
     auth: {
         user: User;
     };
@@ -46,6 +56,7 @@ export interface PageProps {
 // Core models
 export interface User {
     id: number;
+    workspace_id: number;
     name: string;
     email: string;
     role: 'super_admin' | 'admin' | 'manager' | 'agent';
