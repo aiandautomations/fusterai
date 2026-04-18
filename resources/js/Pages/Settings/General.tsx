@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import type { PageProps, Workspace } from '@/types';
-import { ImageIcon, XIcon, UploadIcon, ZapIcon } from 'lucide-react';
+import { XIcon, UploadIcon, ZapIcon } from 'lucide-react';
 
 const TIMEZONES = [
     'UTC',

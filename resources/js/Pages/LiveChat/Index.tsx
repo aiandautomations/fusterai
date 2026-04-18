@@ -24,7 +24,7 @@ function relativeTime(dateStr?: string): string {
 
 export default function LiveChatIndex({ conversations: initialConversations }: Props) {
     const { auth } = usePage<PageProps>().props;
-    const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
+    const [conversations] = useState<Conversation[]>(initialConversations);
     const [selectedId, setSelectedId] = useState<number | null>(initialConversations[0]?.id ?? null);
     const [threads, setThreads] = useState<Thread[]>([]);
     const [loadingThreads, setLoadingThreads] = useState(false);

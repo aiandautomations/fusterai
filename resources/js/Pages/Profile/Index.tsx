@@ -6,7 +6,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { getInitials } from '@/lib/utils';
-import { ShieldIcon, UserIcon, CameraIcon, XIcon, UploadIcon, PenLineIcon } from 'lucide-react';
+import { ShieldIcon, UserIcon, CameraIcon, XIcon, UploadIcon } from 'lucide-react';
 
 interface User {
     id: number;

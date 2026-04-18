@@ -13,7 +13,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import { TagIcon, SearchIcon, MoreHorizontalIcon, CheckIcon, PencilIcon } from 'lucide-react';
+import { TagIcon, SearchIcon, MoreHorizontalIcon, PencilIcon } from 'lucide-react';
 
 interface Tag {
     id: number;

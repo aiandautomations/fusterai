@@ -9,7 +9,7 @@
         "dev": "vite",
         "format": "prettier --write \"resources/**/*.{js,jsx,ts,tsx,css,json}\" \"Modules/**/*.{js,jsx,ts,tsx,css,json}\" \"*.{js,ts}\" package.json package-lock.json tsconfig.json components.json",
         "format:check": "prettier --check \"resources/**/*.{js,jsx,ts,tsx,css,json}\" \"Modules/**/*.{js,jsx,ts,tsx,css,json}\" \"*.{js,ts}\" package.json package-lock.json tsconfig.json components.json",
-        "lint": "eslint \"resources/js/**/*.{js,jsx,ts,tsx}\" \"Modules/**/*.{js,jsx,ts,tsx}\"",
+        "lint": "eslint \"resources/js/**/*.{js,jsx,ts,tsx}\" \"Modules/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
         "typecheck": "tsc --noEmit"
     },
     "devDependencies": {

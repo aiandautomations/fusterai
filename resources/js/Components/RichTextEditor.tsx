@@ -222,18 +222,6 @@ function CannedResponsePicker({ editor, mailboxId }: { editor: Editor; mailboxId
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
 
-    // Focus input when opening
-    useEffect(() => {
-        if (open) {
-            setTimeout(() => inputRef.current?.focus(), 10);
-            fetchResults('');
-        } else {
-            setQuery('');
-            setResults([]);
-            setHighlighted(0);
-        }
-    }, [open]);
-
     const fetchResults = useCallback(
         (q: string) => {
             if (timerRef.current) clearTimeout(timerRef.current);
@@ -255,6 +243,18 @@ function CannedResponsePicker({ editor, mailboxId }: { editor: Editor; mailboxId
         },
         [mailboxId],
     );
+
+    // Focus input when opening
+    useEffect(() => {
+        if (open) {
+            setTimeout(() => inputRef.current?.focus(), 10);
+            fetchResults('');
+        } else {
+            setQuery('');
+            setResults([]);
+            setHighlighted(0);
+        }
+    }, [fetchResults, open]);
 
     function onQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
         setQuery(e.target.value);
@@ -483,7 +483,7 @@ export default function RichTextEditor({
 
     useEffect(() => {
         if (editor && onEditorReady) onEditorReady(editor);
-    }, [editor]);
+    }, [editor, onEditorReady]);
 
     useEffect(() => {
         if (!editor || !onKeyDown) return;

@@ -8,7 +8,6 @@ import { useConversationShortcuts } from '@/hooks/useConversationShortcuts';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
-import { Separator } from '@/Components/ui/separator';
 import { cn, getInitials, sanitizeHtml } from '@/lib/utils';
 import type { Conversation, Thread, User, Tag, Folder, Mailbox } from '@/types';
 import {
@@ -75,6 +74,10 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
         type: 'message' as 'message' | 'note',
     });
 
+    const clearAiTimeout = useCallback(() => {
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    }, []);
+
     useConversationShortcuts({
         conversationId: conversation.id,
         status: conversation.status,
@@ -131,7 +134,7 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
             window.Echo?.leave(`conversation.${conversation.id}.presence`);
             clearAiTimeout();
         };
-    }, [conversation.id]);
+    }, [clearAiTimeout, conversation.id]);
 
     function submitReply(e: React.FormEvent) {
         e.preventDefault();
@@ -140,10 +143,6 @@ export default function ConversationShow({ conversation, agents, tags, folders, 
             onSuccess: () => reset('body'),
         });
     }
-
-    const clearAiTimeout = useCallback(() => {
-        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-    }, []);
 
     async function requestAiSuggestion() {
         setIsRequestingAi(true);

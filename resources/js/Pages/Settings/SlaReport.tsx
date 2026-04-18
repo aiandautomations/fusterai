@@ -60,8 +60,6 @@ function Breach({ rate }: { rate: number }) {
 export default function SlaReport({
     days,
     total,
-    fr_breached,
-    res_breached,
     fr_achieved,
     res_achieved,
     fr_breach_rate,

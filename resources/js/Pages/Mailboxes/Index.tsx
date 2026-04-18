@@ -3,17 +3,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import {
-    MailboxIcon,
-    PlusIcon,
-    SettingsIcon,
-    InboxIcon,
-    ArrowRightIcon,
-    Clock3Icon,
-    CircleDotIcon,
-    MessageCircleIcon,
-    GlobeIcon,
-} from 'lucide-react';
+import { MailboxIcon, PlusIcon, SettingsIcon, InboxIcon, ArrowRightIcon, Clock3Icon, CircleDotIcon } from 'lucide-react';
 
 interface Mailbox {
     id: number;

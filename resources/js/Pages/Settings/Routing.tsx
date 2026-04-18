@@ -19,11 +19,6 @@ interface Props {
     configs: MailboxConfig[];
 }
 
-const MODE_LABELS: Record<string, string> = {
-    round_robin: 'Round Robin',
-    least_loaded: 'Least Loaded',
-};
-
 const MODE_DESCRIPTIONS: Record<string, string> = {
     round_robin: 'Assign to each agent in turn, evenly distributing load.',
     least_loaded: 'Assign to the agent with the fewest open conversations.',

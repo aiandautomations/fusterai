@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
@@ -20,8 +20,6 @@ import {
     ExternalLinkIcon,
     MailboxIcon,
     ChevronDownIcon,
-    CheckSquareIcon,
-    CheckIcon,
     KeyboardIcon,
     BookmarkIcon,
     PencilIcon,
@@ -53,36 +51,39 @@ function useCannedResponsePicker(mailboxId?: number) {
         editorRef.current = editor;
     }, []);
 
-    const onEditorUpdate = useCallback((editor: Editor) => {
-        const { $from } = editor.state.selection;
-        const textBefore = $from.parent.textContent.slice(0, $from.parentOffset);
-        const match = textBefore.match(/(^|\s)\/([\w-]*)$/);
+    const onEditorUpdate = useCallback(
+        (editor: Editor) => {
+            const { $from } = editor.state.selection;
+            const textBefore = $from.parent.textContent.slice(0, $from.parentOffset);
+            const match = textBefore.match(/(^|\s)\/([\w-]*)$/);
 
-        if (match) {
-            const query = match[2];
-            const charsFromSlash = match[0].length - (match[1] ? match[1].length : 0);
-            slashPosRef.current = $from.pos - charsFromSlash;
-            setActiveIndex(0);
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(async () => {
-                try {
-                    const mbParam = mailboxId ? `&mailbox_id=${mailboxId}` : '';
-                    const res = await fetch(`/canned-responses/search?q=${encodeURIComponent(query)}${mbParam}`);
-                    if (!res.ok) {
+            if (match) {
+                const query = match[2];
+                const charsFromSlash = match[0].length - (match[1] ? match[1].length : 0);
+                slashPosRef.current = $from.pos - charsFromSlash;
+                setActiveIndex(0);
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+                debounceRef.current = setTimeout(async () => {
+                    try {
+                        const mbParam = mailboxId ? `&mailbox_id=${mailboxId}` : '';
+                        const res = await fetch(`/canned-responses/search?q=${encodeURIComponent(query)}${mbParam}`);
+                        if (!res.ok) {
+                            setResults([]);
+                            return;
+                        }
+                        const data: CannedResponse[] = await res.json();
+                        setResults(data);
+                    } catch {
                         setResults([]);
-                        return;
                     }
-                    const data: CannedResponse[] = await res.json();
-                    setResults(data);
-                } catch {
-                    setResults([]);
-                }
-            }, 150);
-        } else {
-            setResults([]);
-            slashPosRef.current = null;
-        }
-    }, []);
+                }, 150);
+            } else {
+                setResults([]);
+                slashPosRef.current = null;
+            }
+        },
+        [mailboxId],
+    );
 
     const pickResponse = useCallback((r: CannedResponse) => {
         const editor = editorRef.current;

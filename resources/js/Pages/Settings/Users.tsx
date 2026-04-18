@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useForm, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -17,16 +16,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import {
-    MoreHorizontalIcon,
-    MailIcon,
-    ShieldIcon,
-    UserPlusIcon,
-    SearchIcon,
-    ChevronDownIcon,
-    ChevronRightIcon,
-    CheckIcon,
-} from 'lucide-react';
+import { MoreHorizontalIcon, MailIcon, ShieldIcon, UserPlusIcon, SearchIcon, ChevronDownIcon, CheckIcon } from 'lucide-react';
 
 interface MailboxSummary {
     id: number;
@@ -282,7 +272,7 @@ function UserRow({
 // ── Invite form ───────────────────────────────────────────────────────────────
 
 function InviteForm() {
-    const { data, setData, post, processing, errors, reset, wasSuccessful } = useForm({ name: '', email: '', role: 'agent' });
+    const { data, setData, post, processing, errors, reset } = useForm({ name: '', email: '', role: 'agent' });
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
