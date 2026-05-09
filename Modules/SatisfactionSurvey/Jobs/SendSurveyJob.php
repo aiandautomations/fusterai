@@ -3,6 +3,7 @@
 namespace Modules\SatisfactionSurvey\Jobs;
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Models\Workspace;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,6 +26,13 @@ class SendSurveyJob implements ShouldQueue
 
     public function handle(): void
     {
+        // Respect workspace-level enabled flag (default: enabled)
+        $workspace = Workspace::find($this->conversation->workspace_id);
+        $enabled = $workspace?->settings['survey']['enabled'] ?? true;
+        if (! $enabled) {
+            return;
+        }
+
         $customer = $this->conversation->customer;
 
         // Only send if conversation has a customer with an email address

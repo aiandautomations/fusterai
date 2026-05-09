@@ -52,6 +52,8 @@ import {
     ClipboardListIcon,
     LayoutDashboardIcon,
     GlobeIcon,
+    ShuffleIcon,
+    ThumbsUpIcon,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -208,6 +210,9 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
             '/settings/api-keys',
             '/settings/audit-log',
             '/settings/portal',
+            '/settings/routing',
+            '/settings/sla',
+            '/settings/survey',
             '/settings',
         ].some((h) => path.startsWith(h)) &&
         !customNavActive &&
@@ -866,10 +871,35 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
                                                         href="/settings/routing"
                                                         className={cn('w-full', path.startsWith('/settings/routing') && 'text-primary')}
                                                     >
-                                                        <ClockIcon className="h-4 w-4" />
+                                                        <ShuffleIcon className="h-4 w-4" />
                                                         <span>Routing</span>
                                                     </Link>
                                                 </DropdownMenuItem>
+                                            )}
+                                            {(usePage<PageProps>().props as any).activeModules?.includes('SatisfactionSurvey') && (
+                                                <>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link
+                                                            href="/settings/survey"
+                                                            className={cn('w-full', path === '/settings/survey' && 'text-primary')}
+                                                        >
+                                                            <ThumbsUpIcon className="h-4 w-4" />
+                                                            <span>CSAT Survey</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link
+                                                            href="/settings/survey/report"
+                                                            className={cn(
+                                                                'w-full',
+                                                                path.startsWith('/settings/survey/report') && 'text-primary',
+                                                            )}
+                                                        >
+                                                            <BarChartIcon className="h-4 w-4" />
+                                                            <span>CSAT Report</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                </>
                                             )}
                                             {(usePage<PageProps>().props as any).activeModules?.includes('CustomerPortal') && (
                                                 <DropdownMenuItem asChild>

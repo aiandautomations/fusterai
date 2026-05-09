@@ -111,8 +111,9 @@ class RoutingConfig extends Model
             ->where('status', 'open')
             ->whereIn('assigned_user_id', $agentIds)
             ->groupBy('assigned_user_id')
-            ->pluck(DB::raw('COUNT(*)'), 'assigned_user_id');
+            ->selectRaw('assigned_user_id, COUNT(*) as open_count')
+            ->pluck('open_count', 'assigned_user_id');
 
-        return $agents->sortBy(fn (User $user) => $openCounts->get($user->id, 0))->first();
+        return $agents->sortBy(fn (User $user) => (int) $openCounts->get($user->id, 0))->first();
     }
 }

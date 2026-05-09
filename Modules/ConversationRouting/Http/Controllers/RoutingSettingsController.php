@@ -3,8 +3,8 @@
 namespace Modules\ConversationRouting\Http\Controllers;
 
 use App\Domains\Mailbox\Models\Mailbox;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Modules\ConversationRouting\Models\RoutingConfig;
@@ -13,6 +13,7 @@ class RoutingSettingsController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('manage-settings');
         $workspaceId = $request->user()->workspace_id;
 
         $mailboxes = Mailbox::where('workspace_id', $workspaceId)
@@ -57,6 +58,8 @@ class RoutingSettingsController extends Controller
 
     public function update(Request $request)
     {
+        $this->authorize('manage-settings');
+
         $workspaceId = $request->user()->workspace_id;
 
         $validated = $request->validate([
