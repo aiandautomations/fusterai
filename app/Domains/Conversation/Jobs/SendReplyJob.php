@@ -50,6 +50,11 @@ class SendReplyJob implements ShouldQueue
             return;
         }
 
+        // No mailbox means this is a portal/non-email conversation — nothing to send
+        if (! $mailbox) {
+            return;
+        }
+
         // Build per-mailbox mailer config dynamically
         $smtp = $mailbox->smtp_config;
 
