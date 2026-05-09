@@ -4,15 +4,18 @@ namespace App\Domains\Customer\Models;
 
 use App\Domains\Conversation\Models\Conversation;
 use Database\Factories\CustomerFactory;
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 
-class Customer extends Model
+class Customer extends Model implements AuthenticatableContract
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory;
+    use Authenticatable, HasFactory, Notifiable;
 
     protected static function newFactory(): CustomerFactory
     {
@@ -29,6 +32,7 @@ class Customer extends Model
         'meta',
         'notes',
         'is_blocked',
+        'remember_token',
     ];
 
     protected $casts = [

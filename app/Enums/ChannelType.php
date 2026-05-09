@@ -10,6 +10,7 @@ enum ChannelType: string
     case Slack = 'slack';
     case Api = 'api';
     case Sms = 'sms';
+    case Portal = 'portal';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum ChannelType: string
             self::Slack => 'Slack',
             self::Api => 'API',
             self::Sms => 'SMS',
+            self::Portal => 'Customer Portal',
         };
     }
 }

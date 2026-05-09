@@ -1,0 +1,10 @@
+{
+    "alias": "CustomerPortal",
+    "name": "Customer Portal",
+    "description": "Self-service portal for customers to submit and track support tickets.",
+    "version": "1.0.0",
+    "hooks": {
+        "actions": [],
+        "filters": []
+    }
+}

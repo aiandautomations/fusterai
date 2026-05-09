@@ -51,6 +51,7 @@ import {
     KeyIcon,
     ClipboardListIcon,
     LayoutDashboardIcon,
+    GlobeIcon,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -197,6 +198,7 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
     const analyticsNavActive = path.startsWith('/reports');
     const aiNavActive = ['/automation', '/ai/', '/settings/ai'].some((h) => path.startsWith(h));
     const customNavActive = ['/settings/appearance', '/settings/live-chat'].some((h) => path.startsWith(h));
+    const portalNavActive = path.startsWith('/settings/portal');
     const settingsNavActive =
         [
             '/settings/general',
@@ -205,6 +207,7 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
             '/settings/email',
             '/settings/api-keys',
             '/settings/audit-log',
+            '/settings/portal',
             '/settings',
         ].some((h) => path.startsWith(h)) &&
         !customNavActive &&
@@ -865,6 +868,17 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
                                                     >
                                                         <ClockIcon className="h-4 w-4" />
                                                         <span>Routing</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {(usePage<PageProps>().props as any).activeModules?.includes('CustomerPortal') && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        href="/settings/portal"
+                                                        className={cn('w-full', portalNavActive && 'text-primary')}
+                                                    >
+                                                        <GlobeIcon className="h-4 w-4" />
+                                                        <span>Customer Portal</span>
                                                     </Link>
                                                 </DropdownMenuItem>
                                             )}

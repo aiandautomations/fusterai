@@ -92,7 +92,7 @@
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ],
         "test:coverage": "./vendor/bin/pest --coverage",
-        "analyse": "./vendor/bin/phpstan analyse --memory-limit=256M"
+        "analyse": "./vendor/bin/phpstan analyse --memory-limit=1024M"
     },
     "extra": {
         "laravel": {

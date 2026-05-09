@@ -30,10 +30,14 @@ class HandleInertiaRequests extends Middleware
         // Load the workspace once and memoize across all closures below.
         // Avoids redundant DB queries when branding, appearance, and aiConfigured
         // all need the same workspace row.
+        // Always resolve via the web guard — portal customers use customer_portal guard
+        // and must not bleed into agent-specific shared data.
+        $agentUser = $request->user('web');
+
         $workspace = null;
-        $getWorkspace = function () use ($request, &$workspace) {
-            if ($workspace === null && $request->user()) {
-                $workspace = Workspace::find($request->user()->workspace_id);
+        $getWorkspace = function () use ($agentUser, &$workspace) {
+            if ($workspace === null && $agentUser) {
+                $workspace = Workspace::find($agentUser->workspace_id);
             }
 
             return $workspace;
@@ -42,19 +46,19 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'ziggy' => fn () => (new Ziggy)->toArray(),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->role,
-                    'avatar' => $request->user()->avatar,
-                    'workspace_id' => $request->user()->workspace_id,
-                    'preferences' => $request->user()->preferences,
-                    'status' => $request->user()->status ?? 'offline',
+                'user' => $agentUser ? [
+                    'id' => $agentUser->id,
+                    'name' => $agentUser->name,
+                    'email' => $agentUser->email,
+                    'role' => $agentUser->role,
+                    'avatar' => $agentUser->avatar,
+                    'workspace_id' => $agentUser->workspace_id,
+                    'preferences' => $agentUser->preferences,
+                    'status' => $agentUser->status ?? 'offline',
                 ] : null,
             ],
-            'agentStatuses' => fn () => $request->user()
-                ? User::where('workspace_id', $request->user()->workspace_id)
+            'agentStatuses' => fn () => $agentUser
+                ? User::where('workspace_id', $agentUser->workspace_id)
                     ->get(['id', 'status'])
                     ->pluck('status', 'id')
                 : [],
@@ -64,21 +68,21 @@ class HandleInertiaRequests extends Middleware
                 'token' => fn () => $request->session()->get('token'),
             ],
             'notifications' => [
-                'unread_count' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
+                'unread_count' => fn () => $agentUser?->unreadNotifications()->count() ?? 0,
             ],
             'aiConfigured' => fn () => ! empty($getWorkspace()?->settings['ai_api_key']),
-            'mailboxes' => fn () => $request->user()
-                ? Mailbox::where('workspace_id', $request->user()->workspace_id)
+            'mailboxes' => fn () => $agentUser
+                ? Mailbox::where('workspace_id', $agentUser->workspace_id)
                     ->get(['id', 'name'])
                 : [],
-            'tags' => fn () => $request->user()
-                ? Tag::where('workspace_id', $request->user()->workspace_id)
+            'tags' => fn () => $agentUser
+                ? Tag::where('workspace_id', $agentUser->workspace_id)
                     ->get(['id', 'name', 'color'])
                 : [],
-            'customViews' => fn () => $request->user()
-                ? CustomView::where('workspace_id', $request->user()->workspace_id)
-                    ->where(function ($q) use ($request) {
-                        $q->where('user_id', $request->user()->id)
+            'customViews' => fn () => $agentUser
+                ? CustomView::where('workspace_id', $agentUser->workspace_id)
+                    ->where(function ($q) use ($agentUser) {
+                        $q->where('user_id', $agentUser->id)
                             ->orWhere('is_shared', true);
                     })
                     ->orderBy('order')
@@ -93,8 +97,8 @@ class HandleInertiaRequests extends Middleware
                     'website' => $branding['website'] ?? null,
                 ];
             },
-            'appearance' => function () use ($request, $getWorkspace) {
-                if (! $request->user()) {
+            'appearance' => function () use ($agentUser, $getWorkspace) {
+                if (! $agentUser) {
                     return ['mode' => 'system', 'color' => 'violet', 'font' => 'figtree', 'radius' => 'sm', 'contrast' => 'balanced'];
                 }
                 $appearance = $getWorkspace()?->settings['appearance'] ?? [];

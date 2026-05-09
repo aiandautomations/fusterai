@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Customer\Models\Customer;
 use App\Models\User;
 
 return [
@@ -46,6 +47,10 @@ return [
             'driver' => 'passport',
             'provider' => 'users',
         ],
+        'customer_portal' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -69,6 +74,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => Customer::class,
         ],
 
         // 'users' => [
