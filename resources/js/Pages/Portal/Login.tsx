@@ -24,7 +24,10 @@ export default function Login({ workspace, status }: Props) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4" style={{ fontFamily: 'Figtree, ui-sans-serif, system-ui, sans-serif' }}>
+        <div
+            className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4"
+            style={{ fontFamily: 'Figtree, ui-sans-serif, system-ui, sans-serif' }}
+        >
             <Head title={`Sign in — ${workspace.name}`} />
 
             <div className="w-full max-w-sm">
@@ -33,7 +36,16 @@ export default function Login({ workspace, status }: Props) {
                         <img src={workspace.logo_url} alt={workspace.name} className="h-8 w-auto" />
                     ) : (
                         <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="white"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                         </div>
@@ -71,9 +83,7 @@ export default function Login({ workspace, status }: Props) {
                         </Button>
                     </form>
 
-                    <p className="text-xs text-gray-400 text-center mt-4">
-                        We'll email you a magic link — no password needed.
-                    </p>
+                    <p className="text-xs text-gray-400 text-center mt-4">We'll email you a magic link — no password needed.</p>
                 </div>
             </div>
         </div>

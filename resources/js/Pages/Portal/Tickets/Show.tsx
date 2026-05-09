@@ -33,7 +33,11 @@ const statusColors: Record<string, string> = {
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleString(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
@@ -70,9 +74,7 @@ export default function TicketsShow({ workspace, ticket }: Props) {
                     >
                         <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs font-medium text-gray-700">{thread.author}</span>
-                            {!thread.from_customer && (
-                                <span className="text-xs text-violet-600 font-medium">Support team</span>
-                            )}
+                            {!thread.from_customer && <span className="text-xs text-violet-600 font-medium">Support team</span>}
                             <span className="text-xs text-gray-400 ml-auto">{formatDate(thread.created_at)}</span>
                         </div>
                         <div

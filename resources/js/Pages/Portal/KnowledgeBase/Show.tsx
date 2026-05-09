@@ -31,16 +31,21 @@ export default function KnowledgeBaseShow({ workspace, kb, document }: Props) {
                     {document.indexed_at && (
                         <>
                             <span>·</span>
-                            <span>Updated {new Date(document.indexed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            <span>
+                                Updated{' '}
+                                {new Date(document.indexed_at).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                })}
+                            </span>
                         </>
                     )}
                 </div>
 
                 <h1 className="text-lg font-semibold text-gray-900 mb-5">{document.title}</h1>
 
-                <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                    {document.content}
-                </div>
+                <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">{document.content}</div>
 
                 {document.source_url && (
                     <div className="mt-6 pt-4 border-t border-gray-100">

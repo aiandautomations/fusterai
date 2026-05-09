@@ -28,7 +28,16 @@ export default function PortalLayout({ children, workspace, customer, title }: P
                             <img src={workspace.logo_url} alt={workspace.name} className="h-7 w-auto" />
                         ) : (
                             <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="white"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                 </svg>
                             </div>
@@ -42,7 +51,10 @@ export default function PortalLayout({ children, workspace, customer, title }: P
                                 <Link href={route('portal.kb.index', workspace.slug)} className="text-sm text-gray-600 hover:text-gray-900">
                                     Help articles
                                 </Link>
-                                <Link href={route('portal.tickets.create', workspace.slug)} className="text-sm text-gray-600 hover:text-gray-900">
+                                <Link
+                                    href={route('portal.tickets.create', workspace.slug)}
+                                    className="text-sm text-gray-600 hover:text-gray-900"
+                                >
                                     New ticket
                                 </Link>
                                 <span className="text-sm text-gray-500">{customer.email}</span>
@@ -56,9 +68,7 @@ export default function PortalLayout({ children, workspace, customer, title }: P
             </header>
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-                {title && (
-                    <h1 className="text-xl font-semibold text-gray-900 mb-6">{title}</h1>
-                )}
+                {title && <h1 className="text-xl font-semibold text-gray-900 mb-6">{title}</h1>}
                 {children}
             </main>
         </div>

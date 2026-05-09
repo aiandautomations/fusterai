@@ -47,9 +47,7 @@ export default function Portal({ portal }: Props) {
                         </div>
                         <div>
                             <h2 className="text-[15px] font-semibold">Portal settings</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Configure the self-service portal for your customers.
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Configure the self-service portal for your customers.</p>
                         </div>
                     </div>
 
@@ -62,10 +60,7 @@ export default function Portal({ portal }: Props) {
                                     Makes the portal publicly accessible at your portal URL.
                                 </p>
                             </div>
-                            <Switch
-                                checked={data.enabled}
-                                onCheckedChange={(v) => setData('enabled', v)}
-                            />
+                            <Switch checked={data.enabled} onCheckedChange={(v) => setData('enabled', v)} />
                         </div>
 
                         {/* Portal name */}

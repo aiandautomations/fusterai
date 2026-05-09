@@ -20,9 +20,7 @@ export default function KnowledgeBaseIndex({ workspace, kb, documents }: Props) 
 
     const filtered = search
         ? documents.filter(
-              (d) =>
-                  d.title.toLowerCase().includes(search.toLowerCase()) ||
-                  d.excerpt.toLowerCase().includes(search.toLowerCase()),
+              (d) => d.title.toLowerCase().includes(search.toLowerCase()) || d.excerpt.toLowerCase().includes(search.toLowerCase()),
           )
         : documents;
 
@@ -36,9 +34,7 @@ export default function KnowledgeBaseIndex({ workspace, kb, documents }: Props) 
                 </div>
             ) : (
                 <>
-                    {kb.description && (
-                        <p className="text-sm text-gray-500 mb-5">{kb.description}</p>
-                    )}
+                    {kb.description && <p className="text-sm text-gray-500 mb-5">{kb.description}</p>}
 
                     <div className="mb-5">
                         <input
