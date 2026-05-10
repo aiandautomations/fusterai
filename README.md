@@ -380,7 +380,7 @@ AWS_USE_PATH_STYLE_ENDPOINT=true
 | `NewThreadReceived` | New message arrives | Appends message in real-time |
 | `AiSuggestionReady` | AI finishes generating | Populates AI assist panel |
 | `AgentTyping` | Agent opens reply box | Shows "X is viewing" collision indicator |
-| `LiveChatMessage` | Widget message | Chat widget ↔ agent console |
+| `VisitorTyping` | Widget visitor types | Shows typing indicator in agent console |
 
 ### Database Tables
 
@@ -534,6 +534,7 @@ Hooks::addFilter('ai.system_prompt', function (string $prompt, Conversation $con
 - `SatisfactionSurvey` — CSAT survey email sent on conversation close; tracks good/bad ratings
 - `SlaManager` — SLA policies per priority, breach notifications, pause/resume on pending
 - `ConversationRouting` — per-mailbox round-robin and least-loaded auto-assignment rules
+- `CustomerPortal` — self-service portal for customers to submit and track their own tickets
 
 ---
 
@@ -656,9 +657,34 @@ Edit `config/horizon.php` to tune workers per environment:
 
 ## Upgrading
 
-FusterAI follows a rolling-release model — `main` is always the latest stable code. There are no versioned releases yet; upgrading means pulling the latest commits and running a standard post-update checklist.
+### One-command update (recommended)
 
-### Standard upgrade steps
+```bash
+php artisan fusterai:update
+```
+
+This command checks GitHub for a new release, confirms with you, then safely:
+
+1. Stashes any local changes
+2. Pulls the latest code
+3. Restores your local changes
+4. Runs `composer install`
+5. Runs migrations (`migrate`, never `migrate:fresh` — your data is never touched)
+6. Clears and warms caches
+7. Gracefully restarts Horizon (or queue workers if Horizon isn't installed)
+
+```bash
+php artisan fusterai:update --check   # Check for updates without applying
+php artisan fusterai:update --force   # Non-interactive (CI/CD, scripts)
+```
+
+> **Your `.env` and database are never modified** by this command. Only code is updated.
+
+> **Docker users:** Run `docker compose pull && docker compose up -d --build` to rebuild containers, then `docker compose exec app php artisan migrate --force`.
+
+### Manual upgrade steps
+
+If you prefer to upgrade manually or need finer control:
 
 ```bash
 # 1. Pull latest code
@@ -667,57 +693,25 @@ git pull origin main
 # 2. Install/update PHP dependencies
 composer install --no-dev --optimize-autoloader
 
-# 3. Install/update JS dependencies
-npm install
-
-# 4. Run any new migrations
+# 3. Run any new migrations
 php artisan migrate --force
 
-# 5. Rebuild frontend assets
-npm run build
-
-# 6. Clear and re-cache config/routes/views
+# 4. Clear and re-cache config/routes/views
 php artisan optimize:clear
 php artisan optimize
 
-# 7. Restart queue workers (picks up code changes)
+# 5. Restart queue workers (picks up code changes)
 php artisan horizon:terminate
-# Horizon will restart automatically if managed by Supervisor.
+# Horizon restarts automatically if managed by Supervisor.
 # Otherwise: php artisan horizon
 
-# 8. Restart the WebSocket server
+# 6. Restart the WebSocket server
 php artisan reverb:start
 ```
 
-> **Docker users:** Run `docker compose pull && docker compose up -d --build` to rebuild containers, then `docker compose exec app php artisan migrate --force`.
-
-### Post-upgrade checklist
-
-| Step | Command | Why |
-|---|---|---|
-| Run migrations | `php artisan migrate --force` | Apply schema changes |
-| Clear caches | `php artisan optimize:clear` | Stale config/route/view caches cause 500 errors |
-| Rebuild assets | `npm run build` | New JS/CSS changes won't appear until rebuilt |
-| Restart Horizon | `php artisan horizon:terminate` | Queue workers run old code until restarted |
-| Restart Reverb | `php artisan reverb:start` | WebSocket server runs old code until restarted |
-| Re-index search | `php artisan scout:import "App\Domains\Conversation\Models\Conversation"` | Only needed if search schema changed |
-
-### Checking your current version
-
-```bash
-# Show the latest commit on your installation
-git log --oneline -1
-
-# Compare with upstream
-git fetch origin
-git log HEAD..origin/main --oneline
-```
-
-An empty output from the last command means you are fully up to date.
-
 ### Breaking changes
 
-Check the [commit log](https://github.com/your-org/fusterai/commits/main) before upgrading in production. Commits prefixed `BREAKING:` or touching `database/migrations/` require extra care — always back up your database first:
+Check the [commit log](https://github.com/aiandautomations/fusterai/commits/main) before upgrading in production. Commits prefixed `BREAKING:` or touching `database/migrations/` require extra care — always back up your database first:
 
 ```bash
 pg_dump fusterai > fusterai_backup_$(date +%Y%m%d).sql
