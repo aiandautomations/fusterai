@@ -24,14 +24,43 @@ import {
 } from 'lucide-react';
 
 const TIMEZONES = [
-    'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-    'America/Sao_Paulo', 'America/Toronto', 'America/Vancouver', 'America/Mexico_City',
-    'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Amsterdam', 'Europe/Madrid',
-    'Europe/Rome', 'Europe/Stockholm', 'Europe/Warsaw', 'Europe/Istanbul', 'Europe/Moscow',
-    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Colombo', 'Asia/Dhaka', 'Asia/Bangkok',
-    'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
-    'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Pacific/Auckland',
-    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos', 'Africa/Nairobi',
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Sao_Paulo',
+    'America/Toronto',
+    'America/Vancouver',
+    'America/Mexico_City',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Amsterdam',
+    'Europe/Madrid',
+    'Europe/Rome',
+    'Europe/Stockholm',
+    'Europe/Warsaw',
+    'Europe/Istanbul',
+    'Europe/Moscow',
+    'Asia/Dubai',
+    'Asia/Kolkata',
+    'Asia/Colombo',
+    'Asia/Dhaka',
+    'Asia/Bangkok',
+    'Asia/Singapore',
+    'Asia/Hong_Kong',
+    'Asia/Shanghai',
+    'Asia/Tokyo',
+    'Asia/Seoul',
+    'Australia/Sydney',
+    'Australia/Melbourne',
+    'Australia/Brisbane',
+    'Pacific/Auckland',
+    'Africa/Cairo',
+    'Africa/Johannesburg',
+    'Africa/Lagos',
+    'Africa/Nairobi',
 ];
 
 type DaySchedule = { open: string; close: string } | null;
@@ -488,9 +517,7 @@ export default function MailboxSettings({ mailbox }: Props) {
                                 <ClockIcon className="h-4 w-4 text-muted-foreground" />
                                 <CardTitle>Office Hours</CardTitle>
                             </div>
-                            <CardDescription>
-                                Send an out-of-office reply when customers contact you outside working hours.
-                            </CardDescription>
+                            <CardDescription>Send an out-of-office reply when customers contact you outside working hours.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
@@ -557,7 +584,9 @@ export default function MailboxSettings({ mailbox }: Props) {
                                                                     });
                                                                 }}
                                                             />
-                                                            <span className="text-sm text-muted-foreground w-14">{dayName.slice(0, 3)}</span>
+                                                            <span className="text-sm text-muted-foreground w-14">
+                                                                {dayName.slice(0, 3)}
+                                                            </span>
                                                         </div>
                                                         {slot ? (
                                                             <div className="flex items-center gap-2">
@@ -610,11 +639,7 @@ export default function MailboxSettings({ mailbox }: Props) {
 
                                     <Separator />
 
-                                    <Field
-                                        label="Out-of-hours subject"
-                                        htmlFor="oh-subject"
-                                        hint="Leave blank to use a default subject."
-                                    >
+                                    <Field label="Out-of-hours subject" htmlFor="oh-subject" hint="Leave blank to use a default subject.">
                                         <Input
                                             id="oh-subject"
                                             value={data.auto_reply_config.office_hours.subject}

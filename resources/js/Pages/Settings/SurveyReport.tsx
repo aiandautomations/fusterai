@@ -71,11 +71,7 @@ export default function SurveyReport({ stats, recent, days }: Props) {
                     <StatCard label="Total Responses" value={stats.total} />
                     <StatCard label="Positive 👍" value={stats.good} tone="success" />
                     <StatCard label="Negative 👎" value={stats.bad} tone="destructive" />
-                    <StatCard
-                        label="CSAT Score"
-                        value={stats.score !== null ? `${stats.score}%` : '—'}
-                        tone="primary"
-                    />
+                    <StatCard label="CSAT Score" value={stats.score !== null ? `${stats.score}%` : '—'} tone="primary" />
                 </section>
 
                 {stats.total > 0 && (
@@ -85,10 +81,7 @@ export default function SurveyReport({ stats, recent, days }: Props) {
                             <span>{stats.bad} 👎</span>
                         </div>
                         <div className="h-3 rounded-full bg-muted overflow-hidden">
-                            <div
-                                className="h-full rounded-full bg-success transition-all"
-                                style={{ width: `${stats.score ?? 0}%` }}
-                            />
+                            <div className="h-full rounded-full bg-success transition-all" style={{ width: `${stats.score ?? 0}%` }} />
                         </div>
                     </section>
                 )}

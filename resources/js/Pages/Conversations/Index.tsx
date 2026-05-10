@@ -987,9 +987,8 @@ export default function ConversationsIndex({
                             </div>
                         ) : (
                             conversations.data.map((conv) => {
-                                const displayConv = starredOverrides[conv.id] !== undefined
-                                    ? { ...conv, starred: starredOverrides[conv.id] }
-                                    : conv;
+                                const displayConv =
+                                    starredOverrides[conv.id] !== undefined ? { ...conv, starred: starredOverrides[conv.id] } : conv;
                                 return (
                                     <ConversationRow
                                         key={conv.id}
@@ -1322,23 +1321,19 @@ function EmailDetail({
         const payload: Record<string, string> = { body, type: replyType };
         const at = overrideSendAt ?? (sendLaterAt || undefined);
         if (at) payload.send_at = at;
-        router.post(
-            `/conversations/${conversation.id}/threads`,
-            payload,
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only: ['selected'],
-                onSuccess: () => {
-                    setBody('');
-                    setSending(false);
-                    setReplyExpanded(false);
-                    setSendLaterAt('');
-                    setSendLaterOpen(false);
-                },
-                onError: () => setSending(false),
+        router.post(`/conversations/${conversation.id}/threads`, payload, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['selected'],
+            onSuccess: () => {
+                setBody('');
+                setSending(false);
+                setReplyExpanded(false);
+                setSendLaterAt('');
+                setSendLaterOpen(false);
             },
-        );
+            onError: () => setSending(false),
+        });
     }
 
     function cancelSchedule(threadId: number) {
@@ -1391,11 +1386,15 @@ function EmailDetail({
     }
 
     function toggleStar() {
-        router.post(`/conversations/${conversation.id}/star`, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['selected'],
-        });
+        router.post(
+            `/conversations/${conversation.id}/star`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['selected'],
+            },
+        );
     }
 
     function toggleFollow() {
@@ -1574,7 +1573,9 @@ function EmailDetail({
                                                 onClick={() => setSendLaterOpen((v) => !v)}
                                             >
                                                 <ClockIcon className="h-3.5 w-3.5" />
-                                                {sendLaterAt ? new Date(sendLaterAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Send Later'}
+                                                {sendLaterAt
+                                                    ? new Date(sendLaterAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+                                                    : 'Send Later'}
                                                 <ChevronDownIcon className="h-3 w-3 opacity-60" />
                                             </Button>
                                             {sendLaterOpen && (
@@ -1603,7 +1604,10 @@ function EmailDetail({
                                                             variant="ghost"
                                                             size="sm"
                                                             className="text-xs"
-                                                            onClick={() => { setSendLaterAt(''); setSendLaterOpen(false); }}
+                                                            onClick={() => {
+                                                                setSendLaterAt('');
+                                                                setSendLaterOpen(false);
+                                                            }}
                                                         >
                                                             Clear
                                                         </Button>

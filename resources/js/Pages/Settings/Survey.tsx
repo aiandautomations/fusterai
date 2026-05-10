@@ -63,10 +63,7 @@ export default function Survey({ survey }: Props) {
                                     Send satisfaction surveys when conversations are closed.
                                 </p>
                             </div>
-                            <Switch
-                                checked={data.enabled}
-                                onCheckedChange={(checked) => setData('enabled', checked)}
-                            />
+                            <Switch checked={data.enabled} onCheckedChange={(checked) => setData('enabled', checked)} />
                         </div>
 
                         <div className="space-y-1.5">
@@ -80,9 +77,7 @@ export default function Survey({ survey }: Props) {
                                 onChange={(e) => setData('delay_minutes', Number(e.target.value))}
                                 className="max-w-xs"
                             />
-                            {errors.delay_minutes && (
-                                <p className="text-xs text-destructive">{errors.delay_minutes}</p>
-                            )}
+                            {errors.delay_minutes && <p className="text-xs text-destructive">{errors.delay_minutes}</p>}
                             <p className="text-xs text-muted-foreground">
                                 How long to wait after closing before sending the survey (0 = immediately).
                             </p>
