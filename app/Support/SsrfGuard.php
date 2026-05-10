@@ -52,12 +52,24 @@ class SsrfGuard
             return;
         }
 
-        // Resolve the hostname and verify the resulting IP is public.
-        // gethostbyname() returns the original string unchanged on failure,
-        // so we only check when it actually resolved.
-        $resolved = gethostbyname($host);
-        if ($resolved !== $host && filter_var($resolved, FILTER_VALIDATE_IP)) {
-            self::assertPublicIp($resolved);
+        // Resolve all addresses for the hostname (both IPv4 and IPv6) and
+        // verify every resolved IP is public. dns_get_record covers both address
+        // families, closing the IPv6 blind spot that gethostbyname() has.
+        // Note: DNS rebinding (resolving to a public IP now, private IP later) is
+        // a known limitation of any pre-fetch DNS check. Mitigate at the network
+        // layer (egress firewall) for defence in depth.
+        $ipv4 = dns_get_record($host, DNS_A) ?: [];
+        $ipv6 = dns_get_record($host, DNS_AAAA) ?: [];
+
+        $resolved = array_merge(
+            array_column($ipv4, 'ip'),
+            array_column($ipv6, 'ipv6'),
+        );
+
+        foreach ($resolved as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                self::assertPublicIp($ip);
+            }
         }
     }
 

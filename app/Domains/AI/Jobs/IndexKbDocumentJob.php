@@ -31,19 +31,19 @@ class IndexKbDocumentJob implements ShouldQueue
         $text = $this->document->title."\n\n".$this->document->content;
         $text = mb_substr($text, 0, 8000);
 
-        // Apply workspace credentials so the embeddings call uses the
-        // admin-configured provider rather than .env defaults.
-        ['lab' => $lab] = app(AiSettingsService::class)
-            ->configureForWorkspace($this->document->knowledgeBase->workspace_id);
+        app(AiSettingsService::class)->withWorkspaceCredentials(
+            $this->document->knowledgeBase->workspace_id,
+            function (Lab $lab) use ($text): void {
+                // Anthropic does not provide an embeddings API; fall back to OpenAI.
+                $embeddingsLab = ($lab === Lab::Anthropic) ? Lab::OpenAI : $lab;
 
-        // Anthropic does not provide an embeddings API. Fall back to OpenAI
-        // which supports embeddings natively via text-embedding-3-small.
-        $embeddingsLab = ($lab === Lab::Anthropic) ? Lab::OpenAI : $lab;
+                $response = Embeddings::for([$text])->generate($embeddingsLab);
 
-        $response = Embeddings::for([$text])->generate($embeddingsLab);
+                $this->document->embedding = $response->first();
+                $this->document->indexed_at = now();
+            }
+        );
 
-        $this->document->embedding = $response->first();
-        $this->document->indexed_at = now();
         // Clear any previous index error
         $meta = $this->document->meta ?? [];
         unset($meta['index_error']);

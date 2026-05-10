@@ -41,18 +41,18 @@ class SendAutoReplyJob implements ShouldQueue
 
         $outsideHours = false;
         if (! empty($officeHours['enabled'])) {
-            $schedule  = $officeHours['schedule'] ?? [];
-            $timezone  = $officeHours['timezone'] ?? 'UTC';
+            $schedule = $officeHours['schedule'] ?? [];
+            $timezone = $officeHours['timezone'] ?? 'UTC';
             $outsideHours = ! app(OfficeHoursService::class)->isOpen($schedule, $timezone);
         }
 
         // Out-of-hours reply takes priority over regular auto-reply
         if ($outsideHours) {
             $subject = $officeHours['subject'] ?? 'We\'re currently out of office — '.$conversation->subject;
-            $body    = $officeHours['message'] ?? "Hi {$customer->name},\n\nThanks for reaching out! We're currently outside our office hours and will get back to you as soon as we're back.\n\nBest regards,\n{$mailbox->name}";
+            $body = $officeHours['message'] ?? "Hi {$customer->name},\n\nThanks for reaching out! We're currently outside our office hours and will get back to you as soon as we're back.\n\nBest regards,\n{$mailbox->name}";
         } elseif (! empty($autoReply['enabled'])) {
             $subject = $autoReply['subject'] ?? 'We received your message — '.$conversation->subject;
-            $body    = $autoReply['body'] ?? "Hi {$customer->name},\n\nThank you for reaching out. We've received your message and will get back to you as soon as possible.\n\nBest regards,\n{$mailbox->name}";
+            $body = $autoReply['body'] ?? "Hi {$customer->name},\n\nThank you for reaching out. We've received your message and will get back to you as soon as possible.\n\nBest regards,\n{$mailbox->name}";
         } else {
             return;
         }

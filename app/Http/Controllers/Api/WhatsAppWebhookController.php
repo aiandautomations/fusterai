@@ -45,16 +45,19 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['error' => 'Invalid token'], 403);
         }
 
-        // Validate Meta's HMAC-SHA256 signature
+        // Validate Meta's HMAC-SHA256 signature — mandatory, not optional
         /** @var Channel|null $channel */
         $channel = $mailbox->channels()->where('type', 'whatsapp')->first();
         $appSecret = $channel?->config['app_secret'] ?? null;
-        if ($appSecret) {
-            $signature = $request->header('X-Hub-Signature-256', '');
-            $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);
-            if (! hash_equals($expected, $signature)) {
-                return response()->json(['error' => 'Invalid signature'], 401);
-            }
+
+        if (! $appSecret) {
+            return response()->json(['error' => 'Webhook not configured'], 403);
+        }
+
+        $signature = $request->header('X-Hub-Signature-256', '');
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);
+        if (! hash_equals($expected, $signature)) {
+            return response()->json(['error' => 'Invalid signature'], 401);
         }
 
         ProcessWhatsAppWebhookJob::dispatch($mailbox, $request->all())->onQueue('webhooks');

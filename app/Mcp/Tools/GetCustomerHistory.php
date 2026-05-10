@@ -17,6 +17,8 @@ class GetCustomerHistory extends Tool
 
     protected string $description = "Get a customer's support history: past conversations, open issues, and contact details.";
 
+    public function __construct(private readonly int $workspaceId) {}
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -28,8 +30,9 @@ class GetCustomerHistory extends Tool
     {
         $email = $request->string('email');
         $customer = Customer::withCount('conversations')
-            ->with(['conversations' => fn ($q) => $q->latest()->limit(10)])
+            ->with(['conversations' => fn ($q) => $q->where('workspace_id', $this->workspaceId)->latest()->limit(10)])
             ->where('email', $email)
+            ->where('workspace_id', $this->workspaceId)
             ->first();
 
         if (! $customer) {

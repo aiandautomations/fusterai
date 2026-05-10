@@ -8,6 +8,7 @@ use App\Domains\Conversation\Models\Thread;
 use App\Enums\ChannelType;
 use App\Events\NewThreadReceived;
 use App\Services\DynamicMailerService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,6 +16,7 @@ use Illuminate\Mail\Message;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -22,38 +24,44 @@ class SendReplyJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 168;
+    public int $tries = 10;
 
     public int $timeout = 120;
+
+    /** Exponential backoff: 1m, 5m, 15m, 1h, then hourly up to the retryUntil ceiling. */
+    public function backoff(): array
+    {
+        return [60, 300, 900, 3600, 3600, 3600, 3600, 3600, 3600, 3600];
+    }
 
     public function __construct(
         public readonly Thread $thread,
         public readonly Conversation $conversation,
-        public readonly ?\Carbon\Carbon $scheduledAt = null,
+        public readonly ?Carbon $scheduledAt = null,
     ) {}
 
     public function handle(): void
     {
         // Re-fetch thread; if it was deleted bail silently
-        $freshThread = $this->thread->fresh();
-        if ($freshThread === null) {
+        $thread = $this->thread->fresh();
+        if ($thread === null) {
             return;
         }
 
         // Scheduled send was cancelled by the agent (send_at cleared before job ran)
-        if ($this->scheduledAt !== null && $freshThread->send_at === null) {
+        if ($this->scheduledAt !== null && $thread->send_at === null) {
             return;
         }
 
+        $thread->loadMissing(['user', 'attachments']);
         $conversation = $this->conversation->load(['mailbox', 'customer', 'threads']);
-        $this->thread->loadMissing(['user', 'attachments']);
         $mailbox = $conversation->mailbox;
         $customer = $conversation->customer;
 
         // Route to correct channel driver
         if ($conversation->channel_type === ChannelType::WhatsApp) {
-            app(WhatsAppDriver::class)->send($this->thread);
-            broadcast(new NewThreadReceived($this->thread));
+            app(WhatsAppDriver::class)->send($thread);
+            broadcast(new NewThreadReceived($thread));
 
             return;
         }
@@ -72,16 +80,14 @@ class SendReplyJob implements ShouldQueue
 
         // In local env with no SMTP config, fall back to the default mailer (log driver)
         if (! $smtp && app()->environment('local')) {
-            broadcast(new NewThreadReceived($this->thread));
+            broadcast(new NewThreadReceived($thread));
 
             return;
         }
 
         $mailer = $smtp ? app(DynamicMailerService::class)->fromSmtpConfig($smtp) : Mail::mailer('smtp');
 
-        $thread = $this->thread;
-
-        $agentSignature = $this->thread->user?->signature;
+        $agentSignature = $thread->user?->signature;
 
         // Collect CC recipients from the most recent inbound customer thread
         $ccRecipients = $this->resolveCcRecipients($conversation);
@@ -90,17 +96,17 @@ class SendReplyJob implements ShouldQueue
         // Stored without angle brackets; Symfony IdentificationHeader adds them when serialising.
         $outboundMsgId = 'thread-'.$thread->id.'-'.Str::uuid().'@fusterai';
 
-        // Store with angle brackets so bounce lookups use the same format mail servers return.
-        // Merge into the existing meta array rather than using JSON path syntax, which
-        // fails on PostgreSQL when the column is initially NULL.
-        $thread->update(['meta' => array_merge($thread->meta ?? [], [
-            'outbound_message_id' => "<{$outboundMsgId}>",
-        ])]);
-
+        $trackingToken = Str::random(32);
         $unsubscribeUrl = URL::signedRoute('unsubscribe', ['customer' => $customer->id]);
 
-        $trackingToken = \Illuminate\Support\Str::random(32);
-        $thread->update(['tracking_token' => $trackingToken]);
+        // Single update: merge meta (outbound_message_id) + tracking_token together.
+        // Two separate updates would be two round-trips; merging is one.
+        $thread->update([
+            'tracking_token' => $trackingToken,
+            'meta' => array_merge($thread->meta ?? [], [
+                'outbound_message_id' => "<{$outboundMsgId}>",
+            ]),
+        ]);
 
         $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature, $ccRecipients, $outboundMsgId, $unsubscribeUrl, $trackingToken) {
             $msg->to($customer->email, $customer->name)
@@ -125,18 +131,20 @@ class SendReplyJob implements ShouldQueue
 
             // Attach files
             foreach ($thread->attachments as $attachment) {
-                if (file_exists(storage_path('app/'.$attachment->path))) {
-                    $msg->attach(
-                        storage_path('app/'.$attachment->path),
-                        ['as' => $attachment->filename, 'mime' => $attachment->mime_type],
+                $disk = Storage::disk(config('filesystems.default'));
+                if ($disk->exists($attachment->path)) {
+                    $msg->attachData(
+                        $disk->get($attachment->path),
+                        $attachment->filename,
+                        ['mime' => $attachment->mime_type],
                     );
                 }
             }
         });
 
         // Clear send_at now that the scheduled message has been sent
-        if ($this->thread->send_at !== null) {
-            $this->thread->update(['send_at' => null]);
+        if ($thread->send_at !== null) {
+            $thread->update(['send_at' => null]);
         }
 
         // Broadcast to frontend after send

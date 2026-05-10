@@ -34,7 +34,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
-        $user->update(['status' => 'online']);
+        $user->update([
+            'status' => 'online',
+            'last_active_at' => $user->last_active_at ?? now(),
+        ]);
         broadcast(new AgentStatusChanged($user->workspace_id, $user->id, 'online'))->toOthers();
 
         return redirect()->intended('/dashboard');

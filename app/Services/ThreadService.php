@@ -42,7 +42,7 @@ class ThreadService
         ]);
 
         foreach ($files as $file) {
-            $path = $file->store('attachments/'.$conversation->id, 'local');
+            $path = $file->store('attachments/'.$conversation->id, config('filesystems.default'));
             $thread->attachments()->create([
                 'filename' => $file->getClientOriginalName(),
                 'path' => $path,

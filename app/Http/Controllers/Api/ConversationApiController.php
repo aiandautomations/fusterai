@@ -133,7 +133,14 @@ class ConversationApiController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $fresh = $this->service->updateViaApi($conversation, array_filter($request->validated(), fn ($v) => $v !== null), $request->user());
+        // Use has() to detect explicitly-sent keys; array_filter would strip intentional nulls (e.g. assigned_user_id: null to unassign)
+        $fields = array_filter(
+            $request->validated(),
+            fn ($key) => $request->has($key),
+            ARRAY_FILTER_USE_KEY,
+        );
+
+        $fresh = $this->service->updateViaApi($conversation, $fields, $request->user());
 
         return response()->json($fresh);
     }

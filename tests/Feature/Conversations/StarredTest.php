@@ -3,7 +3,6 @@
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Event;
 

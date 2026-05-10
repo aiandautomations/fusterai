@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\RegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,11 +35,16 @@ class RegisterController extends Controller
      */
     public function store(RegisterRequest $request): RedirectResponse
     {
-        if (User::exists()) {
-            abort(403, 'Registration is closed. Contact your workspace admin to invite you.');
-        }
+        // Use DB::transaction with a lock to prevent two simultaneous registration
+        // requests both passing the User::exists() check and creating duplicate workspaces.
+        $user = DB::transaction(function () use ($request) {
+            // Re-check inside the transaction with a lock on the users table
+            if (User::lockForUpdate()->exists()) {
+                abort(403, 'Registration is closed. Contact your workspace admin to invite you.');
+            }
 
-        $user = $this->service->register($request->validated());
+            return $this->service->register($request->validated());
+        });
 
         Auth::login($user);
 

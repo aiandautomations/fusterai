@@ -60,7 +60,7 @@ test('isOpen respects timezone', function () {
 
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
-    $this->customer  = Customer::factory()->create([
+    $this->customer = Customer::factory()->create([
         'workspace_id' => $this->workspace->id,
         'email' => 'customer@example.com',
     ]);
@@ -92,7 +92,7 @@ test('out-of-hours auto-reply logs an activity thread', function () {
 });
 
 test('within-hours auto-reply logs an activity thread', function () {
-    $schedule = array_fill_keys(['0','1','2','3','4','5','6'], ['open' => '00:00', 'close' => '23:59']);
+    $schedule = array_fill_keys(['0', '1', '2', '3', '4', '5', '6'], ['open' => '00:00', 'close' => '23:59']);
 
     $mailbox = Mailbox::factory()->create([
         'workspace_id' => $this->workspace->id,

@@ -35,15 +35,10 @@ class UpdateConversation extends Tool
     public function handle(Request $request): Response
     {
         $id = (int) $request->get('conversation_id');
-        $conversation = Conversation::find($id);
+        $conversation = Conversation::where('workspace_id', $this->workspaceId)->find($id);
 
         if (! $conversation) {
             return Response::error("Conversation #{$id} not found.");
-        }
-
-        // Scoped authorization: only allow updates within same workspace
-        if ($conversation->workspace_id !== $this->workspaceId) {
-            return Response::error('Access denied.');
         }
 
         $updates = array_filter([

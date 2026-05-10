@@ -190,6 +190,7 @@ interface Props {
         date_from?: string;
         date_to?: string;
         view?: string;
+        starred?: string;
     };
     selected?: FullConversation | null;
     agents: { id: number; name: string; avatar?: string; status?: string }[];

@@ -286,7 +286,7 @@ class ConversationController extends Controller
             return back()->with('error', 'A conversation cannot be merged into itself.');
         }
 
-        $target = Conversation::findOrFail($request->into_id);
+        $target = Conversation::where('workspace_id', $request->user()->workspace_id)->findOrFail($request->into_id);
         $this->authorize('update', $target);
 
         $this->service->merge($conversation, $target, $request->user());

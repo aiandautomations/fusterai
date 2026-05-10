@@ -118,11 +118,10 @@ class SettingsController extends Controller
         }
 
         try {
-            ['lab' => $lab, 'model' => $model] = $aiService->configureForWorkspace($workspaceId);
-
-            // Make the smallest possible real API call — one sentence in, one word out.
-            $agent = new SummarizationAgent;
-            $agent->prompt('Reply with the single word: ok', provider: $lab, model: $model);
+            $aiService->withWorkspaceCredentials(
+                $workspaceId,
+                fn ($lab, $model) => (new SummarizationAgent)->prompt('Reply with the single word: ok', provider: $lab, model: $model),
+            );
 
             return response()->json(['ok' => true, 'message' => 'Connection successful — API key is valid.']);
         } catch (\Throwable $e) {
@@ -176,6 +175,25 @@ class SettingsController extends Controller
     public function toggleModule(ToggleModuleRequest $request, string $alias): RedirectResponse
     {
         $this->authorize('manage-settings');
+
+        // Validate alias against discovered modules to prevent path traversal
+        $modulesPath = base_path('Modules');
+        $discovered = [];
+        if (is_dir($modulesPath)) {
+            foreach (scandir($modulesPath) as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                $providerPath = "{$modulesPath}/{$entry}/Providers/{$entry}ServiceProvider.php";
+                if (is_dir("{$modulesPath}/{$entry}") && file_exists($providerPath)) {
+                    $discovered[] = $entry;
+                }
+            }
+        }
+
+        if (! in_array($alias, $discovered, true)) {
+            abort(404, 'Module not found.');
+        }
 
         $active = $request->boolean('active');
         $name = trim(preg_replace('/([A-Z])/', ' $1', $alias));

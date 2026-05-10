@@ -17,6 +17,8 @@ class GetConversation extends Tool
 
     protected string $description = 'Retrieve a conversation by ID, including threads, customer info, tags, and current status.';
 
+    public function __construct(private readonly int $workspaceId) {}
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -29,7 +31,9 @@ class GetConversation extends Tool
     public function handle(Request $request): Response
     {
         $id = (int) $request->get('conversation_id');
-        $conversation = Conversation::with(['customer', 'threads', 'tags', 'assignee'])->find($id);
+        $conversation = Conversation::with(['customer', 'threads', 'tags', 'assignee'])
+            ->where('workspace_id', $this->workspaceId)
+            ->find($id);
 
         if (! $conversation) {
             return Response::error("Conversation #{$id} not found.");

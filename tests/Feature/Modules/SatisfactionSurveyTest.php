@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Support\Hooks;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\URL;
 use Modules\SatisfactionSurvey\Jobs\SendSurveyJob;
 use Modules\SatisfactionSurvey\Mail\SurveyMail;
 use Modules\SatisfactionSurvey\Models\SurveyResponse;
@@ -131,7 +132,7 @@ test('customer can submit a good rating via signed URL', function () {
         'customer_id' => $this->customer->id,
     ]);
 
-    $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+    $url = URL::temporarySignedRoute(
         'survey.respond',
         now()->addDays(7),
         ['conversation' => $conversation->id, 'rating' => 'good'],
@@ -149,7 +150,7 @@ test('customer can submit a bad rating via signed URL', function () {
         'customer_id' => $this->customer->id,
     ]);
 
-    $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+    $url = URL::temporarySignedRoute(
         'survey.respond',
         now()->addDays(7),
         ['conversation' => $conversation->id, 'rating' => 'bad'],
@@ -178,7 +179,7 @@ test('duplicate survey response is idempotent', function () {
         'customer_id' => $this->customer->id,
     ]);
 
-    $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+    $url = URL::temporarySignedRoute(
         'survey.respond',
         now()->addDays(7),
         ['conversation' => $conversation->id, 'rating' => 'good'],

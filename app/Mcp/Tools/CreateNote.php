@@ -18,7 +18,7 @@ class CreateNote extends Tool
 
     protected string $description = 'Add an internal note to a conversation. Notes are only visible to agents, not customers.';
 
-    public function __construct(private readonly int $userId) {}
+    public function __construct(private readonly int $workspaceId, private readonly int $userId) {}
 
     public function schema(JsonSchema $schema): array
     {
@@ -31,7 +31,7 @@ class CreateNote extends Tool
     public function handle(Request $request): Response
     {
         $id = (int) $request->get('conversation_id');
-        $conversation = Conversation::find($id);
+        $conversation = Conversation::where('workspace_id', $this->workspaceId)->find($id);
 
         if (! $conversation) {
             return Response::error("Conversation #{$id} not found.");

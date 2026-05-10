@@ -1,7 +1,7 @@
 <?php
 
-use App\Domains\Conversation\Models\Thread;
 use App\Domains\Conversation\Models\Conversation;
+use App\Domains\Conversation\Models\Thread;
 use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\Workspace;

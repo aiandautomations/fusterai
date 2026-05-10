@@ -8,6 +8,7 @@ use App\Enums\ThreadType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Conversations\StoreThreadRequest;
 use App\Services\ThreadService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class ThreadController extends Controller
             ThreadType::from($validated['type']),
             $request->user(),
             $request->file('attachments') ?? [],
-            isset($validated['send_at']) ? new \Carbon\Carbon($validated['send_at']) : null,
+            isset($validated['send_at']) ? new Carbon($validated['send_at']) : null,
         );
 
         return back();

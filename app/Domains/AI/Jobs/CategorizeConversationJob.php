@@ -42,13 +42,12 @@ class CategorizeConversationJob implements ShouldQueue
         $excerpt = mb_substr(strip_tags((string) $firstThread->body), 0, 500);
         $prompt = "Subject: {$conversation->subject}\nMessage: {$excerpt}";
 
-        ['lab' => $lab, 'model' => $model] = app(AiSettingsService::class)
-            ->configureForWorkspace($conversation->workspace_id);
-
         try {
-            $agent = new CategorizationAgent;
             /** @var StructuredAgentResponse $response */
-            $response = $agent->prompt($prompt, provider: $lab, model: $model);
+            $response = app(AiSettingsService::class)->withWorkspaceCredentials(
+                $conversation->workspace_id,
+                fn ($lab, $model) => (new CategorizationAgent)->prompt($prompt, provider: $lab, model: $model),
+            );
 
             // StructuredAgentResponse implements ArrayAccess, so use array access or toArray()
             $data = $response->toArray();

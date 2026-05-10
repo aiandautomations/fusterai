@@ -58,6 +58,7 @@ class InviteController extends Controller
                     'name' => $validated['name'],
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
+                    'last_active_at' => now(),
                 ])->save();
 
                 event(new PasswordReset($user));

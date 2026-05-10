@@ -106,6 +106,7 @@ test('messages endpoint returns threads for a visitor conversation', function ()
     ]);
 
     $this->getJson('/api/livechat/messages?'.http_build_query([
+        'workspace_id' => $this->workspace->id,
         'visitor_id' => 'msg-test-visitor',
         'conversation_id' => $conversation->id,
     ]))
@@ -115,6 +116,7 @@ test('messages endpoint returns threads for a visitor conversation', function ()
 
 test('messages endpoint returns empty threads for unknown visitor', function () {
     $this->getJson('/api/livechat/messages?'.http_build_query([
+        'workspace_id' => $this->workspace->id,
         'visitor_id' => 'unknown-xyz',
         'conversation_id' => 999,
     ]))

@@ -32,12 +32,17 @@ class LiveChatMessageController extends Controller
 
     public function messages(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
+            'workspace_id' => 'required|integer|exists:workspaces,id',
             'conversation_id' => 'required|integer',
             'visitor_id' => 'required|string|max:100',
         ]);
 
-        $threads = $this->service->messages($request->visitor_id, (int) $request->conversation_id);
+        $threads = $this->service->messages(
+            $validated['visitor_id'],
+            (int) $validated['conversation_id'],
+            (int) $validated['workspace_id'],
+        );
 
         return response()->json(['threads' => $threads]);
     }
@@ -50,10 +55,24 @@ class LiveChatMessageController extends Controller
     public function typing(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'conversation_id' => 'required|integer|exists:conversations,id',
+            'workspace_id' => 'required|integer|exists:workspaces,id',
+            'conversation_id' => 'required|integer',
+            'visitor_id' => 'required|string|max:100',
         ]);
 
-        broadcast(new VisitorTyping((int) $validated['conversation_id']))->toOthers();
+        // Verify the conversation belongs to the workspace and this visitor's customer record
+        $email = 'visitor_'.$validated['visitor_id'].'@livechat.local';
+        $conversation = Conversation::where('id', $validated['conversation_id'])
+            ->where('workspace_id', $validated['workspace_id'])
+            ->where('channel_type', 'chat')
+            ->whereHas('customer', fn ($q) => $q->where('email', $email)->where('workspace_id', $validated['workspace_id']))
+            ->first();
+
+        if (! $conversation) {
+            return response()->json(['ok' => false], 403);
+        }
+
+        broadcast(new VisitorTyping($conversation->id))->toOthers();
 
         return response()->json(['ok' => true]);
     }

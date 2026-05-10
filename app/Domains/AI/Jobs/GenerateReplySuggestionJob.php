@@ -34,33 +34,31 @@ class GenerateReplySuggestionJob implements ShouldQueue
     {
         $conversation = $this->conversation->load(['customer', 'mailbox', 'threads' => fn ($q) => $q->latest()->limit(10)]);
 
-        // Apply workspace AI credentials to runtime config and get the
-        // provider + model to pass to the agent via the official SDK API.
-        ['lab' => $lab, 'model' => $model] = app(AiSettingsService::class)
-            ->configureForWorkspace($conversation->workspace_id);
-
         try {
-            $agent = new ReplySuggestionAgent($conversation);
-            $prompt = 'Please suggest a helpful, professional reply to the latest customer message. Write only the reply body.';
+            app(AiSettingsService::class)->withWorkspaceCredentials(
+                $conversation->workspace_id,
+                function ($lab, $model) use ($conversation): void {
+                    $agent = new ReplySuggestionAgent($conversation);
+                    $prompt = 'Please suggest a helpful, professional reply to the latest customer message. Write only the reply body.';
 
-            $channel = new PrivateChannel("conversation.{$conversation->id}");
+                    $channel = new PrivateChannel("conversation.{$conversation->id}");
 
-            $stream = $agent->broadcast($prompt, $channel, provider: $lab, model: $model);
+                    $stream = $agent->broadcast($prompt, $channel, provider: $lab, model: $model);
 
-            // broadcast() iterates the stream (broadcasting each chunk) and
-            // populates $stream->text and $stream->usage after completion.
-            $content = $stream->text ?? '';
+                    $content = $stream->text ?? '';
 
-            $suggestion = AiSuggestion::create([
-                'conversation_id' => $conversation->id,
-                'type' => 'reply',
-                'content' => $content,
-                'model' => $model ?? $lab->value,
-                'prompt_tokens' => $stream->usage->promptTokens ?? 0,
-                'completion_tokens' => $stream->usage->completionTokens ?? 0,
-            ]);
+                    $suggestion = AiSuggestion::create([
+                        'conversation_id' => $conversation->id,
+                        'type' => 'reply',
+                        'content' => $content,
+                        'model' => $model ?? $lab->value,
+                        'prompt_tokens' => $stream->usage->promptTokens ?? 0,
+                        'completion_tokens' => $stream->usage->completionTokens ?? 0,
+                    ]);
 
-            broadcast(new AiSuggestionReady($conversation->id, $content, $suggestion->id));
+                    broadcast(new AiSuggestionReady($conversation->id, $content, $suggestion->id));
+                }
+            );
         } catch (\Throwable $e) {
             Log::error('GenerateReplySuggestionJob failed', [
                 'conversation_id' => $conversation->id,

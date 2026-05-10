@@ -12,8 +12,9 @@ class InboundWebhookController extends Controller
 {
     public function receive(Request $request, string $token): JsonResponse
     {
-        // Reject oversized payloads before deserializing into memory (prevent DoS)
-        if ($request->header('Content-Length') && (int) $request->header('Content-Length') > 1_048_576) {
+        // Reject oversized payloads — check actual body length, not the client-supplied
+        // Content-Length header (which can be spoofed or omitted to bypass a header-only check).
+        if (strlen($request->getContent()) > 1_048_576) {
             return response()->json(['message' => 'Payload too large.'], 413);
         }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Channel\Jobs\ProcessWhatsAppWebhookJob;
+use App\Domains\Mailbox\Models\Channel;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Queue;
@@ -40,6 +41,14 @@ test('meta webhook verification fails for unknown token', function () {
 });
 
 test('inbound whatsapp message dispatches processing job', function () {
+    $secret = 'test-app-secret';
+    Channel::create([
+        'mailbox_id' => $this->mailbox->id,
+        'type' => 'whatsapp',
+        'config' => ['app_secret' => $secret],
+        'active' => true,
+    ]);
+
     $payload = [
         'entry' => [[
             'changes' => [[
@@ -59,7 +68,12 @@ test('inbound whatsapp message dispatches processing job', function () {
         ]],
     ];
 
-    $this->postJson('/api/webhooks/whatsapp/test-token-abc', $payload)
+    $body = json_encode($payload);
+    $signature = 'sha256='.hash_hmac('sha256', $body, $secret);
+
+    $this->postJson('/api/webhooks/whatsapp/test-token-abc', $payload, [
+        'X-Hub-Signature-256' => $signature,
+    ])
         ->assertOk()
         ->assertJson(['status' => 'ok']);
 

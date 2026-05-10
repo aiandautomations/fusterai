@@ -8,6 +8,7 @@ use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -58,9 +59,13 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'agentStatuses' => fn () => $agentUser
-                ? User::where('workspace_id', $agentUser->workspace_id)
-                    ->get(['id', 'status'])
-                    ->pluck('status', 'id')
+                ? Cache::remember(
+                    "workspace.agent_statuses.{$agentUser->workspace_id}",
+                    now()->addSeconds(30),
+                    fn () => User::where('workspace_id', $agentUser->workspace_id)
+                        ->get(['id', 'status'])
+                        ->pluck('status', 'id'),
+                )
                 : [],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

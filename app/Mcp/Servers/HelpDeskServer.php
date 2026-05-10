@@ -24,10 +24,10 @@ class HelpDeskServer extends Server
         $userId = $user !== null ? ($user->id ?? 0) : 0;
 
         $this->tools = [
-            new GetConversation,
+            new GetConversation($workspaceId),
             new SearchConversations($workspaceId),
-            new GetCustomerHistory,
-            new CreateNote($userId),
+            new GetCustomerHistory($workspaceId),
+            new CreateNote($workspaceId, $userId),
             new UpdateConversation($workspaceId),
         ];
     }

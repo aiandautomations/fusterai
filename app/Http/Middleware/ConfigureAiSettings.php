@@ -12,10 +12,15 @@ class ConfigureAiSettings
 
     public function handle(Request $request, Closure $next): mixed
     {
-        if ($user = $request->user()) {
-            $this->aiSettings->configureForWorkspace($user->workspace_id);
+        if (! $user = $request->user()) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Wrap the entire request pipeline in withWorkspaceCredentials() so config
+        // is always restored after the request completes — Octane-safe.
+        return $this->aiSettings->withWorkspaceCredentials(
+            $user->workspace_id,
+            fn () => $next($request),
+        );
     }
 }

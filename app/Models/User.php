@@ -9,6 +9,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\Contracts\OAuthenticatable;
@@ -20,7 +21,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements OAuthenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable, SoftDeletes;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -114,12 +115,17 @@ class User extends Authenticatable implements OAuthenticatable
     // ── Notifications ────────────────────────────────────────────
 
     /**
-     * Send the invite notification instead of the default password reset email,
-     * so the link goes to /invite/accept/{token} rather than /reset-password/{token}.
+     * Send the invite notification for never-activated users; use the standard
+     * password reset notification for existing users who forgot their password.
+     * Distinguishes invite vs reset by whether last_active_at is still null.
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
-        $this->notify(new InviteUserNotification($token));
+        if ($this->last_active_at === null) {
+            $this->notify(new InviteUserNotification($token));
+        } else {
+            parent::sendPasswordResetNotification($token);
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────

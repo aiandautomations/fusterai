@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Event;
 beforeEach(function () {
     $this->workspace = Workspace::factory()->create();
     $this->mailbox = Mailbox::factory()->create(['workspace_id' => $this->workspace->id]);
-    $this->customer = Customer::factory()->create(['workspace_id' => $this->workspace->id]);
+    $this->customer = Customer::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'email' => 'visitor_test-visitor@livechat.local',
+    ]);
     $this->agent = User::factory()->create(['workspace_id' => $this->workspace->id, 'role' => 'agent']);
 
     $this->conversation = Conversation::factory()->create([
@@ -30,7 +33,9 @@ test('visitor typing event is broadcast on valid conversation', function () {
     Event::fake([VisitorTyping::class]);
 
     $this->postJson('/api/livechat/typing', [
+        'workspace_id' => $this->workspace->id,
         'conversation_id' => $this->conversation->id,
+        'visitor_id' => 'test-visitor',
     ])->assertOk()->assertJson(['ok' => true]);
 
     Event::assertDispatched(VisitorTyping::class, fn ($e) => $e->conversationId === $this->conversation->id);

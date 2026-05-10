@@ -8,12 +8,14 @@ use App\Domains\Automation\Models\AutomationRule;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Folder;
 use App\Domains\Conversation\Models\Tag;
+use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Models\CannedResponse;
 use App\Models\User;
 use App\Policies\AutomationRulePolicy;
 use App\Policies\CannedResponsePolicy;
 use App\Policies\ConversationPolicy;
+use App\Policies\CustomerPolicy;
 use App\Policies\FolderPolicy;
 use App\Policies\KnowledgeBasePolicy;
 use App\Policies\MailboxPolicy;
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
 
         // ── Policies ─────────────────────────────────────────────────────────────
         Gate::policy(Conversation::class, ConversationPolicy::class);
+        Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(Folder::class, FolderPolicy::class);
         Gate::policy(Mailbox::class, MailboxPolicy::class);
         Gate::policy(KnowledgeBase::class, KnowledgeBasePolicy::class);
@@ -70,11 +73,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Share data with all Inertia pages
         // Note: auth, flash, mailboxes, tags, branding, appearance are shared via HandleInertiaRequests
+        // flash is NOT shared here — it is owned by HandleInertiaRequests (which also shares token)
         Inertia::share([
-            'flash' => fn () => [
-                'success' => session('success'),
-                'error' => session('error'),
-            ],
             'folders' => fn () => request()->user()
                 ? Folder::where('workspace_id', request()->user()->workspace_id)
                     ->withCount(['conversations as open_count' => fn ($q) => $q->where('status', 'open')])

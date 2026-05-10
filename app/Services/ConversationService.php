@@ -37,6 +37,7 @@ class ConversationService
                 'customer_id' => $validated['customer_id'],
                 'subject' => $validated['subject'],
                 'status' => 'open',
+                'priority' => 'normal',
                 'channel_type' => 'email',
                 'last_reply_at' => now(),
             ]);
@@ -173,24 +174,26 @@ class ConversationService
             $updates['snoozed_until'] = null;
         }
 
-        $conversation->update($updates);
+        DB::transaction(function () use ($conversation, $updates, $newStatus, $oldStatus, $actor): void {
+            $conversation->update($updates);
 
-        // Block the customer when marked spam; unblock when moving away from spam
-        $customer = $conversation->customer;
-        if ($customer) {
-            if ($newStatus === ConversationStatus::Spam) {
-                $customer->update(['is_blocked' => true]);
-            } elseif ($oldStatus === ConversationStatus::Spam) {
-                $customer->update(['is_blocked' => false]);
+            // Block the customer when marked spam; unblock when moving away from spam
+            $customer = $conversation->customer;
+            if ($customer) {
+                if ($newStatus === ConversationStatus::Spam) {
+                    $customer->update(['is_blocked' => true]);
+                } elseif ($oldStatus === ConversationStatus::Spam) {
+                    $customer->update(['is_blocked' => false]);
+                }
             }
-        }
 
-        $conversation->threads()->create([
-            'user_id' => $actor->id,
-            'type' => 'activity',
-            'source' => 'web',
-            'body' => "{$actor->name} changed status from <strong>{$oldStatus->label()}</strong> to <strong>{$newStatus->label()}</strong>",
-        ]);
+            $conversation->threads()->create([
+                'user_id' => $actor->id,
+                'type' => 'activity',
+                'source' => 'web',
+                'body' => e($actor->name)." changed status from <strong>{$oldStatus->label()}</strong> to <strong>{$newStatus->label()}</strong>",
+            ]);
+        });
 
         $conversation->refresh();
         Hooks::doAction('conversation.updated', $conversation);
@@ -214,13 +217,13 @@ class ConversationService
         $conversation->update(['assigned_user_id' => $assigneeId]);
 
         if ($assigneeId) {
-            $assignee = User::find($assigneeId);
+            $assignee = User::where('workspace_id', $conversation->workspace_id)->find($assigneeId);
             $body = $assignee?->id === $actor->id
-                ? "{$actor->name} self-assigned this conversation"
-                : "{$actor->name} assigned this conversation to <strong>{$assignee?->name}</strong>";
+                ? e($actor->name).' self-assigned this conversation'
+                : e($actor->name).' assigned this conversation to <strong>'.e($assignee?->name).'</strong>';
         } else {
             $assignee = null;
-            $body = "{$actor->name} unassigned this conversation";
+            $body = e($actor->name).' unassigned this conversation';
         }
 
         $conversation->threads()->create([
@@ -250,7 +253,7 @@ class ConversationService
                 'user_id' => $actor->id,
                 'type' => 'activity',
                 'source' => 'web',
-                'body' => "{$actor->name} snoozed this conversation until <strong>{$until->format('M j, Y g:i A')}</strong>",
+                'body' => e($actor->name).' snoozed this conversation until <strong>'.$until->format('M j, Y g:i A').'</strong>',
             ]);
         }
     }
@@ -269,7 +272,7 @@ class ConversationService
                 'user_id' => $actor->id,
                 'type' => 'activity',
                 'source' => 'web',
-                'body' => "{$actor->name} changed priority from <strong>{$oldPriority->label()}</strong> to <strong>{$newPriority->label()}</strong>",
+                'body' => e($actor->name)." changed priority from <strong>{$oldPriority->label()}</strong> to <strong>{$newPriority->label()}</strong>",
             ]);
 
             $conversation->refresh();
@@ -290,7 +293,7 @@ class ConversationService
             'user_id' => $actor->id,
             'type' => 'activity',
             'source' => 'web',
-            'body' => "Conversation moved to mailbox: {$conversation->mailbox->name}",
+            'body' => 'Conversation moved to mailbox: '.e($conversation->mailbox->name),
         ]);
 
         broadcast(new ConversationUpdated($conversation->fresh()));
@@ -302,16 +305,18 @@ class ConversationService
      */
     public function merge(Conversation $source, Conversation $target, User $actor): void
     {
-        $source->threads()->update(['conversation_id' => $target->id]);
+        DB::transaction(function () use ($source, $target, $actor): void {
+            $source->threads()->update(['conversation_id' => $target->id]);
 
-        $target->threads()->create([
-            'user_id' => $actor->id,
-            'type' => 'activity',
-            'source' => 'web',
-            'body' => "Conversation #{$source->id} was merged into this conversation.",
-        ]);
+            $target->threads()->create([
+                'user_id' => $actor->id,
+                'type' => 'activity',
+                'source' => 'web',
+                'body' => "Conversation #{$source->id} was merged into this conversation.",
+            ]);
 
-        $target->update(['last_reply_at' => now()]);
-        $source->delete();
+            $target->update(['last_reply_at' => now()]);
+            $source->delete();
+        });
     }
 }

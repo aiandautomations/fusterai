@@ -22,7 +22,7 @@ class OfficeHoursService
             return false;
         }
 
-        $open  = Carbon::createFromFormat('H:i', $hours['open'],  $timezone)->setDateFrom($now);
+        $open = Carbon::createFromFormat('H:i', $hours['open'], $timezone)->setDateFrom($now);
         $close = Carbon::createFromFormat('H:i', $hours['close'], $timezone)->setDateFrom($now);
 
         return $now->between($open, $close);

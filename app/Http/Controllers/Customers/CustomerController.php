@@ -17,6 +17,8 @@ class CustomerController extends Controller
 
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = $this->service->paginate(
             $request->user()->workspace_id,
             $request->get('search'),
@@ -30,6 +32,8 @@ class CustomerController extends Controller
 
     public function search(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Customer::class);
+
         $customers = $this->service->search(
             $request->user()->workspace_id,
             $request->get('q', ''),
@@ -40,7 +44,7 @@ class CustomerController extends Controller
 
     public function show(Request $request, Customer $customer): Response
     {
-        abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
+        $this->authorize('view', $customer);
 
         $customer->load(['conversations' => fn ($q) => $q->with('mailbox')->latest()->limit(10)]);
 
@@ -51,7 +55,7 @@ class CustomerController extends Controller
 
     public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
-        abort_unless($customer->workspace_id === $request->user()->workspace_id, 403);
+        $this->authorize('update', $customer);
 
         $this->service->update($customer, $request->validated());
 

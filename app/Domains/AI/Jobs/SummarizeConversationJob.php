@@ -43,14 +43,14 @@ class SummarizeConversationJob implements ShouldQueue
             return;
         }
 
-        ['lab' => $lab, 'model' => $model] = app(AiSettingsService::class)
-            ->configureForWorkspace($conversation->workspace_id);
-
         try {
-            $agent = new SummarizationAgent;
-            $response = $agent->prompt($transcript, provider: $lab, model: $model);
-
-            $conversation->update(['ai_summary' => $response->text]);
+            app(AiSettingsService::class)->withWorkspaceCredentials(
+                $conversation->workspace_id,
+                function ($lab, $model) use ($conversation, $transcript): void {
+                    $response = (new SummarizationAgent)->prompt($transcript, provider: $lab, model: $model);
+                    $conversation->update(['ai_summary' => $response->text]);
+                }
+            );
         } catch (\Throwable $e) {
             Log::error('SummarizeConversationJob failed', [
                 'conversation_id' => $conversation->id,

@@ -60,17 +60,21 @@ class LiveChatService
 
     /**
      * Fetch message threads for a visitor's conversation.
+     * workspace_id is required to scope the customer lookup and prevent cross-workspace leakage.
      */
-    public function messages(string $visitorId, int $conversationId): Collection
+    public function messages(string $visitorId, int $conversationId, int $workspaceId): Collection
     {
         $email = "visitor_{$visitorId}@livechat.local";
-        $customer = Customer::where('email', $email)->first();
+        $customer = Customer::where('workspace_id', $workspaceId)
+            ->where('email', $email)
+            ->first();
 
         if (! $customer) {
             return collect();
         }
 
         $conversation = Conversation::where('id', $conversationId)
+            ->where('workspace_id', $workspaceId)
             ->where('customer_id', $customer->id)
             ->where('channel_type', 'chat')
             ->first();
