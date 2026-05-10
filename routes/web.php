@@ -28,10 +28,14 @@ use App\Http\Controllers\Settings\FolderController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\TagController;
 use App\Http\Controllers\Settings\UserController;
+use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\UnsubscribeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect('/dashboard'));
+
+// ── Email open tracking (public, no auth) ────────────────────────────────────
+Route::get('/t/{token}.gif', [TrackingController::class, 'pixel'])->name('tracking.pixel')->middleware('throttle:120,1');
 
 // ── Unsubscribe (public, signed URL) ─────────────────────────────────────────
 Route::get('/unsubscribe/{customer}', [UnsubscribeController::class, 'show'])->name('unsubscribe');

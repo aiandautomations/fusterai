@@ -1730,6 +1730,11 @@ function EmailThreadItem({ thread, onCancelSchedule }: { thread: FullThread; onC
                             Reply
                         </span>
                     )}
+                    {!isFromCustomer && !isNote && thread.opened_at && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold tracking-wide uppercase">
+                            Opened
+                        </span>
+                    )}
                     <span className="text-[11px] text-muted-foreground/55 tabular-nums">
                         {new Date(thread.created_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
                     </span>

@@ -155,6 +155,7 @@ export interface Thread {
     source: 'email' | 'web' | 'chat' | 'whatsapp' | 'slack' | 'api';
     meta?: Record<string, unknown>;
     send_at?: string | null;
+    opened_at?: string | null;
     created_at: string;
 
     // Relations

@@ -44,12 +44,15 @@ class Thread extends Model
         'source',
         'meta',
         'send_at',
+        'tracking_token',
+        'opened_at',
     ];
 
     protected $casts = [
         'type' => ThreadType::class,
         'meta' => 'array',
         'send_at' => 'datetime',
+        'opened_at' => 'datetime',
     ];
 
     // ── Relations ────────────────────────────────────────────────

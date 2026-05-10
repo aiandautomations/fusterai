@@ -99,11 +99,14 @@ class SendReplyJob implements ShouldQueue
 
         $unsubscribeUrl = URL::signedRoute('unsubscribe', ['customer' => $customer->id]);
 
-        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature, $ccRecipients, $outboundMsgId, $unsubscribeUrl) {
+        $trackingToken = \Illuminate\Support\Str::random(32);
+        $thread->update(['tracking_token' => $trackingToken]);
+
+        $mailer->send([], [], function (Message $msg) use ($conversation, $mailbox, $customer, $thread, $agentSignature, $ccRecipients, $outboundMsgId, $unsubscribeUrl, $trackingToken) {
             $msg->to($customer->email, $customer->name)
                 ->from($mailbox->email, $mailbox->name)
                 ->subject($this->buildSubject($conversation))
-                ->html($this->buildHtmlBody($thread, $mailbox, $agentSignature))
+                ->html($this->buildHtmlBody($thread, $mailbox, $agentSignature, $trackingToken))
                 ->text(strip_tags($thread->body));
 
             foreach ($ccRecipients as $cc) {
@@ -152,7 +155,7 @@ class SendReplyJob implements ShouldQueue
             : 'Re: '.$conversation->subject;
     }
 
-    private function buildHtmlBody(Thread $thread, $mailbox, ?string $agentSignature = null): string
+    private function buildHtmlBody(Thread $thread, $mailbox, ?string $agentSignature = null, ?string $trackingToken = null): string
     {
         $body = $thread->body;
 
@@ -162,7 +165,11 @@ class SendReplyJob implements ShouldQueue
             ? '<br><br>--<br>'.nl2br(e($rawSignature))
             : '';
 
-        return $body.$signature;
+        $pixel = $trackingToken
+            ? '<img src="'.url('/t/'.$trackingToken.'.gif').'" width="1" height="1" style="display:none" alt="">'
+            : '';
+
+        return $body.$signature.$pixel;
     }
 
     private function conversationMessageId(Conversation $conversation): string
