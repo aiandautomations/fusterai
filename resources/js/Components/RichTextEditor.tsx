@@ -485,6 +485,18 @@ export default function RichTextEditor({
         if (editor && onEditorReady) onEditorReady(editor);
     }, [editor, onEditorReady]);
 
+    // Sync external value changes (e.g. form reset) back into the editor.
+    // Treat '' and '<p></p>' as equivalent empty states to avoid a reset loop.
+    useEffect(() => {
+        if (!editor) return;
+        const editorEmpty = editor.isEmpty;
+        const valueEmpty = !value || value === '<p></p>';
+        if (valueEmpty && editorEmpty) return;
+        if (value !== editor.getHTML()) {
+            editor.commands.setContent(value, false);
+        }
+    }, [editor, value]);
+
     useEffect(() => {
         if (!editor || !onKeyDown) return;
         const dom = editor.view.dom as HTMLElement;
