@@ -43,6 +43,26 @@ function typeLabel(type: string): string {
     }
 }
 
+function playNotificationSound() {
+    try {
+        const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.35);
+    } catch {
+        // AudioContext unavailable or blocked — fail silently
+    }
+}
+
 export default function NotificationBell() {
     const { auth } = usePage<PageProps>().props;
     const [open, setOpen] = useState(false);
@@ -80,16 +100,34 @@ export default function NotificationBell() {
         return () => clearInterval(interval);
     }, []);
 
-    // Real-time: listen for new notifications via Reverb
+    // Real-time: listen for new notifications via Reverb + play sound
     useEffect(() => {
         const channelName = `App.Models.User.${auth.user?.id}`;
         const ch = window.Echo?.private(channelName);
         ch?.notification((notification: AppNotification) => {
             setUnreadCount((c) => c + 1);
             setNotifications((prev) => [notification, ...prev]);
+            // Only play sound when the tab is not focused
+            if (document.hidden || !document.hasFocus()) {
+                playNotificationSound();
+            }
         });
         return () => window.Echo?.leave(channelName);
     }, [auth.user?.id]);
+
+    // Tab title badge: prefix with (N) when there are unread notifications
+    useEffect(() => {
+        const base = document.title.replace(/^\(\d+\)\s*/, '');
+        document.title = unreadCount > 0 ? `(${unreadCount}) ${base}` : base;
+
+        if (unreadCount === 0) return;
+
+        // Re-apply prefix after Inertia navigates to a new page (Head resets title)
+        return router.on('navigate', () => {
+            const newBase = document.title.replace(/^\(\d+\)\s*/, '');
+            document.title = `(${unreadCount}) ${newBase}`;
+        });
+    }, [unreadCount]);
 
     // Close on outside click
     useEffect(() => {
@@ -101,6 +139,13 @@ export default function NotificationBell() {
         }
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
+    }, [open]);
+
+    // Remove (N) prefix from tab title when bell panel opens
+    useEffect(() => {
+        if (open) {
+            setUnreadCount(0);
+        }
     }, [open]);
 
     function markAllRead() {
