@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn, getInitials } from '@/lib/utils';
 import type { Conversation, Folder, Mailbox, Tag, User } from '@/types';
 import StatusDot from '@/Components/StatusDot';
-import { EyeIcon, EyeOffIcon, XIcon, ChevronDownIcon, ArrowUpRightIcon, UserCheckIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, XIcon, ChevronDownIcon, ArrowUpRightIcon, UserCheckIcon, StarIcon } from 'lucide-react';
 import type { PageProps } from '@/types';
 
 interface SurveyData {
@@ -33,6 +33,7 @@ interface Props {
     onAddFolder?: (folderId: number) => void;
     onRemoveFolder?: (folderId: number) => void;
     onToggleFollow?: () => void;
+    onToggleStar?: () => void;
     className?: string;
 }
 
@@ -67,6 +68,7 @@ export default function ConversationInspector({
     onAddFolder,
     onRemoveFolder,
     onToggleFollow,
+    onToggleStar,
     className,
 }: Props) {
     const availableTags = tags.filter((tag) => !(conversation.tags ?? []).find((current) => current.id === tag.id));
@@ -81,7 +83,26 @@ export default function ConversationInspector({
         <div className={cn('flex flex-col overflow-y-auto bg-background', className)}>
             {/* ── Customer ── */}
             <div className="px-4 py-4 border-b border-border">
-                <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Customer</p>
+                <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Customer</p>
+                    {onToggleStar && (
+                        <button
+                            type="button"
+                            onClick={onToggleStar}
+                            className="p-1 rounded hover:bg-muted/60 transition-colors"
+                            aria-label={conversation.starred ? 'Unstar conversation' : 'Star conversation'}
+                        >
+                            <StarIcon
+                                className={cn(
+                                    'h-4 w-4 transition-colors',
+                                    conversation.starred
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-muted-foreground/50 hover:text-amber-400',
+                                )}
+                            />
+                        </button>
+                    )}
+                </div>
                 {conversation.customer && (
                     <Link
                         href={`/customers/${conversation.customer.id}`}

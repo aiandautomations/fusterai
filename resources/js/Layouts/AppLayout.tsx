@@ -188,6 +188,7 @@ export default function AppLayout({ children, fullHeight, onCreateView }: AppLay
         { label: 'All Open', href: '/conversations?status=open', count: counts?.open },
         { label: 'Mine', href: '/conversations?assigned=me&status=open', count: counts?.mine },
         { label: 'Unassigned', href: '/conversations?assigned=none&status=open' },
+        { label: 'Starred', href: '/conversations?starred=1', count: counts?.starred },
         { label: 'Pending', href: '/conversations?status=pending', count: counts?.pending },
         { label: 'Snoozed', href: '/conversations?status=snoozed', count: counts?.snoozed },
         { label: 'Closed', href: '/conversations?status=closed' },

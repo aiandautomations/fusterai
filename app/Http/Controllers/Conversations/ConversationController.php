@@ -99,6 +99,10 @@ class ConversationController extends Controller
             $query->where('priority', $priority);
         }
 
+        if ($request->boolean('starred')) {
+            $query->where('starred', true);
+        }
+
         if ($folderId = $request->get('folder')) {
             $query->whereHas('folders', fn ($q) => $q->where('folders.id', $folderId));
         }
@@ -167,7 +171,7 @@ class ConversationController extends Controller
             'agents' => $agents,
             'selected' => $selected,
             'isFollowing' => $isFollowing,
-            'filters' => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to', 'view']),
+            'filters' => $request->only(['status', 'mailbox', 'assigned', 'tag', 'priority', 'conversation', 'date_from', 'date_to', 'view', 'starred']),
             'activeView' => $activeView ? [
                 'id' => $activeView->id,
                 'name' => $activeView->name,
@@ -327,7 +331,8 @@ class ConversationController extends Controller
                 COUNT(CASE WHEN status = 'pending'                           THEN 1 END) AS pending,
                 COUNT(CASE WHEN status = 'closed'                            THEN 1 END) AS closed,
                 COUNT(CASE WHEN status = 'open'    AND snoozed_until IS NULL AND assigned_user_id = ? THEN 1 END) AS mine,
-                COUNT(CASE WHEN snoozed_until IS NOT NULL AND snoozed_until > NOW() THEN 1 END) AS snoozed
+                COUNT(CASE WHEN snoozed_until IS NOT NULL AND snoozed_until > NOW() THEN 1 END) AS snoozed,
+                COUNT(CASE WHEN starred = true THEN 1 END) AS starred
             ", [$user->id])
             ->first();
 
@@ -337,10 +342,20 @@ class ConversationController extends Controller
             'closed' => (int) ($row->closed ?? 0),
             'mine' => (int) ($row->mine ?? 0),
             'snoozed' => (int) ($row->snoozed ?? 0),
+            'starred' => (int) ($row->starred ?? 0),
         ];
     }
 
     // ── Read / Unread ─────────────────────────────────────────────────────────
+
+    public function toggleStar(Request $request, Conversation $conversation): JsonResponse
+    {
+        $this->authorize('view', $conversation);
+
+        $conversation->update(['starred' => ! $conversation->starred]);
+
+        return response()->json(['starred' => $conversation->starred]);
+    }
 
     public function markRead(Request $request, Conversation $conversation): JsonResponse
     {

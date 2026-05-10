@@ -63,6 +63,7 @@ class Conversation extends Model
         'ai_tags',
         'last_reply_at',
         'snoozed_until',
+        'starred',
     ];
 
     protected $casts = [
@@ -72,6 +73,7 @@ class Conversation extends Model
         'ai_tags' => 'array',
         'last_reply_at' => 'datetime',
         'snoozed_until' => 'datetime',
+        'starred' => 'boolean',
     ];
 
     // ── Scout ────────────────────────────────────────────────────
