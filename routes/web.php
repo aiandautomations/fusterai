@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
     // ── Live Chat (agent console) ─────────────────────────────────────────────
 
     Route::get('/live-chat', [LiveChatController::class, 'index'])->name('livechat.index');
+    Route::post('/live-chat/{conversation}/typing', [LiveChatController::class, 'typing'])->name('livechat.typing');
 
     // ── Automation ────────────────────────────────────────────────────────────
 

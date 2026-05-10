@@ -315,6 +315,81 @@
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    // -- Typing indicator (agent → visitor) -----------------------------------
+
+    var typingEl = null;
+    var agentTypingTimer = null;
+
+    function showAgentTyping(agentName) {
+        if (!typingEl) {
+            typingEl = document.createElement('div');
+            typingEl.id = 'fusterai-typing';
+            typingEl.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;';
+            typingEl.innerHTML = [
+                '<div style="display:flex;align-items:center;gap:3px;background:#F3F4F6;padding:8px 12px;border-radius:10px;border-bottom-left-radius:2px;">',
+                '  <span class="fusterai-dot"></span>',
+                '  <span class="fusterai-dot"></span>',
+                '  <span class="fusterai-dot"></span>',
+                '</div>',
+                '<div class="fusterai-msg-meta" id="fusterai-typing-label"></div>',
+            ].join('');
+
+            // Inject dot animation CSS once
+            if (!document.getElementById('fusterai-dot-style')) {
+                var dotStyle = document.createElement('style');
+                dotStyle.id = 'fusterai-dot-style';
+                dotStyle.textContent = [
+                    '.fusterai-dot {',
+                    '  width:6px;height:6px;border-radius:50%;background:#9CA3AF;',
+                    '  animation:fusterai-bounce 1s infinite;display:inline-block;',
+                    '}',
+                    '.fusterai-dot:nth-child(2){animation-delay:0.15s;}',
+                    '.fusterai-dot:nth-child(3){animation-delay:0.3s;}',
+                    '@keyframes fusterai-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}',
+                ].join('\n');
+                document.head.appendChild(dotStyle);
+            }
+        }
+
+        document.getElementById('fusterai-typing-label').textContent = (agentName || 'Agent') + ' is typing…';
+
+        if (!typingEl.parentNode) {
+            messagesEl.appendChild(typingEl);
+        }
+
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        if (agentTypingTimer) clearTimeout(agentTypingTimer);
+        agentTypingTimer = setTimeout(hideAgentTyping, 3000);
+    }
+
+    function hideAgentTyping() {
+        if (typingEl && typingEl.parentNode) {
+            typingEl.parentNode.removeChild(typingEl);
+        }
+        agentTypingTimer = null;
+    }
+
+    // -- Visitor typing broadcast (visitor → agent) ---------------------------
+
+    var visitorTypingTimer = null;
+    var visitorTypingPending = false;
+
+    function sendVisitorTyping() {
+        if (!conversationId || !apiBase) return;
+        if (visitorTypingPending) return; // debounce: send at most once per 2s
+
+        visitorTypingPending = true;
+        visitorTypingTimer = setTimeout(function () { visitorTypingPending = false; }, 2000);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', apiBase + '/api/livechat/typing', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.send(JSON.stringify({ conversation_id: conversationId }));
+    }
+
     // -- Pusher / Reverb subscription -----------------------------------------
 
     var echoInstance = null;
@@ -356,6 +431,8 @@
                 if (thread.customer_id) return;
                 var name = (thread.user && thread.user.name) ? thread.user.name : 'Support';
 
+                hideAgentTyping();
+
                 var isPanelOpen = !panel.classList.contains('hidden');
                 if (isPanelOpen) {
                     appendMessage(thread.body, 'agent', name);
@@ -364,6 +441,13 @@
                     openPanel();
                     appendMessage(thread.body, 'agent', name);
                     incrementUnread();
+                }
+            });
+
+            livechatChannel.bind('agent.typing', function (data) {
+                var name = (data && data.agent_name) ? data.agent_name : 'Agent';
+                if (!panel.classList.contains('hidden')) {
+                    showAgentTyping(name);
                 }
             });
         });
@@ -473,10 +557,11 @@
         }
     });
 
-    // Auto-grow textarea
+    // Auto-grow textarea + broadcast typing indicator
     inputEl.addEventListener('input', function () {
         inputEl.style.height = '';
         inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
+        sendVisitorTyping();
     });
 
 }());

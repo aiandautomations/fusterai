@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\LiveChat;
 
 use App\Domains\Conversation\Models\Conversation;
+use App\Events\AgentTyping;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,5 +27,15 @@ class LiveChatController extends Controller
         return Inertia::render('LiveChat/Index', [
             'conversations' => $conversations,
         ]);
+    }
+
+    public function typing(Request $request, Conversation $conversation): JsonResponse
+    {
+        // Ensure conversation belongs to agent's workspace
+        abort_unless($conversation->workspace_id === $request->user()->workspace_id, 403);
+
+        broadcast(new AgentTyping($conversation->id, $request->user()->name))->toOthers();
+
+        return response()->json(['ok' => true]);
     }
 }

@@ -22,6 +22,10 @@ Route::middleware('throttle:120,1')->group(function () {
 Route::middleware('throttle:10,1')->group(function () {
     Route::post('/livechat/message', [LiveChatMessageController::class, 'store']);
 });
+// Typing indicator — higher rate limit since it fires on every keystroke burst
+Route::middleware('throttle:60,1')->group(function () {
+    Route::post('/livechat/typing', [LiveChatMessageController::class, 'typing']);
+});
 
 // Webhooks (no auth — validated by token in URL, rate limited to prevent abuse)
 Route::middleware('throttle:30,1')->group(function () {

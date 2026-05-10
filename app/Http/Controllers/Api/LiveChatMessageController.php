@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domains\Conversation\Models\Conversation;
+use App\Events\VisitorTyping;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreLiveChatMessageRequest;
 use App\Models\Workspace;
@@ -43,5 +45,16 @@ class LiveChatMessageController extends Controller
     public function store(StoreLiveChatMessageRequest $request): JsonResponse
     {
         return response()->json($this->service->store($request->validated()));
+    }
+
+    public function typing(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'conversation_id' => 'required|integer|exists:conversations,id',
+        ]);
+
+        broadcast(new VisitorTyping((int) $validated['conversation_id']))->toOthers();
+
+        return response()->json(['ok' => true]);
     }
 }

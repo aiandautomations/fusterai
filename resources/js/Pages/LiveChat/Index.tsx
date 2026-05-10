@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
@@ -28,6 +28,9 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
     const [selectedId, setSelectedId] = useState<number | null>(initialConversations[0]?.id ?? null);
     const [threads, setThreads] = useState<Thread[]>([]);
     const [loadingThreads, setLoadingThreads] = useState(false);
+    const [visitorTyping, setVisitorTyping] = useState(false);
+    const visitorTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const agentTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const { data, setData, post, processing, reset } = useForm({ body: '', type: 'message' });
@@ -71,10 +74,13 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
         return () => ch?.stopListening('.conversation.updated');
     }, [auth.user?.workspace_id]);
 
-    // ── Real-time: per-conversation livechat channel for new threads ──────────
+    // ── Real-time: per-conversation livechat channel for new threads + typing ──
 
     useEffect(() => {
         if (!selectedId) return;
+
+        setVisitorTyping(false);
+        if (visitorTypingTimer.current) clearTimeout(visitorTypingTimer.current);
 
         const channelName = `livechat.${selectedId}`;
         const ch = window.Echo?.channel(channelName);
@@ -84,11 +90,30 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                 if (prev.find((t) => t.id === event.thread.id)) return prev;
                 return [...prev, event.thread];
             });
+            setVisitorTyping(false);
+        });
+
+        ch?.listen('.visitor.typing', () => {
+            setVisitorTyping(true);
+            if (visitorTypingTimer.current) clearTimeout(visitorTypingTimer.current);
+            visitorTypingTimer.current = setTimeout(() => setVisitorTyping(false), 3000);
         });
 
         return () => {
             window.Echo?.leave(channelName);
+            if (visitorTypingTimer.current) clearTimeout(visitorTypingTimer.current);
         };
+    }, [selectedId]);
+
+    // ── Broadcast agent typing to widget ─────────────────────────────────────
+
+    const broadcastAgentTyping = useCallback(() => {
+        if (!selectedId) return;
+        if (agentTypingTimer.current) return; // debounce: only send once per 2s burst
+        window.axios.post(`/live-chat/${selectedId}/typing`).catch(() => {});
+        agentTypingTimer.current = setTimeout(() => {
+            agentTypingTimer.current = null;
+        }, 2000);
     }, [selectedId]);
 
     // ── Reply submission ──────────────────────────────────────────────────────
@@ -218,6 +243,19 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                                         );
                                     })
                                 )}
+
+                                {/* Visitor typing indicator */}
+                                {visitorTyping && (
+                                    <div className="flex flex-col max-w-[70%] self-start">
+                                        <div className="px-4 py-3 rounded-xl bg-background border border-border rounded-tl-sm flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+                                        </div>
+                                        <span className="text-[11px] text-muted-foreground mt-1 px-1">Visitor is typing…</span>
+                                    </div>
+                                )}
+
                                 <div ref={messagesEndRef} />
                             </div>
 
@@ -228,7 +266,10 @@ export default function LiveChatIndex({ conversations: initialConversations }: P
                             >
                                 <textarea
                                     value={data.body}
-                                    onChange={(e) => setData('body', e.target.value)}
+                                    onChange={(e) => {
+                                        setData('body', e.target.value);
+                                        broadcastAgentTyping();
+                                    }}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
