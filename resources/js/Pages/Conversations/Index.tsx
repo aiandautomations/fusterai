@@ -237,6 +237,12 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
     const [showDropdown, setShowDropdown] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
+
     function searchCustomers(q: string) {
         setCustomerQuery(q);
         setSelectedCustomer(null);
@@ -248,6 +254,7 @@ function NewConversationModal({ mailboxes, onClose }: { mailboxes: Mailbox[]; on
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(async () => {
             const res = await fetch(`/customers/search?q=${encodeURIComponent(q)}`);
+            if (!res.ok) return;
             const data: CustomerOption[] = await res.json();
             setCustomerOptions(data);
             setShowDropdown(true);
