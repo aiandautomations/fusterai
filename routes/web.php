@@ -86,9 +86,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/conversations/{conversation}/tags', [ConversationController::class, 'syncTags'])->name('conversations.tags');
     Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
     Route::post('/conversations/{conversation}/unread', [ConversationController::class, 'markUnread'])->name('conversations.unread');
+    Route::post('/conversations/{conversation}/star', [ConversationController::class, 'toggleStar'])->name('conversations.star');
 
     // Threads
     Route::post('/conversations/{conversation}/threads', [ThreadController::class, 'store'])->name('threads.store');
+    Route::delete('/conversations/{conversation}/threads/{thread}/schedule', [ThreadController::class, 'cancelSchedule'])->name('threads.schedule.cancel');
 
     // Followers
     Route::post('/conversations/{conversation}/follow', [FollowerController::class, 'store'])->name('conversations.follow');

@@ -131,6 +131,7 @@ export interface Conversation {
     ai_tags?: string[];
     last_reply_at?: string;
     snoozed_until?: string;
+    starred?: boolean;
     is_unread?: boolean;
     created_at: string;
 
@@ -153,6 +154,7 @@ export interface Thread {
     body_plain?: string;
     source: 'email' | 'web' | 'chat' | 'whatsapp' | 'slack' | 'api';
     meta?: Record<string, unknown>;
+    send_at?: string | null;
     created_at: string;
 
     // Relations

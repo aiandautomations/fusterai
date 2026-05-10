@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\AgentMentionedNotification;
 use App\Notifications\ConversationFollowerNotification;
 use App\Notifications\NewCustomerReplyNotification;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 
@@ -27,7 +28,7 @@ class ThreadService
      *
      * @param  UploadedFile[]  $files
      */
-    public function store(Conversation $conversation, string $body, ThreadType $type, User $actor, array $files = []): Thread
+    public function store(Conversation $conversation, string $body, ThreadType $type, User $actor, array $files = [], ?Carbon $sendAt = null): Thread
     {
         $isChat = $conversation->channel_type === ChannelType::Chat;
 
@@ -37,6 +38,7 @@ class ThreadService
             'type' => $type,
             'body' => $body,
             'source' => $isChat ? 'chat' : 'web',
+            'send_at' => $sendAt,
         ]);
 
         foreach ($files as $file) {
@@ -53,10 +55,15 @@ class ThreadService
             $conversation->update(['last_reply_at' => now()]);
             ConversationRead::markRead($actor->id, $conversation->id);
 
-            broadcast(new NewThreadReceived($thread));
+            if (! $sendAt) {
+                broadcast(new NewThreadReceived($thread));
+            }
 
             if (! $isChat) {
-                SendReplyJob::dispatch($thread, $conversation)->onQueue('email-outbound');
+                $pending = SendReplyJob::dispatch($thread, $conversation, $sendAt)->onQueue('email-outbound');
+                if ($sendAt) {
+                    $pending->delay($sendAt);
+                }
             }
 
             $this->notifyOnReply($conversation, $thread, $actor);

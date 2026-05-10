@@ -43,11 +43,13 @@ class Thread extends Model
         'body_plain',
         'source',
         'meta',
+        'send_at',
     ];
 
     protected $casts = [
         'type' => ThreadType::class,
         'meta' => 'array',
+        'send_at' => 'datetime',
     ];
 
     // ── Relations ────────────────────────────────────────────────

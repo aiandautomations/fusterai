@@ -24,6 +24,7 @@ import {
     BookmarkIcon,
     PencilIcon,
     Trash2Icon,
+    StarIcon,
 } from 'lucide-react';
 import ViewBuilderModal from '@/Components/ViewBuilderModal';
 import { Checkbox } from '@/Components/ui/checkbox';
@@ -508,6 +509,7 @@ export default function ConversationsIndex({
     const appliedAgentDefaultRef = useRef(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [starredOverrides, setStarredOverrides] = useState<Record<number, boolean>>({});
 
     const allIds = conversations.data.map((c) => c.id);
     const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
@@ -535,6 +537,16 @@ export default function ConversationsIndex({
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
     }, []);
+
+    function handleStar(conv: Conversation, e: React.MouseEvent) {
+        e.stopPropagation();
+        const current = starredOverrides[conv.id] ?? conv.starred ?? false;
+        setStarredOverrides((prev) => ({ ...prev, [conv.id]: !current }));
+        window.axios.post(`/conversations/${conv.id}/star`).catch(() => {
+            // Revert on failure
+            setStarredOverrides((prev) => ({ ...prev, [conv.id]: current }));
+        });
+    }
 
     function toggleSelect(id: number, e: React.MouseEvent) {
         e.stopPropagation();
@@ -974,16 +986,22 @@ export default function ConversationsIndex({
                                 </p>
                             </div>
                         ) : (
-                            conversations.data.map((conv) => (
-                                <ConversationRow
-                                    key={conv.id}
-                                    conversation={conv}
-                                    isSelected={selected?.id === conv.id}
-                                    isChecked={selectedIds.has(conv.id)}
-                                    onCheck={(e) => toggleSelect(conv.id, e)}
-                                    onClick={() => selectConversation(conv)}
-                                />
-                            ))
+                            conversations.data.map((conv) => {
+                                const displayConv = starredOverrides[conv.id] !== undefined
+                                    ? { ...conv, starred: starredOverrides[conv.id] }
+                                    : conv;
+                                return (
+                                    <ConversationRow
+                                        key={conv.id}
+                                        conversation={displayConv}
+                                        isSelected={selected?.id === conv.id}
+                                        isChecked={selectedIds.has(conv.id)}
+                                        onCheck={(e) => toggleSelect(conv.id, e)}
+                                        onClick={() => selectConversation(conv)}
+                                        onStar={(e) => handleStar(conv, e)}
+                                    />
+                                );
+                            })
                         )}
                     </div>
 
@@ -1114,12 +1132,14 @@ function ConversationRow({
     isChecked,
     onCheck,
     onClick,
+    onStar,
 }: {
     conversation: Conversation;
     isSelected: boolean;
     isChecked: boolean;
     onCheck: (e: React.MouseEvent) => void;
     onClick: () => void;
+    onStar: (e: React.MouseEvent) => void;
 }) {
     const isSnoozed = conversation.snoozed_until && new Date(conversation.snoozed_until) > new Date();
 
@@ -1175,9 +1195,29 @@ function ConversationRow({
                                         {conversation.customer?.name ?? 'Unknown'}
                                     </span>
                                 </div>
-                                <span className="text-[11px] text-muted-foreground/60 shrink-0 tabular-nums">
-                                    {relativeTime(conversation.last_reply_at ?? conversation.created_at)}
-                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="text-[11px] text-muted-foreground/60 tabular-nums">
+                                        {relativeTime(conversation.last_reply_at ?? conversation.created_at)}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={onStar}
+                                        className={cn(
+                                            'opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded',
+                                            conversation.starred && 'opacity-100',
+                                        )}
+                                        aria-label={conversation.starred ? 'Unstar' : 'Star'}
+                                    >
+                                        <StarIcon
+                                            className={cn(
+                                                'h-3.5 w-3.5 transition-colors',
+                                                conversation.starred
+                                                    ? 'fill-amber-400 text-amber-400'
+                                                    : 'text-muted-foreground/50 hover:text-amber-400',
+                                            )}
+                                        />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Subject */}
@@ -1255,6 +1295,8 @@ function EmailDetail({
     const [replyExpanded, setReplyExpanded] = useState(false);
     const [body, setBody] = useState('');
     const [sending, setSending] = useState(false);
+    const [sendLaterAt, setSendLaterAt] = useState<string>('');
+    const [sendLaterOpen, setSendLaterOpen] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(() => {
         if (typeof window === 'undefined') return true;
         return window.localStorage.getItem('conversation.inspector.open') !== '0';
@@ -1273,13 +1315,16 @@ function EmailDetail({
         window.localStorage.setItem('conversation.inspector.open', inspectorOpen ? '1' : '0');
     }, [inspectorOpen]);
 
-    function sendReply(e: React.FormEvent) {
+    function sendReply(e: React.FormEvent, overrideSendAt?: string) {
         e.preventDefault();
         if (!body.trim()) return;
         setSending(true);
+        const payload: Record<string, string> = { body, type: replyType };
+        const at = overrideSendAt ?? (sendLaterAt || undefined);
+        if (at) payload.send_at = at;
         router.post(
             `/conversations/${conversation.id}/threads`,
-            { body, type: replyType },
+            payload,
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -1288,10 +1333,18 @@ function EmailDetail({
                     setBody('');
                     setSending(false);
                     setReplyExpanded(false);
+                    setSendLaterAt('');
+                    setSendLaterOpen(false);
                 },
                 onError: () => setSending(false),
             },
         );
+    }
+
+    function cancelSchedule(threadId: number) {
+        window.axios.delete(`/conversations/${conversation.id}/threads/${threadId}/schedule`).then(() => {
+            router.reload({ only: ['selected'] });
+        });
     }
 
     function updateStatus(status: string) {
@@ -1335,6 +1388,14 @@ function EmailDetail({
             { folder_ids: folderIds },
             { preserveState: true, preserveScroll: true, only: ['selected', 'isFollowing', 'survey'] },
         );
+    }
+
+    function toggleStar() {
+        router.post(`/conversations/${conversation.id}/star`, {}, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['selected'],
+        });
     }
 
     function toggleFollow() {
@@ -1420,7 +1481,7 @@ function EmailDetail({
                 <div className="flex-1 overflow-y-auto bg-muted/20">
                     <div className="w-full px-5 py-6 space-y-5">
                         {threads.map((thread) => (
-                            <EmailThreadItem key={thread.id} thread={thread} />
+                            <EmailThreadItem key={thread.id} thread={thread} onCancelSchedule={cancelSchedule} />
                         ))}
                     </div>
                 </div>
@@ -1501,7 +1562,56 @@ function EmailDetail({
                                         onKeyDown={cannedKeyDown}
                                     />
                                 </div>
-                                <div className="flex items-center justify-end px-3 py-2.5 border-t border-border bg-muted/20">
+                                <div className="flex items-center justify-end gap-2 px-3 py-2.5 border-t border-border bg-muted/20">
+                                    {/* Send Later — only for message replies, not notes */}
+                                    {replyType === 'message' && (
+                                        <div className="relative">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1.5 text-xs"
+                                                onClick={() => setSendLaterOpen((v) => !v)}
+                                            >
+                                                <ClockIcon className="h-3.5 w-3.5" />
+                                                {sendLaterAt ? new Date(sendLaterAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Send Later'}
+                                                <ChevronDownIcon className="h-3 w-3 opacity-60" />
+                                            </Button>
+                                            {sendLaterOpen && (
+                                                <div className="absolute bottom-full right-0 mb-1.5 bg-popover border border-border rounded-xl shadow-xl p-3 z-50 w-64">
+                                                    <p className="text-xs font-medium text-foreground mb-2">Schedule send</p>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="w-full text-sm border border-input rounded-lg px-3 py-1.5 bg-background outline-none focus:border-ring"
+                                                        value={sendLaterAt}
+                                                        min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+                                                        onChange={(e) => setSendLaterAt(e.target.value)}
+                                                    />
+                                                    <div className="flex gap-2 mt-2">
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            className="flex-1 text-xs gap-1"
+                                                            disabled={!sendLaterAt || sending || !body.trim() || body === '<p></p>'}
+                                                            onClick={(e) => sendReply(e as unknown as React.FormEvent, sendLaterAt)}
+                                                        >
+                                                            <ClockIcon className="h-3 w-3" />
+                                                            Schedule
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-xs"
+                                                            onClick={() => { setSendLaterAt(''); setSendLaterOpen(false); }}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <Button type="submit" disabled={sending || !body.trim() || body === '<p></p>'} className="gap-1.5 px-5">
                                         <SendIcon className="h-3.5 w-3.5" />
                                         {replyType === 'message' ? 'Send Reply' : 'Add Note'}
@@ -1547,6 +1657,7 @@ function EmailDetail({
                             syncFolders((conversation.folders ?? []).map((folder) => folder.id).filter((id) => id !== folderId))
                         }
                         onToggleFollow={toggleFollow}
+                        onToggleStar={toggleStar}
                     />
                 )}
             </div>
@@ -1556,10 +1667,11 @@ function EmailDetail({
 
 // ── Email thread item ─────────────────────────────────────────────────────────
 
-function EmailThreadItem({ thread }: { thread: FullThread }) {
+function EmailThreadItem({ thread, onCancelSchedule }: { thread: FullThread; onCancelSchedule?: (id: number) => void }) {
     const isFromCustomer = !!thread.customer_id;
     const isNote = thread.type === 'note';
     const isActivity = thread.type === 'activity';
+    const isScheduled = !!thread.send_at && new Date(thread.send_at) > new Date();
     const author = isFromCustomer ? thread.customer : thread.user;
 
     if (isActivity) {
@@ -1623,6 +1735,25 @@ function EmailThreadItem({ thread }: { thread: FullThread }) {
                     </span>
                 </div>
             </div>
+
+            {/* Scheduled banner */}
+            {isScheduled && (
+                <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800/40 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                        <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+                        Scheduled for {new Date(thread.send_at!).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    </div>
+                    {onCancelSchedule && (
+                        <button
+                            type="button"
+                            onClick={() => onCancelSchedule(thread.id)}
+                            className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-500 dark:hover:text-amber-300 underline shrink-0 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Body */}
             <div

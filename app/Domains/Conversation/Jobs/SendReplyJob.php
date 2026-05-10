@@ -29,10 +29,22 @@ class SendReplyJob implements ShouldQueue
     public function __construct(
         public readonly Thread $thread,
         public readonly Conversation $conversation,
+        public readonly ?\Carbon\Carbon $scheduledAt = null,
     ) {}
 
     public function handle(): void
     {
+        // Re-fetch thread; if it was deleted bail silently
+        $freshThread = $this->thread->fresh();
+        if ($freshThread === null) {
+            return;
+        }
+
+        // Scheduled send was cancelled by the agent (send_at cleared before job ran)
+        if ($this->scheduledAt !== null && $freshThread->send_at === null) {
+            return;
+        }
+
         $conversation = $this->conversation->load(['mailbox', 'customer', 'threads']);
         $this->thread->loadMissing(['user', 'attachments']);
         $mailbox = $conversation->mailbox;
@@ -118,6 +130,11 @@ class SendReplyJob implements ShouldQueue
                 }
             }
         });
+
+        // Clear send_at now that the scheduled message has been sent
+        if ($this->thread->send_at !== null) {
+            $this->thread->update(['send_at' => null]);
+        }
 
         // Broadcast to frontend after send
         broadcast(new NewThreadReceived($thread));

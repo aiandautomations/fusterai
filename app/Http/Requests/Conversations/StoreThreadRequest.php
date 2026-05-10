@@ -20,6 +20,7 @@ class StoreThreadRequest extends FormRequest
             'type' => ['required', Rule::in([ThreadType::Message->value, ThreadType::Note->value])],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:20480'],
+            'send_at' => ['nullable', 'date', 'after:now'],
         ];
     }
 }
