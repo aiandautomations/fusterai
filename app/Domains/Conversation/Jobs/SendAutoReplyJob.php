@@ -77,7 +77,7 @@ class SendAutoReplyJob implements ShouldQueue
         // Log so agents can see the auto-reply was sent
         $conversation->threads()->create([
             'type' => 'activity',
-            'source' => 'web',
+            'source' => 'system',
             'body' => 'Auto-reply sent to customer.',
         ]);
     }

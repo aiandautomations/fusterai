@@ -10,6 +10,8 @@ use App\Domains\Customer\Models\Customer;
 use App\Domains\Mailbox\Models\Mailbox;
 use App\Events\ConversationUpdated;
 use App\Events\NewThreadReceived;
+use App\Models\User;
+use App\Notifications\NewCustomerReplyNotification;
 use App\Services\AiSettingsService;
 use App\Support\Hooks;
 use Illuminate\Bus\Queueable;
@@ -80,10 +82,14 @@ class ProcessInboundEmailJob implements ShouldQueue
 
             // Save attachments
             foreach ($data['attachments'] ?? [] as $att) {
+                $decoded = base64_decode($att['content'], true);
+                if ($decoded === false) {
+                    continue; // skip malformed attachment content
+                }
                 $safeFilename = Str::slug(pathinfo($att['name'], PATHINFO_FILENAME))
                     .'.'.pathinfo($att['name'], PATHINFO_EXTENSION);
                 $path = 'attachments/'.$conversation->id.'/'.Str::uuid().'_'.$safeFilename;
-                Storage::put($path, base64_decode($att['content']));
+                Storage::put($path, $decoded);
                 $thread->attachments()->create([
                     'filename' => $att['name'],
                     'path' => $path,
@@ -119,11 +125,18 @@ class ProcessInboundEmailJob implements ShouldQueue
             CategorizeConversationJob::dispatch($conversation)->onQueue('ai');
         }
 
+        // Notify assigned agent of the new customer reply
+        if ($conversation->assigned_user_id) {
+            User::find($conversation->assigned_user_id)
+                ?->notify(new NewCustomerReplyNotification($conversation, $thread));
+        }
+
         // Auto-mark spam and skip auto-reply for blocked customers (repeat spammers)
         if ($conversation->wasRecentlyCreated) {
             $customer = Customer::find($conversation->customer_id);
             if ($customer?->is_blocked) {
                 $conversation->update(['status' => 'spam']);
+                broadcast(new ConversationUpdated($conversation->fresh()));
             } else {
                 SendAutoReplyJob::dispatch($conversation)->onQueue('email-outbound');
             }
@@ -225,7 +238,7 @@ class ProcessInboundEmailJob implements ShouldQueue
     private function stripQuotedReply(string $html): string
     {
         // Remove blockquote elements (quoted replies in HTML emails)
-        $html = preg_replace('/<blockquote[^>]*>.*?<\/blockquote>/is', '', $html);
+        $html = preg_replace('/<blockquote[^>]*>.*?<\/blockquote>/is', '', $html) ?? $html;
 
         // Remove common reply separators and everything after
         $separators = [
@@ -235,7 +248,7 @@ class ProcessInboundEmailJob implements ShouldQueue
         ];
 
         foreach ($separators as $sep) {
-            $html = preg_replace('/('.$sep.').*$/is', '', $html);
+            $html = preg_replace('/('.$sep.').*$/is', '', $html) ?? $html;
         }
 
         return trim($html);

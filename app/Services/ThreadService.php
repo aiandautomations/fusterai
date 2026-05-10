@@ -80,7 +80,8 @@ class ThreadService
     {
         $assignedUserId = $conversation->assigned_user_id;
 
-        // Notify the assigned agent when a customer (not an agent) sends a message
+        // Only notify the assigned agent for customer-originated replies, not agent replies.
+        // Agent reply notifications are handled in ProcessInboundEmailJob.
         $isAgentReply = $thread->user_id !== null;
         if (! $isAgentReply && $assignedUserId && $assignedUserId !== $actor->id) {
             User::find($assignedUserId)?->notify(new NewCustomerReplyNotification($conversation, $thread));

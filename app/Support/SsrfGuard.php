@@ -66,6 +66,12 @@ class SsrfGuard
             array_column($ipv6, 'ipv6'),
         );
 
+        // Reject hostnames that don't resolve — an unresolvable host could still
+        // reach private IPs via /etc/hosts or split-horizon DNS at fetch time.
+        if (empty($resolved)) {
+            throw new \InvalidArgumentException("Could not resolve hostname '{$host}'.");
+        }
+
         foreach ($resolved as $ip) {
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 self::assertPublicIp($ip);

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Thread;
 use App\Events\ConversationUpdated;
+use App\Events\NewThreadReceived;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -42,9 +43,10 @@ class CreateNote extends Tool
             'user_id' => $this->userId,
             'type' => 'note',
             'body' => nl2br(e($request->string('note'))),
-            'status' => 'note',
+            'source' => 'mcp',
         ]);
 
+        broadcast(new NewThreadReceived($thread));
         broadcast(new ConversationUpdated($conversation));
 
         return Response::json(['success' => true, 'thread_id' => $thread->id]);

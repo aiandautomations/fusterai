@@ -20,7 +20,7 @@ class BulkConversationRequest extends FormRequest
             'ids.*' => ['integer'],
             'action' => ['required', 'in:close,reopen,assign,snooze,spam,priority,mark_read,mark_unread'],
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('workspace_id', $this->user()->workspace_id)],
-            'snooze_until' => ['nullable', 'date', 'after:now'],
+            'snooze_until' => [Rule::requiredIf(fn () => $this->input('action') === 'snooze'), 'date', 'after:now'],
             'priority' => ['nullable', Rule::enum(ConversationPriority::class)],
         ];
     }

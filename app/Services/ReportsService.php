@@ -70,7 +70,11 @@ class ReportsService
                     ->where('status', 'closed')
                     ->where('created_at', '>=', $since)
                     ->whereNotNull('last_reply_at')
-                    ->selectRaw('AVG(EXTRACT(EPOCH FROM (last_reply_at - created_at))/3600) as avg_hours')
+                    ->selectRaw(
+                        DB::connection()->getDriverName() === 'pgsql'
+                            ? 'AVG(EXTRACT(EPOCH FROM (last_reply_at - created_at))/3600) as avg_hours'
+                            : 'AVG(TIMESTAMPDIFF(SECOND, created_at, last_reply_at)/3600) as avg_hours'
+                    )
                     ->value('avg_hours') ?? 0,
                 1
             ),

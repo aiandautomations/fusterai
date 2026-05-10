@@ -26,12 +26,12 @@ class PortalTicketController extends Controller
         $tickets = Conversation::where('workspace_id', $workspace->id)
             ->where('customer_id', $customer->id)
             ->orderByDesc('last_reply_at')
-            ->get(['id', 'subject', 'status', 'priority', 'last_reply_at', 'created_at']);
+            ->paginate(20, ['id', 'subject', 'status', 'priority', 'last_reply_at', 'created_at']);
 
         return Inertia::render('Portal/Tickets/Index', [
             'workspace' => $this->workspaceProps($workspace),
             'customer' => ['name' => $customer->name, 'email' => $customer->email],
-            'tickets' => $tickets->map(fn ($t) => [
+            'tickets' => $tickets->through(fn ($t) => [
                 'id' => $t->id,
                 'subject' => $t->subject,
                 'status' => $t->status->value,

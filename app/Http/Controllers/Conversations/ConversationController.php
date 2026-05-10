@@ -75,7 +75,9 @@ class ConversationController extends Controller
         if ($status === 'snoozed') {
             $query->snoozed();
         } else {
-            $query->where('status', $status)->whereNull('snoozed_until');
+            // Include conversations whose snooze has already expired (not yet cleared by the scheduler)
+            $query->where('status', $status)
+                ->where(fn ($q) => $q->whereNull('snoozed_until')->orWhere('snoozed_until', '<=', now()));
         }
 
         if ($mailboxId = $request->get('mailbox')) {
@@ -327,12 +329,12 @@ class ConversationController extends Controller
         $row = DB::table('conversations')
             ->where('workspace_id', $user->workspace_id)
             ->selectRaw("
-                COUNT(CASE WHEN status = 'open'    AND snoozed_until IS NULL THEN 1 END) AS open,
-                COUNT(CASE WHEN status = 'pending'                           THEN 1 END) AS pending,
-                COUNT(CASE WHEN status = 'closed'                            THEN 1 END) AS closed,
-                COUNT(CASE WHEN status = 'open'    AND snoozed_until IS NULL AND assigned_user_id = ? THEN 1 END) AS mine,
-                COUNT(CASE WHEN snoozed_until IS NOT NULL AND snoozed_until > NOW() THEN 1 END) AS snoozed,
-                COUNT(CASE WHEN starred = true THEN 1 END) AS starred
+                COUNT(CASE WHEN status = 'open'    AND (snoozed_until IS NULL OR snoozed_until <= NOW()) THEN 1 END) AS open,
+                COUNT(CASE WHEN status = 'pending'                                                        THEN 1 END) AS pending,
+                COUNT(CASE WHEN status = 'closed'                                                         THEN 1 END) AS closed,
+                COUNT(CASE WHEN status = 'open'    AND (snoozed_until IS NULL OR snoozed_until <= NOW()) AND assigned_user_id = ? THEN 1 END) AS mine,
+                COUNT(CASE WHEN snoozed_until IS NOT NULL AND snoozed_until > NOW()                       THEN 1 END) AS snoozed,
+                COUNT(CASE WHEN starred = true                                                            THEN 1 END) AS starred
             ", [$user->id])
             ->first();
 

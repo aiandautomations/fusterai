@@ -39,16 +39,20 @@ class FetchUrlAndIndexJob implements ShouldQueue
                 ->withHeaders(['User-Agent' => 'FusterAI-KnowledgeBase/1.0'])
                 ->get($this->url);
 
-            // If the server redirects, validate the destination before following.
-            if (in_array($response->status(), [301, 302, 307, 308])) {
+            // Follow up to 5 redirects, validating each destination for SSRF.
+            $maxRedirects = 5;
+            $redirects = 0;
+            while (in_array($response->status(), [301, 302, 307, 308]) && $redirects < $maxRedirects) {
                 $location = $response->header('Location');
-                if ($location) {
-                    SsrfGuard::validate($location);
-                    $response = Http::timeout(20)
-                        ->withoutRedirecting()
-                        ->withHeaders(['User-Agent' => 'FusterAI-KnowledgeBase/1.0'])
-                        ->get($location);
+                if (! $location) {
+                    break;
                 }
+                SsrfGuard::validate($location);
+                $response = Http::timeout(20)
+                    ->withoutRedirecting()
+                    ->withHeaders(['User-Agent' => 'FusterAI-KnowledgeBase/1.0'])
+                    ->get($location);
+                $redirects++;
             }
 
             if (! $response->successful()) {

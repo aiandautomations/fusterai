@@ -55,6 +55,7 @@ class ConversationService
         SendReplyJob::dispatch($thread, $conversation)->onQueue('email-outbound');
         RunAutomationRulesJob::dispatch('conversation.created', $conversation);
         Hooks::doAction('conversation.created', $conversation);
+        broadcast(new ConversationUpdated($conversation->fresh()));
 
         return compact('conversation', 'thread');
     }
@@ -255,6 +256,10 @@ class ConversationService
                 'source' => 'web',
                 'body' => e($actor->name).' snoozed this conversation until <strong>'.$until->format('M j, Y g:i A').'</strong>',
             ]);
+
+            $conversation->refresh();
+            Hooks::doAction('conversation.updated', $conversation);
+            broadcast(new ConversationUpdated($conversation));
         }
     }
 
@@ -318,5 +323,7 @@ class ConversationService
             $target->update(['last_reply_at' => now()]);
             $source->delete();
         });
+
+        broadcast(new ConversationUpdated($target->fresh()));
     }
 }

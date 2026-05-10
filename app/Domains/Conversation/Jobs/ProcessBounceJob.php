@@ -48,7 +48,7 @@ class ProcessBounceJob implements ShouldQueue
 
         $conversation->threads()->create([
             'type' => 'activity',
-            'body' => "<p>⚠️ Email bounced ({$this->bounceType}): {$this->bounceMessage}</p>",
+            'body' => '<p>⚠️ Email bounced ('.e($this->bounceType).'): '.e($this->bounceMessage).'</p>',
             'body_plain' => "Email bounced ({$this->bounceType}): {$this->bounceMessage}",
             'source' => 'email',
             'meta' => [

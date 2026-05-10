@@ -6,6 +6,8 @@ use App\Domains\Automation\Models\AutomationRule;
 use App\Domains\Conversation\Models\Conversation;
 use App\Domains\Conversation\Models\Folder;
 use App\Domains\Conversation\Models\Tag;
+use App\Domains\Mailbox\Models\Mailbox;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -73,6 +75,11 @@ class RunAutomationRulesJob implements ShouldQueue
                 default => null,
             };
 
+            // Backed enums must be compared as their scalar value
+            if ($actual instanceof \BackedEnum) {
+                $actual = $actual->value;
+            }
+
             $matches = match ($operator) {
                 'equals' => $actual === $value,
                 'not_equals' => $actual !== $value,
@@ -100,7 +107,11 @@ class RunAutomationRulesJob implements ShouldQueue
             match ($type) {
                 'set_status' => $conv->update(['status' => $value]),
                 'set_priority' => $conv->update(['priority' => $value]),
-                'assign_to' => $conv->update(['assigned_user_id' => $value]),
+                'assign_to' => User::where('id', $value)
+                    ->where('workspace_id', $conv->workspace_id)
+                    ->exists()
+                    ? $conv->update(['assigned_user_id' => $value])
+                    : null,
                 'unassign' => $conv->update(['assigned_user_id' => null]),
                 'add_tag' => $conv->tags()->syncWithoutDetaching(
                     Tag::where('workspace_id', $conv->workspace_id)
@@ -110,7 +121,11 @@ class RunAutomationRulesJob implements ShouldQueue
                     Folder::where('workspace_id', $conv->workspace_id)
                         ->where('id', $value)->pluck('id')
                 ),
-                'move_mailbox' => $conv->update(['mailbox_id' => $value]),
+                'move_mailbox' => Mailbox::where('id', $value)
+                    ->where('workspace_id', $conv->workspace_id)
+                    ->exists()
+                    ? $conv->update(['mailbox_id' => $value])
+                    : null,
                 default => null,
             };
         }

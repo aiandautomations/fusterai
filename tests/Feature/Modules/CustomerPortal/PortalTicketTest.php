@@ -52,8 +52,8 @@ test('customer can view their tickets list', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Portal/Tickets/Index')
-            ->has('tickets', 1)
-            ->where('tickets.0.subject', 'Help with login')
+            ->has('tickets.data', 1)
+            ->where('tickets.data.0.subject', 'Help with login')
         );
 });
 
@@ -73,7 +73,7 @@ test('customer only sees their own tickets', function () {
     $this->actingAs($this->customer, 'customer_portal')
         ->get(route('portal.tickets.index', $this->workspace->slug))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->has('tickets', 1));
+        ->assertInertia(fn ($page) => $page->has('tickets.data', 1));
 });
 
 test('customer can view new ticket form', function () {
