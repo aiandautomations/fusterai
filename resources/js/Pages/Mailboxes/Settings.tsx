@@ -20,13 +20,41 @@ import {
     ShieldCheckIcon,
     MessageCircleIcon,
     ArrowRightIcon,
+    ClockIcon,
 } from 'lucide-react';
+
+const TIMEZONES = [
+    'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+    'America/Sao_Paulo', 'America/Toronto', 'America/Vancouver', 'America/Mexico_City',
+    'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Amsterdam', 'Europe/Madrid',
+    'Europe/Rome', 'Europe/Stockholm', 'Europe/Warsaw', 'Europe/Istanbul', 'Europe/Moscow',
+    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Colombo', 'Asia/Dhaka', 'Asia/Bangkok',
+    'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
+    'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Pacific/Auckland',
+    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos', 'Africa/Nairobi',
+];
+
+type DaySchedule = { open: string; close: string } | null;
+
+interface OfficeHoursConfig {
+    enabled: boolean;
+    timezone: string;
+    subject?: string;
+    message?: string;
+    schedule: Record<string, DaySchedule>;
+}
 
 interface Props {
     mailbox: Mailbox & {
         imap_config?: Record<string, string>;
         smtp_config?: Record<string, string>;
-        auto_reply_config?: { enabled: boolean; subject?: string; body?: string; auto_close_pending_days?: number };
+        auto_reply_config?: {
+            enabled: boolean;
+            subject?: string;
+            body?: string;
+            auto_close_pending_days?: number;
+            office_hours?: OfficeHoursConfig;
+        };
     };
 }
 
@@ -151,6 +179,19 @@ export default function MailboxSettings({ mailbox }: Props) {
             subject: mailbox.auto_reply_config?.subject ?? '',
             body: mailbox.auto_reply_config?.body ?? '',
             auto_close_pending_days: mailbox.auto_reply_config?.auto_close_pending_days ?? 0,
+            office_hours: {
+                enabled: mailbox.auto_reply_config?.office_hours?.enabled ?? false,
+                timezone: mailbox.auto_reply_config?.office_hours?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+                subject: mailbox.auto_reply_config?.office_hours?.subject ?? '',
+                message: mailbox.auto_reply_config?.office_hours?.message ?? '',
+                schedule: mailbox.auto_reply_config?.office_hours?.schedule ?? {
+                    '1': { open: '09:00', close: '17:00' },
+                    '2': { open: '09:00', close: '17:00' },
+                    '3': { open: '09:00', close: '17:00' },
+                    '4': { open: '09:00', close: '17:00' },
+                    '5': { open: '09:00', close: '17:00' },
+                },
+            },
         },
     });
 
@@ -432,6 +473,181 @@ export default function MailboxSettings({ mailbox }: Props) {
                                             }
                                             placeholder={
                                                 "Hi {{customer_name}},\n\nThanks for reaching out! We've received your message and will get back to you within 1 business day.\n\nBest regards,\nSupport Team"
+                                            }
+                                        />
+                                    </Field>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Office Hours */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle>Office Hours</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Send an out-of-office reply when customers contact you outside working hours.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+                                <div>
+                                    <p className="text-sm font-medium">Enable office hours</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Sends an out-of-hours auto-reply when a message arrives outside your schedule.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={data.auto_reply_config.office_hours.enabled}
+                                    onCheckedChange={(v) =>
+                                        setData('auto_reply_config', {
+                                            ...data.auto_reply_config,
+                                            office_hours: { ...data.auto_reply_config.office_hours, enabled: v },
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            {data.auto_reply_config.office_hours.enabled && (
+                                <>
+                                    <Separator />
+
+                                    <Field label="Timezone" htmlFor="oh-timezone">
+                                        <NativeSelect
+                                            id="oh-timezone"
+                                            value={data.auto_reply_config.office_hours.timezone}
+                                            onChange={(v) =>
+                                                setData('auto_reply_config', {
+                                                    ...data.auto_reply_config,
+                                                    office_hours: { ...data.auto_reply_config.office_hours, timezone: v },
+                                                })
+                                            }
+                                        >
+                                            {TIMEZONES.map((tz) => (
+                                                <option key={tz} value={tz}>
+                                                    {tz}
+                                                </option>
+                                            ))}
+                                        </NativeSelect>
+                                    </Field>
+
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">Weekly schedule</p>
+                                        {(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const).map(
+                                            (dayName, idx) => {
+                                                const key = String(idx);
+                                                const slot = data.auto_reply_config.office_hours.schedule[key] ?? null;
+                                                return (
+                                                    <div key={key} className="flex items-center gap-3">
+                                                        <div className="w-24 flex items-center gap-2">
+                                                            <Switch
+                                                                checked={slot !== null}
+                                                                onCheckedChange={(on) => {
+                                                                    const next = { ...data.auto_reply_config.office_hours.schedule };
+                                                                    next[key] = on ? { open: '09:00', close: '17:00' } : null;
+                                                                    setData('auto_reply_config', {
+                                                                        ...data.auto_reply_config,
+                                                                        office_hours: {
+                                                                            ...data.auto_reply_config.office_hours,
+                                                                            schedule: next,
+                                                                        },
+                                                                    });
+                                                                }}
+                                                            />
+                                                            <span className="text-sm text-muted-foreground w-14">{dayName.slice(0, 3)}</span>
+                                                        </div>
+                                                        {slot ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Input
+                                                                    type="time"
+                                                                    className="w-32"
+                                                                    value={slot.open}
+                                                                    onChange={(e) => {
+                                                                        const next = {
+                                                                            ...data.auto_reply_config.office_hours.schedule,
+                                                                            [key]: { ...slot, open: e.target.value },
+                                                                        };
+                                                                        setData('auto_reply_config', {
+                                                                            ...data.auto_reply_config,
+                                                                            office_hours: {
+                                                                                ...data.auto_reply_config.office_hours,
+                                                                                schedule: next,
+                                                                            },
+                                                                        });
+                                                                    }}
+                                                                />
+                                                                <span className="text-xs text-muted-foreground">to</span>
+                                                                <Input
+                                                                    type="time"
+                                                                    className="w-32"
+                                                                    value={slot.close}
+                                                                    onChange={(e) => {
+                                                                        const next = {
+                                                                            ...data.auto_reply_config.office_hours.schedule,
+                                                                            [key]: { ...slot, close: e.target.value },
+                                                                        };
+                                                                        setData('auto_reply_config', {
+                                                                            ...data.auto_reply_config,
+                                                                            office_hours: {
+                                                                                ...data.auto_reply_config.office_hours,
+                                                                                schedule: next,
+                                                                            },
+                                                                        });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">Closed</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+
+                                    <Separator />
+
+                                    <Field
+                                        label="Out-of-hours subject"
+                                        htmlFor="oh-subject"
+                                        hint="Leave blank to use a default subject."
+                                    >
+                                        <Input
+                                            id="oh-subject"
+                                            value={data.auto_reply_config.office_hours.subject}
+                                            onChange={(e) =>
+                                                setData('auto_reply_config', {
+                                                    ...data.auto_reply_config,
+                                                    office_hours: {
+                                                        ...data.auto_reply_config.office_hours,
+                                                        subject: e.target.value,
+                                                    },
+                                                })
+                                            }
+                                            placeholder="We're currently out of office"
+                                        />
+                                    </Field>
+
+                                    <Field label="Out-of-hours message" htmlFor="oh-message">
+                                        <textarea
+                                            id="oh-message"
+                                            rows={4}
+                                            className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                                            value={data.auto_reply_config.office_hours.message}
+                                            onChange={(e) =>
+                                                setData('auto_reply_config', {
+                                                    ...data.auto_reply_config,
+                                                    office_hours: {
+                                                        ...data.auto_reply_config.office_hours,
+                                                        message: e.target.value,
+                                                    },
+                                                })
+                                            }
+                                            placeholder={
+                                                "Hi {{customer_name}},\n\nThanks for reaching out! We're currently outside our office hours and will get back to you as soon as we return.\n\nBest regards,\nSupport Team"
                                             }
                                         />
                                     </Field>
