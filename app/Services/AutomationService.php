@@ -20,7 +20,7 @@ class AutomationService
             return AutomationRule::create([
                 ...$validated,
                 'workspace_id' => $workspaceId,
-                'order' => ($last?->order ?? 0) + 1,
+                'order' => ($last->order ?? 0) + 1,
             ]);
         });
     }
