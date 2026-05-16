@@ -493,7 +493,7 @@ export default function RichTextEditor({
         const valueEmpty = !value || value === '<p></p>';
         if (valueEmpty && editorEmpty) return;
         if (value !== editor.getHTML()) {
-            editor.commands.setContent(value, false);
+            editor.commands.setContent(value);
         }
     }, [editor, value]);
 
