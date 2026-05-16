@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Artisan;
 
 test('check flag reports already up to date', function () {
     $version = currentComposerVersion();

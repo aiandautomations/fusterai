@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Laravel\Horizon\Horizon;
 
 class UpdateCommand extends Command
 {
@@ -214,6 +215,6 @@ class UpdateCommand extends Command
 
     private function isHorizonInstalled(): bool
     {
-        return class_exists(\Laravel\Horizon\Horizon::class);
+        return class_exists(Horizon::class);
     }
 }
